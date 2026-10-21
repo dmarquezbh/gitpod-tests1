@@ -1,0 +1,4 @@
+rust-axum/target/
+dotnet/bin/
+dotnet/obj/
+dotnet/out/

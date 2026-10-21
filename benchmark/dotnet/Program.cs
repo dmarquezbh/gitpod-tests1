@@ -1,0 +1,39 @@
+using DotnetBench;
+using Microsoft.AspNetCore.Server.Kestrel.Core;
+using Npgsql;
+
+var builder = WebApplication.CreateSlimBuilder(args);
+builder.Logging.ClearProviders();
+
+var port = int.TryParse(Environment.GetEnvironmentVariable("PORT"), out var p) ? p : 8080;
+var inlineCompletions = Environment.GetEnvironmentVariable("DOTNET_SYSTEM_NET_SOCKETS_INLINE_COMPLETIONS") == "1";
+
+builder.WebHost.UseKestrel(o =>
+{
+    o.AddServerHeader = true; // "Server: Kestrel" (the suite requires Server + Date headers)
+    o.ConfigureEndpointDefaults(e => e.Protocols = HttpProtocols.Http1);
+    o.ListenAnyIP(port);
+});
+builder.WebHost.UseSockets(o =>
+{
+    o.Backlog = 4096;
+    o.WaitForDataBeforeAllocatingBuffer = false;
+    o.UnsafePreferInlineScheduling = inlineCompletions;
+    if (int.TryParse(Environment.GetEnvironmentVariable("KESTREL_IO_QUEUE_COUNT"), out var ioQueues))
+        o.IOQueueCount = ioQueues; // 0 = dispatch continuations straight to the thread pool
+});
+
+var connString = Environment.GetEnvironmentVariable("POSTGRES_CONNECTION")
+    ?? "Server=127.0.0.1;Port=5432;Database=hello_world;User Id=benchmarkdbuser;Password=benchmarkdbpass;"
+     + "Multiplexing=true;Write Coalescing Buffer Threshold Bytes=1000;"
+     + "Maximum Pool Size=" + (Environment.GetEnvironmentVariable("POSTGRES_MAX_POOL_SIZE") ?? "4") + ";"
+     + "Max Auto Prepare=16;Auto Prepare Min Usages=1;No Reset On Close=true";
+
+var db = new Db(NpgsqlDataSource.Create(connString));
+var handlers = new Handlers(db);
+
+var app = builder.Build();
+((IApplicationBuilder)app).Run(handlers.Handle);
+
+Console.WriteLine($"started dotnet server on port {port} (inline completions: {inlineCompletions}, cpus: {Environment.ProcessorCount}, server GC: {System.Runtime.GCSettings.IsServerGC}).");
+app.Run();
