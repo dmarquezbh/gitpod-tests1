@@ -1,4 +1,4 @@
-# Rust vs .NET 11 vs Go — resultados de todas as rodadas
+# Rust vs .NET 11 vs Go — resultados de todas as rodadas (1 a 5)
 
 Benchmark no estilo TechEmpower (os seis testes e os scripts `wrk` do próprio projeto) comparando a
 implementação Rust (axum + tokio-postgres) com duas reimplementações em .NET 11 (Kestrel e um
@@ -206,6 +206,56 @@ Primeira implementação .NET (Kestrel, middleware terminal, JSON por source gen
 | updates | q=20 | 4,541 | 8,695 (1.91x) | 111.6 / 180.0 · 59.2 / 150.2 | 0 / 0 |
 
 </details>
+
+## Rodada 5 — melhorando o Rust (host Xeon 2,80 GHz, sessão nova)
+
+A pergunta inversa: o que o Rust ganha com o mesmo tratamento dado ao .NET, e o .NET se sustenta?
+Duas respostas, medidas na mesma sessão que o .NET platform (host de 2,80 GHz, mais lento nesta
+sessão que na rodada 4: os valores absolutos de todas as implementações caíram ~20%):
+
+- **axum-tuned**: o código do TechEmpower com conexões PostgreSQL reservadas para multi-linha e
+  updates (2 por runtime, escolhido por tuning: `updates q=1` +60%, `queries q=20` +57%),
+  `simd-json` e `panic=abort`.
+- **may-minihttp**: a implementação Rust mais rápida do ranking do TechEmpower, sem alteração
+  (HTTP e cliente PostgreSQL próprios sobre corrotinas `may`), o equivalente Rust da variante platform.
+
+| Teste | Rust axum | Rust axum-tuned | Rust may-minihttp | **.NET Platform** | Platform / may | Platform / axum-tuned |
+|---|---:|---:|---:|---:|---:|---:|
+| plaintext | 652.511 | 791.778 | 1.817.619 | **2.192.357** | 1,21x | 2,77x |
+| json | 151.888 | 171.589 | **218.879** | 214.252 | 0,98x | 1,25x |
+| db | 78.848 | **90.388** | 77.696 | 81.437 | 1,05x | 0,90x |
+| queries q=1 | 78.894 | 73.706 | 77.751 | **79.415** | 1,02x | 1,08x |
+| queries q=20 | 5.787 | 8.017 | 2.624 | **16.857** | 6,42x | 2,10x |
+| fortunes | 68.466 | 68.938 | 81.130 | **91.799** | 1,13x | 1,33x |
+| updates q=1 | 12.289 | 17.201 | **23.370** | 21.052 | 0,90x | 1,22x |
+| updates q=20 | 3.311 | 5.016 | 2.096 | **7.914** | 3,78x | 1,58x |
+
+A/B intercalado (2 alternâncias × 5 s, c=256, mesma sessão), que é a leitura mais confiável:
+
+| Teste | may-minihttp | .NET Platform | axum-tuned | Platform / may | Platform / axum-tuned |
+|---|---:|---:|---:|---:|---:|
+| json | 239.288 / 220.557 | 216.711 / 237.385 | 186.474 / 158.255 | 0,99x | 1,32x |
+| db | 75.981 / 71.421 | 82.662 / 91.076 | 74.135 / 75.293 | **1,18x** | 1,16x |
+| fortunes | 84.137 / 80.223 | 74.291 / 83.356 | 64.402 / 68.373 | 0,96x | 1,19x |
+| queries q=1 | 81.418 / 81.829 | 87.075 / 80.852 | 69.204 / 72.821 | 1,03x | 1,18x |
+
+Leitura:
+
+- **Contra o axum melhorado, o .NET platform segue à frente em tudo** no A/B (1,16x–1,32x). Na
+  suíte sequencial o axum-tuned marcou mais em `/db` (90k vs 81k), mas o A/B intercalado, com os
+  dois sob as mesmas condições, deu 1,16x para o .NET; a suíte sequencial é o piso. O tuning rendeu
+  ao Rust o que rendeu ao .NET: `updates q=1` +40%, `queries q=20` +39%, json +13% com `simd-json`.
+- **Contra o may-minihttp, é um empate técnico com vitórias dos dois lados**: o .NET vence em
+  plaintext (1,21x), `/db` (1,05x na suíte, 1,18x no A/B) e, de longe, nas operações de várias
+  linhas (o may-minihttp não pipelina as N consultas de uma requisição: `queries q=20` 2,6k contra
+  16,9k); o may-minihttp vence em `updates q=1` (0,90x); json, fortunes e `queries q=1` ficam dentro
+  do ruído (0,96x–1,03x).
+- O que resta de diferença estrutural: os dois são o mesmo desenho (um loop por core, HTTP e PG na
+  mesma thread, cliente PostgreSQL *pipelined* próprio); o may-minihttp usa corrotinas com stack e
+  `yarte` para JSON e HTML, o .NET usa `epoll` direto por P/Invoke, System.Text.Json com source
+  generator e um renderizador manual. O resultado empatado sugere que, nesse nível, a linguagem
+  deixou de ser o fator; a arquitetura e o número de syscalls por requisição são.
+- Nenhum erro em nenhum nível, em nenhuma das quatro implementações.
 
 ## A/B intercalados (mesmo host, servidores alternados)
 
