@@ -2,3 +2,8 @@ rust-axum/target/
 dotnet/bin/
 dotnet/obj/
 dotnet/out/
+go-std/app
+go-fasthttp/app
+dotnet-platform/bin/
+dotnet-platform/obj/
+dotnet-platform/out/

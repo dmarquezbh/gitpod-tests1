@@ -7,6 +7,9 @@
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <LangVersion>latest</LangVersion>
 
+    <!-- .NET 11: async methods lowered by the JIT instead of compiler state machines -->
+    <Features>$(Features);runtime-async=on</Features>
+
     <!-- Runtime knobs for throughput -->
     <ServerGarbageCollection>true</ServerGarbageCollection>
     <ConcurrentGarbageCollection>false</ConcurrentGarbageCollection>

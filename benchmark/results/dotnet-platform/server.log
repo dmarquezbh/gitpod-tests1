@@ -1,0 +1,1 @@
+started dotnet platform server on port 8081 (http transport: raw sockets, db driver: raw, inline completions: True, cpus: 2, server GC: False).

@@ -15,16 +15,19 @@
 #   --query-levels "1 5 10 20"           for queries/updates (TFB: 1 5 10 15 20), at --max-concurrency
 #   --max-concurrency 512
 #   --out DIR             results directory (default: results/NAME)
+#   --queries-url PATH    default "/queries?q=" (the Go implementations use "/queries?queries=")
+#   --updates-url PATH    default "/updates?q=" (go-std uses "/update?queries=")
 set -euo pipefail
 
 NAME=""; PORT=""; TESTS=""; SERVER_CPUS="0-1"; WRK_CPUS="2-3"; DURATION=10
-LEVELS="16 64 256 512"; PIPELINE_LEVELS="256 1024 4096"; QUERY_LEVELS="1 5 10 20"; MAX_CONCURRENCY=512; PIPELINE=16; OUT=""
+LEVELS="16 64 256 512"; PIPELINE_LEVELS="256 1024 4096"; QUERY_LEVELS="1 5 10 20"; MAX_CONCURRENCY=512; PIPELINE=16; OUT=""; QUERIES_URL="/queries?q="; UPDATES_URL="/updates?q="
 while [[ $# -gt 0 ]]; do
   case "$1" in
     --name) NAME="$2"; shift 2;; --port) PORT="$2"; shift 2;; --tests) TESTS="$2"; shift 2;;
     --server-cpus) SERVER_CPUS="$2"; shift 2;; --wrk-cpus) WRK_CPUS="$2"; shift 2;; --duration) DURATION="$2"; shift 2;;
     --levels) LEVELS="$2"; shift 2;; --pipeline-levels) PIPELINE_LEVELS="$2"; shift 2;; --query-levels) QUERY_LEVELS="$2"; shift 2;;
     --max-concurrency) MAX_CONCURRENCY="$2"; shift 2;; --out) OUT="$2"; shift 2;;
+    --queries-url) QUERIES_URL="$2"; shift 2;; --updates-url) UPDATES_URL="$2"; shift 2;;
     --) shift; break;;
     *) echo "unknown option $1" >&2; exit 2;;
   esac
@@ -84,8 +87,8 @@ for test in $TESTS; do
     json)      URL="/json";      ACCEPT="application/json,text/html;q=0.9,application/xhtml+xml;q=0.9,application/xml;q=0.8,*/*;q=0.7";;
     db)        URL="/db";        ACCEPT="application/json,text/html;q=0.9,application/xhtml+xml;q=0.9,application/xml;q=0.8,*/*;q=0.7";;
     fortunes)  URL="/fortunes";  ACCEPT="text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8";;
-    queries)   URL="/queries?q="; ACCEPT="application/json,text/html;q=0.9,application/xhtml+xml;q=0.9,application/xml;q=0.8,*/*;q=0.7";;
-    updates)   URL="/updates?q="; ACCEPT="application/json,text/html;q=0.9,application/xhtml+xml;q=0.9,application/xml;q=0.8,*/*;q=0.7";;
+    queries)   URL="$QUERIES_URL"; ACCEPT="application/json,text/html;q=0.9,application/xhtml+xml;q=0.9,application/xml;q=0.8,*/*;q=0.7";;
+    updates)   URL="$UPDATES_URL"; ACCEPT="application/json,text/html;q=0.9,application/xhtml+xml;q=0.9,application/xml;q=0.8,*/*;q=0.7";;
     *) echo "unknown test $test" >&2; exit 2;;
   esac
   echo; echo "################ [$NAME] $test ################"

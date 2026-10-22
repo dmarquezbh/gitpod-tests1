@@ -26,10 +26,11 @@ builder.WebHost.UseSockets(o =>
 var connString = Environment.GetEnvironmentVariable("POSTGRES_CONNECTION")
     ?? "Server=127.0.0.1;Port=5432;Database=hello_world;User Id=benchmarkdbuser;Password=benchmarkdbpass;"
      + "Multiplexing=true;Write Coalescing Buffer Threshold Bytes=1000;"
-     + "Maximum Pool Size=" + (Environment.GetEnvironmentVariable("POSTGRES_MAX_POOL_SIZE") ?? "4") + ";"
+     + "Maximum Pool Size=" + (Environment.GetEnvironmentVariable("POSTGRES_MAX_POOL_SIZE") ?? "4") + ";" // per data source
      + "Max Auto Prepare=16;Auto Prepare Min Usages=1;No Reset On Close=true";
 
-var db = new Db(NpgsqlDataSource.Create(connString));
+var shards = int.TryParse(Environment.GetEnvironmentVariable("POSTGRES_DATA_SOURCES"), out var ds) ? ds : 1;
+var db = new Db(connString, shards);
 var handlers = new Handlers(db);
 
 var app = builder.Build();

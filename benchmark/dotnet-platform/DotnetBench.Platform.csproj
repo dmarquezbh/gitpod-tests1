@@ -1,0 +1,40 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net11.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <LangVersion>latest</LangVersion>
+    <RootNamespace>DotnetBench.Platform</RootNamespace>
+
+    <!-- .NET 11: async methods lowered by the JIT instead of compiler state machines -->
+    <Features>$(Features);runtime-async=on</Features>
+
+    <ServerGarbageCollection>false</ServerGarbageCollection>   <!-- measured: on 2 CPUs workstation GC beats server GC for this server -->
+    <ConcurrentGarbageCollection>false</ConcurrentGarbageCollection>
+    <GarbageCollectionAdaptationMode>0</GarbageCollectionAdaptationMode>
+    <TieredPGO>true</TieredPGO>
+    <TieredCompilation>true</TieredCompilation>
+    <InvariantGlobalization>true</InvariantGlobalization>
+    <UseSystemResourceKeys>true</UseSystemResourceKeys>
+    <EventSourceSupport>false</EventSourceSupport>
+    <SatelliteResourceLanguages>en</SatelliteResourceLanguages>
+    <PublishReadyToRun>false</PublishReadyToRun>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- Kestrel's socket transport (IConnectionListenerFactory) comes from the shared framework -->
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
+    <PackageReference Include="Npgsql" Version="10.0.3" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- data access, models and the fortunes renderer are shared with the Kestrel variant -->
+    <Compile Include="../dotnet/Db.cs" Link="Shared/Db.cs" />
+    <Compile Include="../dotnet/Models.cs" Link="Shared/Models.cs" />
+    <Compile Include="../dotnet/FortunesRenderer.cs" Link="Shared/FortunesRenderer.cs" />
+  </ItemGroup>
+
+</Project>
