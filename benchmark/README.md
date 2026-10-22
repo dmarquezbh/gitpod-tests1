@@ -6,7 +6,7 @@ Reimplementação em **.NET 11** da aplicação web Rust usada no
 benchmark** (os scripts `wrk` do próprio TechEmpower) contra as implementações Rust, .NET
 (duas variantes) e Go (duas implementações do próprio TechEmpower), no mesmo PostgreSQL.
 
-Ver [`RESULTS.md`](RESULTS.md) para os números.
+Ver [`RESULTS.md`](RESULTS.md) para os números e [`docs/rodada-5.md`](docs/rodada-5.md) para a documentação completa da última rodada (Rust melhorado contra o .NET platform).
 
 ## Layout
 

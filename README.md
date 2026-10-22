@@ -7,7 +7,8 @@ PostgreSQL próprios), comparada também com as implementações Go do TechEmpow
 
 - [`RESULTS.md`](RESULTS.md) — resultados de todas as rodadas, todos os testes, todos os níveis.
 - [`benchmark/README.md`](benchmark/README.md) — arquitetura das implementações, o que o .NET 11 muda, como reproduzir.
-- [`benchmark/RESULTS.md`](benchmark/RESULTS.md) — relatório detalhado da última rodada (perfil de CPU, tuning passo a passo).
+- [`benchmark/RESULTS.md`](benchmark/RESULTS.md) — relatório detalhado das rodadas 4 e 5 (perfil de CPU, tuning passo a passo).
+- [`benchmark/docs/rodada-5.md`](benchmark/docs/rodada-5.md) — documentação completa da última rodada: o Rust melhorado (axum-tuned e may-minihttp) contra o .NET platform, com diff, validação, método, todos os níveis e análise.
 - `benchmark/` — código das cinco implementações, scripts da suíte e saída bruta do `wrk`.
 
 As pastas `benchmark/rust-axum`, `benchmark/go-std` e `benchmark/go-fasthttp` são cópias do
