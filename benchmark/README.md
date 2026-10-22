@@ -49,8 +49,15 @@ Ver [`RESULTS.md`](RESULTS.md) para os números.
   pipelining do `tokio-postgres`. O `UPDATE` usa exatamente o mesmo SQL (`UNNEST($1::int[], $2::int[])`).
 - **Fortunes**: renderizador HTML manual escrevendo UTF-8 direto no buffer, escaping idêntico
   ao do `yarte` (`&amp; &lt; &gt; &quot; &#x27; &#x2f;`) — a resposta é byte a byte igual à do Rust.
-- Runtime: Server GC sem DATAS, PGO dinâmico, `DOTNET_ReadyToRun=0`, `InvariantGlobalization`,
-  **Runtime Async** (`<Features>runtime-async=on</Features>`, novo no .NET 11).
+- Runtime: Server GC sem DATAS, PGO dinâmico, `DOTNET_ReadyToRun=0`, `InvariantGlobalization`.
+  **Runtime Async** (novo no .NET 11) foi medido em A/B duplo nesta variante; a decisão final
+  (ligado ou desligado) está no `.csproj` com o motivo, e os números em `RESULTS.md`.
+- Banco: Npgsql multiplexado, 1 data source com pool 4. A terceira rodada mostrou que fragmentar em
+  4 data sources (ganho em db/fortunes) custa 10% em `updates q=1` por causa dos 8 backends; a
+  configuração 1×4 foi a melhor no conjunto. O cliente PostgreSQL próprio (abaixo) **não** é usado
+  aqui: sem *inline completions* as continuações caem no thread pool e o desenho de afinidade por
+  thread degenera (medido: `/db` a 44k e `updates` a 300 req/s), então o Kestrel fica com o driver
+  de biblioteca, que é também o que o caracteriza como variante "realistic".
 
 ### Variante Platform (`dotnet-platform/`)
 
@@ -98,6 +105,13 @@ multiplexado passa por um único loop de escrita. Duas respostas, selecionáveis
   kernel juntar os `Bind/Execute/Sync` de consultas concorrentes num segmento (+10% em `/db`,
   +20% em `/fortunes`); GC workstation não-concorrente com gen0 de 64 MB (em 2 CPUs, as threads do
   Server GC só competem com as de IO).
+  Terceira rodada: **conexões pesadas** (`POSTGRES_RAW_HEAVY_CONNECTIONS=4`): consultas de várias
+  linhas e updates vão para 4 conexões reservadas, e o tráfego de linha única fica nas 2 primárias.
+  O trabalho longo do PostgreSQL (UPDATE, 20 SELECTs) deixa de enfileirar o `/db`, e o PostgreSQL
+  passa a usar mais backends justamente onde é ele o gargalo: `updates q=1` foi de 18,4k para
+  33,8k e `queries q=20` de 16k para 24k, sem perder `/db` nem `/fortunes`. E a operação de
+  linha única (`SingleWorldOp`) passou a ser reciclada numa pilha por thread: zero alocação por
+  requisição em `/db`.
 
 ### Go (`go-std/`, `go-fasthttp/`)
 

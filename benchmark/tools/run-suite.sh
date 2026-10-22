@@ -41,6 +41,10 @@ HOST="127.0.0.1:$PORT"
 SUMMARY="$OUT/summary.csv"
 echo "impl,test,level,rps,latency_avg_ms,latency_p99_ms,requests,errors,non2xx,transfer_mb_s" > "$SUMMARY"
 
+# the database tests need PostgreSQL up (it was found stopped once between rounds)
+if [[ "$TESTS" =~ (db|queries|fortunes|updates) ]] && command -v pg_isready >/dev/null && ! pg_isready -h 127.0.0.1 -q; then
+  echo "[$NAME] ERROR: PostgreSQL is not accepting connections on 127.0.0.1:5432" >&2; exit 1
+fi
 # inode(s) of sockets LISTENing on $PORT, from /proc/net/tcp{,6}
 listen_inodes() { awk -v port="$(printf '%04X' "$PORT")" '$4=="0A" && $2 ~ (":" port "$") {print $10}' /proc/net/tcp /proc/net/tcp6 2>/dev/null; }
 if [[ -n "$(listen_inodes)" ]]; then

@@ -1,4 +1,5 @@
 using DotnetBench;
+using DotnetBench.Platform.Pg;
 using Microsoft.AspNetCore.Server.Kestrel.Core;
 using Npgsql;
 
@@ -30,11 +31,16 @@ var connString = Environment.GetEnvironmentVariable("POSTGRES_CONNECTION")
      + "Max Auto Prepare=16;Auto Prepare Min Usages=1;No Reset On Close=true";
 
 var shards = int.TryParse(Environment.GetEnvironmentVariable("POSTGRES_DATA_SOURCES"), out var ds) ? ds : 1;
-var db = new Db(connString, shards);
+var driver = Environment.GetEnvironmentVariable("DB_DRIVER") ?? "npgsql";
+IDb db = driver == "raw"
+    ? await RawDb.ConnectAsync("127.0.0.1", 5432, "benchmarkdbuser", "benchmarkdbpass", "hello_world",
+        int.TryParse(Environment.GetEnvironmentVariable("POSTGRES_RAW_CONNECTIONS"), out var rc) ? rc : Environment.ProcessorCount,
+        int.TryParse(Environment.GetEnvironmentVariable("POSTGRES_RAW_HEAVY_CONNECTIONS"), out var hc) ? hc : 0)
+    : new Db(connString, shards);
 var handlers = new Handlers(db);
 
 var app = builder.Build();
 ((IApplicationBuilder)app).Run(handlers.Handle);
 
-Console.WriteLine($"started dotnet server on port {port} (inline completions: {inlineCompletions}, cpus: {Environment.ProcessorCount}, server GC: {System.Runtime.GCSettings.IsServerGC}).");
+Console.WriteLine($"started dotnet server on port {port} (db driver: {driver}, inline completions: {inlineCompletions}, cpus: {Environment.ProcessorCount}, server GC: {System.Runtime.GCSettings.IsServerGC}).");
 app.Run();

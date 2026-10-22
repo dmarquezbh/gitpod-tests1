@@ -8,8 +8,8 @@ export DOTNET_CLI_TELEMETRY_OPTOUT=1 DOTNET_NOLOGO=1
 export DOTNET_SYSTEM_NET_SOCKETS_INLINE_COMPLETIONS="${DOTNET_SYSTEM_NET_SOCKETS_INLINE_COMPLETIONS:-0}"  # 1 = socket continuations inline on the IO thread; see RESULTS.md (tuning) for why 0 here
 export DOTNET_ReadyToRun=0      # JIT the framework instead of using precompiled R2R code -> full dynamic PGO
 export DOTNET_TieredPGO=1
-export POSTGRES_MAX_POOL_SIZE="${POSTGRES_MAX_POOL_SIZE:-2}"   # per data source
-export POSTGRES_DATA_SOURCES="${POSTGRES_DATA_SOURCES:-4}"  # independent Npgsql data sources (write loops)
+export POSTGRES_MAX_POOL_SIZE="${POSTGRES_MAX_POOL_SIZE:-4}"   # per data source
+export POSTGRES_DATA_SOURCES="${POSTGRES_DATA_SOURCES:-1}"  # round 3: 4 data sources cost 10% on updates q=1 (more backends), 1x4 measured best overall
 DURATION="${DURATION:-10}"
 ( cd dotnet && dotnet publish -c Release -o out )
 rm -rf results/dotnet

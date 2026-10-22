@@ -41,17 +41,23 @@ public sealed class PgConnection : IThreadPoolWorkItem
     /// <summary>Connections whose read loop runs on the current thread (set by the read loop itself,
     /// so with inline socket completions an IO thread only ever talks to connections it also reads).</summary>
     [ThreadStatic] static List<PgConnection>? t_local;
+    [ThreadStatic] static List<PgConnection>? t_localHeavy;
     bool _registered;
 
+    /// <summary>Heavy connections serve multi-row queries and updates, so that the long PostgreSQL work
+    /// of those requests does not queue behind the single-row traffic of the primary connection.</summary>
+    public bool Heavy { get; init; }
+
     public static List<PgConnection>? LocalConnections => t_local;
+    public static List<PgConnection>? LocalHeavyConnections => t_localHeavy;
 
     PgConnection(Socket socket) => _socket = socket;
 
-    public static async Task<PgConnection> ConnectAsync(string host, int port, string user, string password, string database)
+    public static async Task<PgConnection> ConnectAsync(string host, int port, string user, string password, string database, bool heavy = false)
     {
         var socket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp) { NoDelay = Environment.GetEnvironmentVariable("PG_NODELAY") != "0" };
         await socket.ConnectAsync(new IPEndPoint(IPAddress.Parse(host), port));
-        var connection = new PgConnection(socket);
+        var connection = new PgConnection(socket) { Heavy = heavy };
         await connection.StartupAsync(user, password, database);
         await connection.PrepareAsync();
         _ = connection.ReadLoopAsync();
@@ -63,7 +69,7 @@ public sealed class PgConnection : IThreadPoolWorkItem
 
     public ValueTask<World> QueryWorld(int id)
     {
-        var op = new SingleWorldOp();
+        var op = SingleWorldOp.Rent();
         lock (_writeLock)
         {
             _pending.Enqueue(op);
@@ -265,7 +271,12 @@ public sealed class PgConnection : IThreadPoolWorkItem
                 var n = await _socket.ReceiveAsync(_readBuffer.AsMemory(_readLength), SocketFlags.None);
                 if (n == 0) throw new EndOfStreamException("PostgreSQL closed the connection");
                 _readLength += n;
-                if (!_registered) { _registered = true; (t_local ??= new List<PgConnection>()).Add(this); }
+                if (!_registered)
+                {
+                    _registered = true;
+                    if (Heavy) (t_localHeavy ??= new List<PgConnection>()).Add(this);
+                    else (t_local ??= new List<PgConnection>()).Add(this);
+                }
 
                 var consumed = 0;
                 while (TryGetMessage(_readBuffer.AsSpan(consumed, _readLength - consumed), out var type, out var body))

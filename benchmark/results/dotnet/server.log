@@ -1,1 +1,1 @@
-started dotnet server on port 8080 (inline completions: False, cpus: 2, server GC: True).
+started dotnet server on port 8080 (db driver: npgsql, inline completions: False, cpus: 2, server GC: True).

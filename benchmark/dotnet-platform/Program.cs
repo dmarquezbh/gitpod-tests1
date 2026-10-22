@@ -20,7 +20,8 @@ var shards = int.TryParse(Environment.GetEnvironmentVariable("POSTGRES_DATA_SOUR
 var driver = Environment.GetEnvironmentVariable("DB_DRIVER") ?? "npgsql";
 IDb db = driver == "raw"
     ? await RawDb.ConnectAsync("127.0.0.1", 5432, "benchmarkdbuser", "benchmarkdbpass", "hello_world",
-        int.TryParse(Environment.GetEnvironmentVariable("POSTGRES_RAW_CONNECTIONS"), out var rc) ? rc : Environment.ProcessorCount)
+        int.TryParse(Environment.GetEnvironmentVariable("POSTGRES_RAW_CONNECTIONS"), out var rc) ? rc : Environment.ProcessorCount,
+        int.TryParse(Environment.GetEnvironmentVariable("POSTGRES_RAW_HEAVY_CONNECTIONS"), out var hc) ? hc : 0)
     : new Db(connString, shards);
 var app = new HttpApplication(db);
 

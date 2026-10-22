@@ -8,17 +8,33 @@ namespace DotnetBench.Platform.Pg;
 public sealed class RawDb : IDb
 {
     readonly PgConnection[] _connections;
-    static int s_next;
+    readonly PgConnection[] _heavy;
+    static int s_next, s_nextHeavy;
     [ThreadStatic] static PgConnection? t_connection;   // fallback for threads that read no connection
     [ThreadStatic] static int t_rotation;
 
-    RawDb(PgConnection[] connections) => _connections = connections;
+    RawDb(PgConnection[] connections, PgConnection[] heavy) { _connections = connections; _heavy = heavy; }
 
-    public static async Task<RawDb> ConnectAsync(string host, int port, string user, string password, string database, int connections)
+    /// <param name="heavyConnections">0 = everything on the primary connections (axum-pg layout);
+    /// N &gt; 0 = extra connections reserved for multi-row queries and updates.</param>
+    public static async Task<RawDb> ConnectAsync(string host, int port, string user, string password, string database, int connections, int heavyConnections = 0)
     {
         var all = new PgConnection[connections];
         for (var i = 0; i < connections; i++) all[i] = await PgConnection.ConnectAsync(host, port, user, password, database);
-        return new RawDb(all);
+        var heavy = new PgConnection[heavyConnections];
+        for (var i = 0; i < heavyConnections; i++) heavy[i] = await PgConnection.ConnectAsync(host, port, user, password, database, heavy: true);
+        return new RawDb(all, heavy);
+    }
+
+    PgConnection HeavyConnection
+    {
+        get
+        {
+            if (_heavy.Length == 0) return Connection;
+            var local = PgConnection.LocalHeavyConnections;
+            if (local is not null && local.Count > 0) return local[(t_rotation++ & 0x7fffffff) % local.Count];
+            return _heavy[(Interlocked.Increment(ref s_nextHeavy) - 1) % _heavy.Length];
+        }
     }
 
     PgConnection Connection
@@ -37,17 +53,19 @@ public sealed class RawDb : IDb
 
     public ValueTask<World> LoadSingleWorld() => Connection.QueryWorld(RandomId());
 
-    public ValueTask<World[]> LoadMultipleWorlds(int count)
+    public ValueTask<World[]> LoadMultipleWorlds(int count) => LoadMultipleWorlds(count, count > 1 ? HeavyConnection : Connection);
+
+    static ValueTask<World[]> LoadMultipleWorlds(int count, PgConnection connection)
     {
         Span<int> ids = count <= 512 ? stackalloc int[count] : new int[count];
         for (var i = 0; i < count; i++) ids[i] = RandomId();
-        return Connection.QueryWorlds(ids);
+        return connection.QueryWorlds(ids);
     }
 
     public async ValueTask<World[]> UpdateWorlds(int count)
     {
-        var connection = Connection;
-        var worlds = await LoadMultipleWorlds(count);
+        var connection = HeavyConnection;
+        var worlds = await LoadMultipleWorlds(count, connection);
         var ids = new int[count];
         var numbers = new int[count];
         for (var i = 0; i < count; i++)

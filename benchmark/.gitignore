@@ -7,3 +7,4 @@ go-fasthttp/app
 dotnet-platform/bin/
 dotnet-platform/obj/
 dotnet-platform/out/
+dotnet/out-noasync/

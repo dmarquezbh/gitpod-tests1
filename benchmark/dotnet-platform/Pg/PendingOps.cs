@@ -32,13 +32,39 @@ public abstract class PendingOp<T> : PendingOp, IValueTaskSource<T>
     public override void Complete() { if (!_failed) _core.SetResult(Result); }
     public override void Fail(Exception e) { if (!_failed) { _failed = true; _core.SetException(e); } }
 
-    T IValueTaskSource<T>.GetResult(short token) => _core.GetResult(token);
+    /// <summary>Called once the awaiter has taken the result; pooled subclasses reset and recycle here.</summary>
+    protected virtual void Released() { }
+    protected void ResetCore() { _core.Reset(); _failed = false; }
+
+    T IValueTaskSource<T>.GetResult(short token)
+    {
+        var result = _core.GetResult(token);
+        Released();
+        return result;
+    }
     ValueTaskSourceStatus IValueTaskSource<T>.GetStatus(short token) => _core.GetStatus(token);
     void IValueTaskSource<T>.OnCompleted(Action<object?> continuation, object? state, short token, ValueTaskSourceOnCompletedFlags flags) => _core.OnCompleted(continuation, state, token, flags);
 }
 
 public sealed class SingleWorldOp : PendingOp<World>
 {
+    // An op is only ever touched by one thread at a time (creator → read loop → inline continuation),
+    // so a per-thread free list is safe: whoever takes the result puts it back on its own thread's list.
+    [ThreadStatic] static Stack<SingleWorldOp>? t_pool;
+
+    public static SingleWorldOp Rent()
+    {
+        var pool = t_pool;
+        return pool is { Count: > 0 } ? pool.Pop() : new SingleWorldOp();
+    }
+
+    protected override void Released()
+    {
+        ResetCore();
+        var pool = t_pool ??= new Stack<SingleWorldOp>();
+        if (pool.Count < 1024) pool.Push(this);
+    }
+
     World _world;
     protected override World Result => _world;
     public override void OnDataRow(ReadOnlySpan<byte> row)

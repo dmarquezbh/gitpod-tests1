@@ -7,8 +7,8 @@
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <LangVersion>latest</LangVersion>
 
-    <!-- .NET 11: async methods lowered by the JIT instead of compiler state machines -->
-    <Features>$(Features);runtime-async=on</Features>
+    <!-- .NET 11 Runtime Async was measured on this app: no gain on Kestrel (within noise), so it stays off here. -->
+    <UseRuntimeAsync>false</UseRuntimeAsync>
 
     <!-- Runtime knobs for throughput -->
     <ServerGarbageCollection>true</ServerGarbageCollection>
@@ -26,6 +26,13 @@
 
   <ItemGroup>
     <PackageReference Include="Npgsql" Version="10.0.3" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- the raw pipelined PostgreSQL client lives in the platform project; selectable here with DB_DRIVER=raw -->
+    <Compile Include="../dotnet-platform/Pg/PgConnection.cs" Link="Pg/PgConnection.cs" />
+    <Compile Include="../dotnet-platform/Pg/PendingOps.cs" Link="Pg/PendingOps.cs" />
+    <Compile Include="../dotnet-platform/Pg/RawDb.cs" Link="Pg/RawDb.cs" />
   </ItemGroup>
 
 </Project>

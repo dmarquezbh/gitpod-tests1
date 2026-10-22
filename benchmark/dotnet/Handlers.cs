@@ -12,7 +12,7 @@ namespace DotnetBench;
 /// Bodies are produced into per-thread reusable buffers so every response carries a Content-Length
 /// (no chunked framing), then copied once into Kestrel's output pipe.
 /// </summary>
-public sealed class Handlers(Db db)
+public sealed class Handlers(IDb db)
 {
     static readonly StringValues TextPlain = "text/plain";
     static readonly StringValues ApplicationJson = "application/json";

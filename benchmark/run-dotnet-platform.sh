@@ -13,7 +13,8 @@ export DOTNET_TieredPGO=1
 # workstation non-concurrent GC with a 64 MB gen0 budget.
 export HTTP_TRANSPORT="${HTTP_TRANSPORT:-raw}"                      # raw | kestrel-sockets
 export DB_DRIVER="${DB_DRIVER:-raw}"                                # raw | npgsql
-export POSTGRES_RAW_CONNECTIONS="${POSTGRES_RAW_CONNECTIONS:-2}"    # raw driver: connections (one per IO thread)
+export POSTGRES_RAW_CONNECTIONS="${POSTGRES_RAW_CONNECTIONS:-2}"    # raw driver: primary connections (one per IO thread)
+export POSTGRES_RAW_HEAVY_CONNECTIONS="${POSTGRES_RAW_HEAVY_CONNECTIONS:-4}"  # raw driver: connections reserved for multi-row queries and updates
 export PG_NODELAY="${PG_NODELAY:-0}"                                # raw driver: 0 = leave Nagle on
 export POSTGRES_MAX_POOL_SIZE="${POSTGRES_MAX_POOL_SIZE:-2}"        # npgsql driver: pool per data source
 export POSTGRES_DATA_SOURCES="${POSTGRES_DATA_SOURCES:-4}"          # npgsql driver: independent data sources
