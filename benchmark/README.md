@@ -14,12 +14,14 @@ Ver [`RESULTS.md`](RESULTS.md) para os números.
 |---|---|
 | `rust-axum/` | Cópia literal da implementação Rust (commit em `UPSTREAM.txt`, licença em `LICENSE-TFB`). Não foi alterada. |
 | `go-std/`, `go-fasthttp/` | Cópias literais das implementações Go do TechEmpower (net/http + pgx v3; fasthttp + pgx v4). Não alteradas. |
+| `rust-axum-tuned/` | Rodada 5: o axum com as mesmas ideias aplicadas ao .NET (conexões PostgreSQL reservadas para multi-linha/updates por runtime, `simd-json`, `panic=abort`). Diferença para `rust-axum/` em `src/pg/database.rs`, `Cargo.toml` e um ajuste do módulo `simd_json` para o axum 0.8. |
+| `rust-may-minihttp/` | Rodada 5: cópia literal do `may-minihttp` do TechEmpower, a implementação Rust mais rápida do ranking (HTTP e cliente PostgreSQL próprios sobre corrotinas `may`), o equivalente Rust da variante platform. |
 | `dotnet/` | Reimplementação em C# / .NET 11 sobre **Kestrel** (variante "realistic": framework HTTP completo, como o axum sobre hyper). |
 | `dotnet-platform/` | Reimplementação em C# / .NET 11 com **servidor HTTP/1.1 próprio** sobre o transporte de sockets do Kestrel e `System.IO.Pipelines` (variante "platform", a mesma abordagem das entradas aspnetcore que lideram o TechEmpower). Compartilha `Db.cs`, `Models.cs` e `FortunesRenderer.cs` com `dotnet/`. |
 | `tools/run-suite.sh` | Réplica de `toolset/wrk/{concurrency,pipeline,query}.sh` do TFB, sem Docker, com pinning de CPU. |
 | `tools/compare.sh` | Junta os dois `summary.csv` e gera as tabelas Markdown. |
 | `tools/create-postgres.sql`, `tools/tfb-postgresql.conf` | Schema e tuning do PostgreSQL do TFB. |
-| `run-rust.sh`, `run-dotnet.sh`, `run-dotnet-platform.sh`, `run-go.sh` | Compilam e rodam a suíte completa para cada implementação. |
+| `run-rust.sh`, `run-rust-tuned.sh`, `run-rust-may.sh`, `run-dotnet.sh`, `run-dotnet-platform.sh`, `run-go.sh` | Compilam e rodam a suíte completa para cada implementação. |
 | `results/` | Saída bruta do `wrk` por nível + `summary.csv` por implementação. |
 
 ## Os seis testes (regras do TechEmpower)
@@ -122,6 +124,21 @@ multiplexado passa por um único loop de escrita. Duas respostas, selecionáveis
   33,8k e `queries q=20` de 16k para 24k, sem perder `/db` nem `/fortunes`. E a operação de
   linha única (`SingleWorldOp`) passou a ser reciclada numa pilha por thread: zero alocação por
   requisição em `/db`.
+
+### Rust melhorado (`rust-axum-tuned/`, `rust-may-minihttp/`) — rodada 5
+
+Depois de o .NET passar o Rust, a pergunta inversa: o que o Rust ganha com o mesmo tratamento?
+Duas respostas, medidas na mesma sessão que o .NET platform:
+
+- **axum-tuned**: o código do TechEmpower com três mudanças. (1) Cada runtime Tokio ganha, além da
+  conexão primária, `POSTGRES_HEAVY_CONNECTIONS` conexões `tokio-postgres` reservadas para consultas
+  de várias linhas e updates, exatamente o que deu +40% em `updates q=1` no .NET; (2) `simd-json` no
+  lugar do `serde_json` (feature que o próprio TFB prevê, corrigida para o axum 0.8); (3)
+  `panic = "abort"`. O resto (hyper, runtime *current-thread* por core, `SO_REUSEPORT`, mimalloc,
+  LTO fat, `target-cpu=native`) já estava no original.
+- **may-minihttp**: sem alteração. Servidor HTTP mínimo e cliente PostgreSQL *pipelined* próprios
+  sobre corrotinas `may`, uma conexão por core; é a entrada Rust que lidera o ranking do TechEmpower
+  e o comparável honesto da variante platform do .NET.
 
 ### Go (`go-std/`, `go-fasthttp/`)
 

@@ -8,3 +8,5 @@ dotnet-platform/bin/
 dotnet-platform/obj/
 dotnet-platform/out/
 dotnet/out-noasync/
+rust-axum-tuned/target/
+rust-may-minihttp/target/
