@@ -2,6 +2,7 @@ using System.Net;
 using DotnetBench;
 using DotnetBench.Platform;
 using DotnetBench.Platform.Pg;
+using DotnetBench.Platform.EventLoop;
 using Microsoft.AspNetCore.Server.Kestrel.Transport.Sockets;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;
@@ -26,6 +27,16 @@ IDb db = driver == "raw"
 var app = new HttpApplication(db);
 
 var httpTransport = Environment.GetEnvironmentVariable("HTTP_TRANSPORT") ?? "kestrel-sockets";
+if (httpTransport == "epoll")
+{
+    // self-contained event loops: HTTP and PostgreSQL on the same thread, libc epoll/recv/send
+    var loops = int.TryParse(Environment.GetEnvironmentVariable("EVENT_LOOPS"), out var lc) ? lc : Environment.ProcessorCount;
+    var heavyPerLoop = int.TryParse(Environment.GetEnvironmentVariable("POSTGRES_HEAVY_PER_LOOP"), out var hp) ? hp : 2;
+    DateHeader.Start();
+    Console.WriteLine($"started dotnet platform server on port {port} (http transport: epoll event loops x{loops}, db: in-loop raw client (1 + {heavyPerLoop} heavy per loop), cpus: {Environment.ProcessorCount}, server GC: {System.Runtime.GCSettings.IsServerGC}).");
+    EventLoopServer.Run(port, loops, heavyPerLoop, Environment.GetEnvironmentVariable("PG_NODELAY") == "1");
+    return;
+}
 if (httpTransport == "raw")
 {
     DateHeader.Start();

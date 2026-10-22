@@ -1,1 +1,1 @@
-started dotnet platform server on port 8081 (http transport: raw sockets, db driver: raw, inline completions: True, cpus: 2, server GC: False).
+started dotnet platform server on port 8081 (http transport: epoll event loops x2, db: in-loop raw client (1 + 2 heavy per loop), cpus: 2, server GC: False).

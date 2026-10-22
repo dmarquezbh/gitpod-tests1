@@ -8,10 +8,11 @@ export DOTNET_CLI_TELEMETRY_OPTOUT=1 DOTNET_NOLOGO=1
 export DOTNET_SYSTEM_NET_SOCKETS_INLINE_COMPLETIONS="${DOTNET_SYSTEM_NET_SOCKETS_INLINE_COMPLETIONS:-1}"
 export DOTNET_ReadyToRun=0
 export DOTNET_TieredPGO=1
-# Final configuration (see RESULTS.md, "tuning"): raw socket HTTP loop, raw pipelined PostgreSQL client
-# with one connection per IO thread, Nagle left on for the PostgreSQL sockets (kernel-side coalescing),
-# workstation non-concurrent GC with a 64 MB gen0 budget.
-export HTTP_TRANSPORT="${HTTP_TRANSPORT:-raw}"                      # raw | kestrel-sockets
+# Final configuration (see RESULTS.md, "tuning"): one epoll event loop per core (libc), HTTP and the
+# pipelined PostgreSQL client on the same thread, PostgreSQL writes flushed once per epoll batch, Nagle
+# left on for the PostgreSQL sockets, workstation non-concurrent GC with a 64 MB gen0 budget.
+export HTTP_TRANSPORT="${HTTP_TRANSPORT:-epoll}"                    # epoll (own event loops, libc) | raw | kestrel-sockets
+export POSTGRES_HEAVY_PER_LOOP="${POSTGRES_HEAVY_PER_LOOP:-2}"      # epoll: PostgreSQL connections per loop reserved for multi-row/updates (plus 1 primary)
 export DB_DRIVER="${DB_DRIVER:-raw}"                                # raw | npgsql
 export POSTGRES_RAW_CONNECTIONS="${POSTGRES_RAW_CONNECTIONS:-2}"    # raw driver: primary connections (one per IO thread)
 export POSTGRES_RAW_HEAVY_CONNECTIONS="${POSTGRES_RAW_HEAVY_CONNECTIONS:-4}"  # raw driver: connections reserved for multi-row queries and updates

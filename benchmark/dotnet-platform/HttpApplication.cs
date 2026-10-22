@@ -18,12 +18,12 @@ public sealed class HttpApplication(IDb db)
 {
     public enum Route : byte { NotFound, Plaintext, Json, Db, Queries, Fortunes, Updates }
 
-    static ReadOnlySpan<byte> PlaintextHead => "HTTP/1.1 200 OK\r\nServer: K\r\nContent-Type: text/plain\r\nContent-Length: 13\r\n"u8;
+    internal static ReadOnlySpan<byte> PlaintextHead => "HTTP/1.1 200 OK\r\nServer: K\r\nContent-Type: text/plain\r\nContent-Length: 13\r\n"u8;
     static ReadOnlySpan<byte> JsonHead => "HTTP/1.1 200 OK\r\nServer: K\r\nContent-Type: application/json\r\nContent-Length: 27\r\n"u8;
     static ReadOnlySpan<byte> JsonHeadNoLength => "HTTP/1.1 200 OK\r\nServer: K\r\nContent-Type: application/json\r\nContent-Length: "u8;
-    static ReadOnlySpan<byte> HtmlHeadNoLength => "HTTP/1.1 200 OK\r\nServer: K\r\nContent-Type: text/html; charset=utf-8\r\nContent-Length: "u8;
-    static ReadOnlySpan<byte> NotFoundHead => "HTTP/1.1 404 Not Found\r\nServer: K\r\nContent-Length: 0\r\n"u8;
-    static ReadOnlySpan<byte> HelloWorld => "Hello, World!"u8;
+    internal static ReadOnlySpan<byte> HtmlHeadNoLength => "HTTP/1.1 200 OK\r\nServer: K\r\nContent-Type: text/html; charset=utf-8\r\nContent-Length: "u8;
+    internal static ReadOnlySpan<byte> NotFoundHead => "HTTP/1.1 404 Not Found\r\nServer: K\r\nContent-Length: 0\r\n"u8;
+    internal static ReadOnlySpan<byte> HelloWorld => "Hello, World!"u8;
 
     static readonly JsonMessage HelloWorldMessage = new("Hello, World!");
     static readonly JsonWriterOptions JsonOptions = new() { SkipValidation = true };
@@ -186,7 +186,7 @@ public sealed class HttpApplication(IDb db)
 
     // ---- response writing ----------------------------------------------------------------------
 
-    static void WriteResponse(IBufferWriter<byte> output, ReadOnlySpan<byte> head, ReadOnlySpan<byte> body)
+    internal static void WriteResponse(IBufferWriter<byte> output, ReadOnlySpan<byte> head, ReadOnlySpan<byte> body)
     {
         var date = DateHeader.Bytes;
         var span = output.GetSpan(head.Length + date.Length + body.Length);
@@ -196,7 +196,7 @@ public sealed class HttpApplication(IDb db)
         output.Advance(head.Length + date.Length + body.Length);
     }
 
-    static void WriteResponseWithLength(IBufferWriter<byte> output, ReadOnlySpan<byte> headNoLength, ReadOnlySpan<byte> body)
+    internal static void WriteResponseWithLength(IBufferWriter<byte> output, ReadOnlySpan<byte> headNoLength, ReadOnlySpan<byte> body)
     {
         var date = DateHeader.Bytes;
         var span = output.GetSpan(headNoLength.Length + 12 + date.Length + body.Length);
@@ -212,7 +212,7 @@ public sealed class HttpApplication(IDb db)
         output.Advance(pos + body.Length);
     }
 
-    static void WriteJsonMessage(IBufferWriter<byte> output)
+    internal static void WriteJsonMessage(IBufferWriter<byte> output)
     {
         WriteResponse(output, JsonHead, default);
         var writer = GetJsonWriter(output);
@@ -220,7 +220,7 @@ public sealed class HttpApplication(IDb db)
         writer.Flush();
     }
 
-    static void WriteJson<T>(IBufferWriter<byte> output, T value, JsonTypeInfo<T> typeInfo)
+    internal static void WriteJson<T>(IBufferWriter<byte> output, T value, JsonTypeInfo<T> typeInfo)
     {
         var buffer = GetBuffer();
         var writer = GetJsonWriter(buffer);
@@ -237,7 +237,7 @@ public sealed class HttpApplication(IDb db)
         return writer;
     }
 
-    static ArrayBufferWriter<byte> GetBuffer()
+    internal static ArrayBufferWriter<byte> GetBuffer()
     {
         var buffer = t_buffer;
         if (buffer is null) t_buffer = buffer = new ArrayBufferWriter<byte>(32 * 1024);

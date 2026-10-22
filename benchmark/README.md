@@ -78,10 +78,20 @@ pequena. A variante platform remove essa camada:
   exatamente o mesmo código da variante Kestrel.
 
 Transporte (`HTTP_TRANSPORT`): `kestrel-sockets` usa o `SocketTransportFactory` do Kestrel
-(socket → `Pipe` → aplicação); `raw` (`RawSocketServer.cs`, o padrão nos resultados) faz o loop
-direto sobre `Socket`: `ReceiveAsync` num `byte[]` por conexão, parse, respostas num buffer de
-saída, um `SendAsync` por leitura. Sem Pipe, sem cópia intermediária, a mesma forma de uma
-*connection task* do hyper. Foi o que levou o `/json` de ~210k para ~260–310k req/s.
+(socket → `Pipe` → aplicação); `raw` (`RawSocketServer.cs`) faz o loop direto sobre `Socket`:
+`ReceiveAsync` num `byte[]` por conexão, parse, respostas num buffer de saída, um `SendAsync` por
+leitura. Sem Pipe, sem cópia intermediária. Foi o que levou o `/json` de ~210k para ~260–310k req/s.
+
+`epoll` (`EventLoop/`, **o padrão desde a rodada 4**) vai até o fim: um event loop por core, como
+o tokio *current-thread* do axum. Cada loop tem seu `epoll` (P/Invoke na libc: `epoll_create1`,
+`epoll_wait`, `accept4`, `recv`, `send`), seu socket de escuta com `SO_REUSEPORT` (o kernel distribui
+as conexões), suas conexões HTTP e suas conexões PostgreSQL — tudo na mesma thread, sem thread pool,
+sem `async`, sem lock. Uma requisição de banco vira uma operação pendente (objeto reciclado) na fila
+da conexão PG; a resposta do PostgreSQL chega no mesmo loop e o callback escreve a resposta HTTP.
+Os bytes dos comandos PG são acumulados e enviados **uma vez por lote do `epoll_wait`**: a
+coalescência que o tokio ganha de graça por escalonar a task da conexão depois das tasks das
+requisições. Pipelining HTTP preserva a ordem: enquanto uma operação de banco está em voo, as
+requisições seguintes da mesma conexão esperam no buffer de entrada.
 
 Limitações assumidas (iguais às das entradas "platform" do TechEmpower): só HTTP/1.1, só `GET`
 sem corpo, sem `Connection: close` explícito, sem TLS.
@@ -120,6 +130,14 @@ jackc/pgx v3, `./app -db pgx`) e `fasthttp` (valyala/fasthttp + pgx v4 pool). Co
 `GOAMD64=v3 -ldflags="-s -w"`, Go 1.24.7. O fasthttp fixa o host `tfb-database`, resolvido via
 `/etc/hosts`. Os parâmetros de query são `?queries=` (e `/update` singular no go-std); o runner
 aceita `--queries-url`/`--updates-url` por isso.
+
+### Por que o event loop existe (rodada 4)
+
+Depois do cliente PostgreSQL próprio, o perfil de `/db` não mostrava mais código gerenciado
+relevante: só `send`/`recv`/`epoll_wait`. A diferença restante para o Rust era (1) o `send` por
+comando PG (o tokio-postgres escreve vários por vez) e (2) a camada de sockets do runtime
+(`SocketAsyncEngine`, `SocketAsyncContext`, continuações). O event loop remove as duas: medido na
+mesma sessão contra o transporte `raw`, `/db` +23%, `/fortunes` +18%, `queries q=1` +12%.
 
 ## O que o .NET 11 muda em relação ao .NET 10 (e o que foi aplicado)
 
