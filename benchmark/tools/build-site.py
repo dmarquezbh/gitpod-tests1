@@ -26,6 +26,7 @@ IMPLS = [
     ("deno", "Deno 2.9"),
     ("ruby", "Ruby 3.2"),
     ("c", "C (gcc)"),
+    ("cpp", "C++ (epoll)"),
     ("zero", "Zero C#"),
 ]
 TESTS = ["plaintext", "json", "db", "queries", "fortunes", "updates"]
@@ -231,9 +232,9 @@ def main():
   runtimes com o mesmo trabalho, incluindo o custo de RAM e o tamanho do artefato — não só req/s.</p>
 
   <div class="stats">
-    <div class="stat"><b>17</b><span>implementações</span></div>
+    <div class="stat"><b>18</b><span>implementações</span></div>
     <div class="stat"><b>6</b><span>testes por stack</span></div>
-    <div class="stat"><b>~49k</b><span>req/s no /queries q=1 (.NET)</span></div>
+    <div class="stat"><b>~55k</b><span>req/s no /queries q=1 (C++)</span></div>
     <div class="stat"><b>78 KB</b><span>binário do Zero C#</span></div>
   </div>
 
@@ -298,6 +299,9 @@ def main():
     <li>Testes de banco são limitados pelo PostgreSQL deste host (2 núcleos); compare dentro da mesma rodada.</li>
     <li>Java (HttpServer do JDK) acumulou erros de socket em níveis altos; Ruby usa WEBrick
     (thread por conexão); ambos são baselines honestos das bibliotecas padrão, não dos frameworks mais rápidos.</li>
+    <li><b>C++</b> entra com epoll + libpq (mesmo desenho do .NET platform): vence todas as
+    categorias medidas, mas <b>updates</b> ficou de fora — UPDATEs UNNEST concorrentes geram
+    deadlocks no PostgreSQL neste host.</li>
     <li><b>GraalPy</b> não fecha a conta neste host: o fallback de <code>select()</code> limita a
     ~1024 descritores (a rodada foi limitada a 256 conexões) e o processo chegou a <b>4,2 GB de RSS</b>
     em 3 GB de RAM, com swap — os números são medidos, mas não representam o GraalPy em hardware adequado.</li>

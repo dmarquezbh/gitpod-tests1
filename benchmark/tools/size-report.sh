@@ -50,6 +50,7 @@ emit bun "$(bytes extra/js)" "$(bytes "$HOME/.local/opt/bun")"
 emit deno "$(bytes extra/js)" "$(bytes "$HOME/.local/opt/deno")"
 emit ruby "$(bytes extra/ruby "$GEMDIR/gems/pg"* "$GEMDIR/gems/rack"* "$GEMDIR/gems/webrick"*)" "$(bytes "$RUBY_BIN" "$RUBY_LIB" /usr/lib/ruby)"
 emit c "$(bytes extra/c/bench)" "$LIBPQ"
+emit cpp "$(bytes extra/cpp/bench)" "$LIBPQ"
 emit zero "$(bytes extra/zero/bench)" "$LIBPQ"
 
 column -s, -t "$OUT"
