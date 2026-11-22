@@ -80,10 +80,36 @@ def kb_or_mb(n):
     return mb(n)
 
 
+def _ranking(best):
+    """For each test: impls ordered by rps desc, with ranks; plus wins per impl."""
+    ranks = {}
+    wins = {impl: [] for impl, _ in IMPLS}
+    for test in TESTS:
+        ranked = sorted(
+            ((impl, best[(impl, test)][0]) for impl, _ in IMPLS if (impl, test) in best),
+            key=lambda x: -x[1],
+        )
+        for pos, (impl, rps) in enumerate(ranked, 1):
+            ranks[(impl, test)] = pos
+            if pos == 1:
+                wins[impl].append(test)
+    return ranks, wins
+
+
 def table_throughput(best):
+    ranks, wins = _ranking(best)
+    # stacks sorted by number of category wins, then by average rank, then plaintext
+    def score(impl):
+        rs = [ranks[(impl, t)] for t in TESTS if (impl, t) in ranks]
+        avg = sum(rs) / len(rs) if rs else 99
+        plain = best.get((impl, "plaintext"), (0,))[0]
+        return (-len(wins[impl]), avg, -plain)
+
+    order = sorted((impl for impl, _ in IMPLS if any((impl, t) in best for t in TESTS)), key=score)
+    labels = dict(IMPLS)
     head = "".join(f"<th>{html.escape(TEST_LABEL[t])}</th>" for t in TESTS)
     rows = []
-    for impl, label in IMPLS:
+    for impl in order:
         cells = []
         for test in TESTS:
             v = best.get((impl, test))
@@ -92,27 +118,63 @@ def table_throughput(best):
                 continue
             rps, level, errs = v
             mark = " *" if errs else ""
-            cells.append(f"<td title='melhor nível: {level}'>{fmt(rps)}{mark}</td>")
-        rows.append(f"<tr><th>{html.escape(label)}</th>{''.join(cells)}</tr>")
-    return f"<table><thead><tr><th>Stack</th>{head}</tr></thead><tbody>{''.join(rows)}</tbody></table>"
+            text = f"{fmt(rps)}{mark}"
+            if ranks[(impl, test)] == 1:
+                text = f"<strong>{text}</strong>"
+            cells.append(f"<td title='nível {level}'>{text}</td>")
+        highlight = ", ".join(TEST_LABEL[t].split(" (")[0] for t in wins[impl]) or "—"
+        if wins[impl]:
+            highlight = f"<strong>{highlight}</strong>"
+        rows.append(f"<tr><th>{html.escape(labels[impl])}</th>{''.join(cells)}<td class='hl'>{highlight}</td></tr>")
+    return (
+        "<table><thead><tr><th>Stack (ordenado por vitórias)</th>"
+        f"{head}<th>Destaques (1º lugar)</th></tr></thead><tbody>{''.join(rows)}</tbody></table>"
+    )
+
+
+def table_podium(best):
+    rows = []
+    for test in TESTS:
+        ranked = sorted(
+            ((impl, best[(impl, test)][0]) for impl, _ in IMPLS if (impl, test) in best),
+            key=lambda x: -x[1],
+        )[:3]
+        labels = dict(IMPLS)
+        cells = "".join(
+            f"<td><strong>{html.escape(labels[impl])}</strong><br><span class='rps'>{fmt(rps)}</span></td>"
+            for impl, rps in ranked
+        )
+        rows.append(f"<tr><th>{html.escape(TEST_LABEL[test])}</th>{cells}</tr>")
+    return (
+        "<table><thead><tr><th>Categoria</th><th>1º</th><th>2º</th><th>3º</th></tr></thead>"
+        f"<tbody>{''.join(rows)}</tbody></table>"
+    )
 
 
 def table_footprint(met):
-    rows = []
     labels = dict(IMPLS)
-    order = [x for x, _ in IMPLS if x in met]
+    order = sorted((x for x, _ in IMPLS if x in met), key=lambda i: float(met[i]["peak_rss_kb"] or 0))
+    min_rss = min((float(met[i]["peak_rss_kb"]) for i in order if met[i]["peak_rss_kb"]), default=0)
+    min_total = min((float(met[i]["total_bytes"]) for i in order), default=0)
+    rows = []
     for impl in order:
         m = met[impl]
-        rss = f"{float(m['peak_rss_kb']) / 1024:.0f} MB" if m["peak_rss_kb"] else "—"
+        rss_val = float(m["peak_rss_kb"] or 0)
+        rss = f"{rss_val / 1024:.0f} MB" if rss_val else "—"
+        if rss_val and rss_val == min_rss:
+            rss = f"<strong>{rss}</strong>"
+        total = kb_or_mb(m["total_bytes"])
+        if float(m["total_bytes"]) == min_total:
+            total = f"<strong>{total}</strong>"
         rows.append(
             "<tr>"
             f"<th>{html.escape(labels[impl])}</th>"
             f"<td>{rss}</td><td>{kb_or_mb(m['app_bytes'])}</td>"
-            f"<td>{kb_or_mb(m['runtime_bytes'])}</td><td>{kb_or_mb(m['total_bytes'])}</td>"
+            f"<td>{kb_or_mb(m['runtime_bytes'])}</td><td>{total}</td>"
             "</tr>"
         )
     return (
-        "<table><thead><tr><th>Stack</th><th>RSS de pico</th><th>App</th>"
+        "<table><thead><tr><th>Stack (por RSS)</th><th>RSS de pico</th><th>App</th>"
         "<th>Runtime/deps</th><th>Total</th></tr></thead><tbody>"
         + "".join(rows)
         + "</tbody></table>"
@@ -152,6 +214,8 @@ def main():
   tbody th, thead th:first-child {{ text-align:left; }}
   tbody tr:last-child td, tbody tr:last-child th {{ border-bottom:0; }}
   .na {{ color:var(--muted); }}
+  .hl {{ text-align:left; white-space:normal; }}
+  .rps {{ color:var(--muted); font-size:.8rem; }}
   code {{ background:var(--card); padding:.1em .35em; border-radius:4px; font-size:.9em; }}
   pre {{ background:var(--card); border:1px solid var(--line); border-radius:10px; padding:14px; overflow:auto; }}
   a {{ color: var(--accent); }}
@@ -192,6 +256,10 @@ def main():
   <p>Cada célula é o melhor nível daquela stack; o <code>title</code> mostra o nível. <b>*</b> indica
   erros de socket naquele nível (o valor é o melhor nível sem erro quando existe).</p>
   <div class="wrap">{table_throughput(best)}</div>
+
+  <h3>Pódio por categoria</h3>
+  <p>Os três primeiros de cada teste, na mesma rodada.</p>
+  <div class="wrap">{table_podium(best)}</div>
 
   <h2>RAM e tamanho</h2>
   <p>RSS de pico é a soma de <code>VmHWM</code> da árvore de processos do servidor durante a suíte.
