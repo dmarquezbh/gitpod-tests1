@@ -10,3 +10,13 @@ dotnet-platform/out/
 dotnet/out-noasync/
 rust-axum-tuned/target/
 rust-may-minihttp/target/
+extra/js/node_modules/
+extra/js/package-lock.json
+extra/java/out/
+extra/java/postgresql.jar
+extra/c/bench
+extra/zero/bench
+results-upstream/
+__pycache__/
+*.pyc
+extra/js/node_modules/

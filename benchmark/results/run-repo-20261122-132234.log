@@ -1,0 +1,538 @@
+################ rust 2026-11-22T13:22:34-03:00 ################
+warning: struct `Fortune` is never constructed
+ --> src/common/models.rs:9:12
+  |
+9 | pub struct Fortune {
+  |            ^^^^^^^
+  |
+  = note: `#[warn(dead_code)]` (part of `#[warn(unused)]`) on by default
+
+warning: struct `FortuneInfo` is never constructed
+  --> src/common/models.rs:15:12
+   |
+15 | pub struct FortuneInfo {
+   |            ^^^^^^^^^^^
+
+warning: struct `World` is never constructed
+  --> src/common/models.rs:21:12
+   |
+21 | pub struct World {
+   |            ^^^^^
+
+warning: struct `Utf8Html` is never constructed
+  --> src/common/utils.rs:34:12
+   |
+34 | pub struct Utf8Html<T>(pub T);
+   |            ^^^^^^^^
+
+warning: struct `Message` is never constructed
+ --> src/common/models.rs:4:12
+  |
+4 | pub struct Message {
+  |            ^^^^^^^
+  |
+  = note: `#[warn(dead_code)]` (part of `#[warn(unused)]`) on by default
+
+warning: struct `Fortune` is never constructed
+ --> src/common/models.rs:9:12
+  |
+9 | pub struct Fortune {
+  |            ^^^^^^^
+
+warning: `axum-techempower` (bin "axum") generated 4 warnings
+warning: `axum-techempower` (bin "axum-pg") generated 4 warnings (2 duplicates)
+    Finished `release` profile [optimized] target(s) in 17.63s
+[rust] starting server (cpus 0-1): rust-axum/target/release/axum
+
+################ [rust] plaintext ################
+--- primer
+--- warmup
+--- concurrency=256 pipeline=16
+Running 10s test @ http://127.0.0.1:8000/plaintext
+  2 threads and 256 connections
+  Thread Stats   Avg      Stdev     Max   +/- Stdev
+    Latency    11.38ms    7.76ms  73.38ms   74.97%
+    Req/Sec   106.42k    22.96k  166.18k    72.86%
+  Latency Distribution
+     50%   10.37ms
+     75%   15.21ms
+     90%   20.45ms
+     99%   49.76ms
+  2121792 requests in 10.11s, 291.38MB read
+Requests/sec: 209941.35
+Transfer/sec:     28.83MB
+--- concurrency=1024 pipeline=16
+Running 10s test @ http://127.0.0.1:8000/plaintext
+  2 threads and 1024 connections
+  Thread Stats   Avg      Stdev     Max   +/- Stdev
+    Latency    38.48ms   18.75ms 140.84ms   49.93%
+    Req/Sec   109.46k    13.60k  133.54k    80.30%
+  Latency Distribution
+     50%   57.28ms
+     75%   87.45ms
+     90%    0.00us
+     99%    0.00us
+  2165760 requests in 10.03s, 297.42MB read
+Requests/sec: 215880.89
+Transfer/sec:     29.65MB
+--- concurrency=4096 pipeline=16
+Running 10s test @ http://127.0.0.1:8000/plaintext
+  2 threads and 4096 connections
+  Thread Stats   Avg      Stdev     Max   +/- Stdev
+    Latency   155.45ms   72.33ms 396.49ms   48.18%
+    Req/Sec   106.86k    14.18k  144.16k    73.96%
+  Latency Distribution
+     50%  233.68ms
+     75%  323.20ms
+     90%    0.00us
+     99%    0.00us
+  2085648 requests in 10.09s, 286.42MB read
+Requests/sec: 206719.50
+Transfer/sec:     28.39MB
+
+################ [rust] json ################
+--- primer
+--- warmup
+--- concurrency=16
+Running 10s test @ http://127.0.0.1:8000/json
+  2 threads and 16 connections
+  Thread Stats   Avg      Stdev     Max   +/- Stdev
+    Latency   416.22us  461.22us   7.18ms   92.46%
+    Req/Sec    22.86k     1.75k   27.00k    69.50%
+  Latency Distribution
+     50%  302.00us
+     75%  356.00us
+     90%  629.00us
+     99%    2.67ms
+  455064 requests in 10.01s, 64.66MB read
+Requests/sec:  45471.27
+Transfer/sec:      6.46MB
+--- concurrency=64
+Running 10s test @ http://127.0.0.1:8000/json
+  2 threads and 64 connections
+  Thread Stats   Avg      Stdev     Max   +/- Stdev
+    Latency     1.34ms  788.22us  11.26ms   86.08%
+    Req/Sec    23.61k     2.08k   28.86k    68.00%
+  Latency Distribution
+     50%    1.13ms
+     75%    1.46ms
+     90%    1.95ms
+     99%    4.59ms
+  470450 requests in 10.02s, 66.85MB read
+Requests/sec:  46957.80
+Transfer/sec:      6.67MB
+--- concurrency=256
+Running 10s test @ http://127.0.0.1:8000/json
+  2 threads and 256 connections
+  Thread Stats   Avg      Stdev     Max   +/- Stdev
+    Latency     5.07ms    1.41ms  19.46ms   76.61%
+    Req/Sec    23.65k     2.22k   31.23k    75.00%
+  Latency Distribution
+     50%    5.16ms
+     75%    5.38ms
+     90%    6.46ms
+     99%   10.04ms
+  471973 requests in 10.05s, 67.07MB read
+Requests/sec:  46985.33
+Transfer/sec:      6.68MB
+--- concurrency=512
+Running 10s test @ http://127.0.0.1:8000/json
+  2 threads and 512 connections
+  Thread Stats   Avg      Stdev     Max   +/- Stdev
+    Latency    10.28ms    2.43ms  29.59ms   74.25%
+    Req/Sec    23.82k     1.65k   28.56k    71.50%
+  Latency Distribution
+     50%   10.01ms
+     75%   11.32ms
+     90%   13.07ms
+     99%   17.86ms
+  475422 requests in 10.08s, 67.56MB read
+Requests/sec:  47181.30
+Transfer/sec:      6.70MB
+
+[rust] done -> results/rust-platform/summary.csv
+impl,test,level,rps,latency_avg_ms,latency_p99_ms,requests,errors,non2xx,transfer_mb_s
+rust,plaintext,256,209941.35,11.380,49.760,2121792,0,0,28.830
+rust,plaintext,1024,215880.89,38.480,0.000,2165760,0,0,29.650
+rust,plaintext,4096,206719.50,155.450,0.000,2085648,0,0,28.390
+rust,json,16,45471.27,0.416,2.670,455064,0,0,6.460
+rust,json,64,46957.80,1.340,4.590,470450,0,0,6.670
+rust,json,256,46985.33,5.070,10.040,471973,0,0,6.680
+rust,json,512,47181.30,10.280,17.860,475422,0,0,6.700
+[rust] starting server (cpus 0-1): rust-axum/target/release/axum-pg
+
+################ [rust] db ################
+--- primer
+--- warmup
+--- concurrency=16
+Running 10s test @ http://127.0.0.1:8000/db
+  2 threads and 16 connections
+  Thread Stats   Avg      Stdev     Max   +/- Stdev
+    Latency     1.27ms  591.26us   9.21ms   78.04%
+    Req/Sec     6.32k   381.46     7.20k    66.50%
+  Latency Distribution
+     50%    1.14ms
+     75%    1.47ms
+     90%    1.97ms
+     99%    3.42ms
+  125788 requests in 10.01s, 18.33MB read
+Requests/sec:  12562.94
+Transfer/sec:      1.83MB
+--- concurrency=64
+Running 10s test @ http://127.0.0.1:8000/db
+  2 threads and 64 connections
+  Thread Stats   Avg      Stdev     Max   +/- Stdev
+    Latency     4.27ms    1.35ms  14.36ms   74.92%
+    Req/Sec     7.41k   520.69     8.53k    63.00%
+  Latency Distribution
+     50%    4.09ms
+     75%    4.85ms
+     90%    6.00ms
+     99%    8.57ms
+  147811 requests in 10.02s, 21.54MB read
+Requests/sec:  14746.80
+Transfer/sec:      2.15MB
+--- concurrency=256
+Running 10s test @ http://127.0.0.1:8000/db
+  2 threads and 256 connections
+  Thread Stats   Avg      Stdev     Max   +/- Stdev
+    Latency    15.00ms    2.70ms  38.69ms   75.36%
+    Req/Sec     8.41k   512.82    10.57k    76.50%
+  Latency Distribution
+     50%   14.85ms
+     75%   16.28ms
+     90%   18.16ms
+     99%   23.28ms
+  168223 requests in 10.08s, 24.51MB read
+Requests/sec:  16695.88
+Transfer/sec:      2.43MB
+--- concurrency=512
+Running 10s test @ http://127.0.0.1:8000/db
+  2 threads and 512 connections
+  Thread Stats   Avg      Stdev     Max   +/- Stdev
+    Latency    30.86ms    5.31ms  96.33ms   80.14%
+    Req/Sec     8.26k   794.23    12.83k    81.91%
+  Latency Distribution
+     50%   30.25ms
+     75%   32.84ms
+     90%   36.68ms
+     99%   46.65ms
+  164440 requests in 10.08s, 23.96MB read
+Requests/sec:  16316.79
+Transfer/sec:      2.38MB
+
+################ [rust] queries ################
+--- primer
+--- warmup
+--- queries=1 (c=512)
+Running 10s test @ http://127.0.0.1:8000/queries?q=1
+  2 threads and 512 connections
+  Thread Stats   Avg      Stdev     Max   +/- Stdev
+    Latency    35.06ms    7.51ms  71.47ms   69.58%
+    Req/Sec     7.25k     0.89k   12.90k    67.84%
+  Latency Distribution
+     50%   34.01ms
+     75%   39.37ms
+     90%   45.79ms
+     99%   54.97ms
+  144465 requests in 10.09s, 21.32MB read
+Requests/sec:  14314.59
+Transfer/sec:      2.11MB
+--- queries=5 (c=512)
+Running 10s test @ http://127.0.0.1:8000/queries?q=5
+  2 threads and 512 connections
+  Thread Stats   Avg      Stdev     Max   +/- Stdev
+    Latency   162.11ms   20.34ms 227.00ms   81.41%
+    Req/Sec     1.57k   403.20     2.69k    66.00%
+  Latency Distribution
+     50%  160.84ms
+     75%  172.70ms
+     90%  186.63ms
+     99%  213.05ms
+  31333 requests in 10.04s, 8.45MB read
+Requests/sec:   3119.34
+Transfer/sec:    861.75KB
+--- queries=10 (c=512)
+Running 10s test @ http://127.0.0.1:8000/queries?q=10
+  2 threads and 512 connections
+  Thread Stats   Avg      Stdev     Max   +/- Stdev
+    Latency   312.12ms   43.57ms 414.31ms   85.85%
+    Req/Sec   813.56    366.32     1.68k    61.31%
+  Latency Distribution
+     50%  310.93ms
+     75%  332.51ms
+     90%  352.29ms
+     99%  407.99ms
+  16157 requests in 10.06s, 6.81MB read
+Requests/sec:   1606.30
+Transfer/sec:    693.01KB
+--- queries=20 (c=512)
+Running 10s test @ http://127.0.0.1:8000/queries?q=20
+  2 threads and 512 connections
+  Thread Stats   Avg      Stdev     Max   +/- Stdev
+    Latency   584.83ms   90.71ms 691.78ms   93.03%
+    Req/Sec   436.93    235.20     0.92k    58.55%
+  Latency Distribution
+     50%  601.12ms
+     75%  624.93ms
+     90%  655.33ms
+     99%  682.47ms
+  8496 requests in 10.05s, 6.15MB read
+Requests/sec:    845.34
+Transfer/sec:    627.05KB
+
+################ [rust] fortunes ################
+--- primer
+--- warmup
+--- concurrency=16
+Running 10s test @ http://127.0.0.1:8000/fortunes
+  2 threads and 16 connections
+  Thread Stats   Avg      Stdev     Max   +/- Stdev
+    Latency     1.06ms  638.94us  10.86ms   86.95%
+    Req/Sec     7.59k   615.89     9.34k    72.00%
+  Latency Distribution
+     50%    0.93ms
+     75%    1.19ms
+     90%    1.68ms
+     99%    3.69ms
+  151084 requests in 10.01s, 196.53MB read
+Requests/sec:  15096.42
+Transfer/sec:     19.64MB
+--- concurrency=64
+Running 10s test @ http://127.0.0.1:8000/fortunes
+  2 threads and 64 connections
+  Thread Stats   Avg      Stdev     Max   +/- Stdev
+    Latency     3.65ms    1.49ms  14.14ms   72.07%
+    Req/Sec     8.50k   739.06    10.29k    75.00%
+  Latency Distribution
+     50%    3.48ms
+     75%    4.42ms
+     90%    5.55ms
+     99%    8.27ms
+  169397 requests in 10.02s, 220.35MB read
+Requests/sec:  16902.56
+Transfer/sec:     21.99MB
+--- concurrency=256
+Running 10s test @ http://127.0.0.1:8000/fortunes
+  2 threads and 256 connections
+  Thread Stats   Avg      Stdev     Max   +/- Stdev
+    Latency    13.51ms    4.16ms  34.74ms   67.73%
+    Req/Sec     9.15k     0.97k   11.91k    73.00%
+  Latency Distribution
+     50%   13.38ms
+     75%   16.16ms
+     90%   18.85ms
+     99%   24.41ms
+  183310 requests in 10.09s, 238.45MB read
+Requests/sec:  18160.39
+Transfer/sec:     23.62MB
+--- concurrency=512
+Running 10s test @ http://127.0.0.1:8000/fortunes
+  2 threads and 512 connections
+  Thread Stats   Avg      Stdev     Max   +/- Stdev
+    Latency    25.30ms    6.73ms  57.91ms   66.39%
+    Req/Sec     9.77k   762.77    12.36k    72.22%
+  Latency Distribution
+     50%   24.92ms
+     75%   29.85ms
+     90%   34.20ms
+     99%   42.10ms
+  195254 requests in 10.10s, 253.99MB read
+Requests/sec:  19338.88
+Transfer/sec:     25.16MB
+
+################ [rust] updates ################
+--- primer
+--- warmup
+--- queries=1 (c=512)
+Running 10s test @ http://127.0.0.1:8000/updates?q=1
+  2 threads and 512 connections
+  Thread Stats   Avg      Stdev     Max   +/- Stdev
+    Latency   160.48ms   17.31ms 235.81ms   79.98%
+    Req/Sec     1.59k   415.28     2.46k    60.80%
+  Latency Distribution
+     50%  158.30ms
+     75%  168.24ms
+     90%  181.12ms
+     99%  208.75ms
+  31661 requests in 10.05s, 4.67MB read
+Requests/sec:   3151.30
+Transfer/sec:    476.31KB
+--- queries=5 (c=512)
+Running 10s test @ http://127.0.0.1:8000/updates?q=5
+  2 threads and 512 connections
+  Thread Stats   Avg      Stdev     Max   +/- Stdev
+    Latency   295.53ms   29.80ms 368.20ms   75.45%
+    Req/Sec     0.86k   395.79     2.02k    68.84%
+  Latency Distribution
+     50%  295.17ms
+     75%  311.88ms
+     90%  334.82ms
+     99%  355.76ms
+  17103 requests in 10.06s, 4.61MB read
+Requests/sec:   1700.06
+Transfer/sec:    469.68KB
+--- queries=10 (c=512)
+Running 10s test @ http://127.0.0.1:8000/updates?q=10
+  2 threads and 512 connections
+  Thread Stats   Avg      Stdev     Max   +/- Stdev
+    Latency   451.01ms   35.36ms 548.97ms   78.67%
+    Req/Sec   569.67    439.01     1.66k    63.10%
+  Latency Distribution
+     50%  453.17ms
+     75%  473.44ms
+     90%  487.21ms
+     99%  543.35ms
+  11048 requests in 10.05s, 4.65MB read
+Requests/sec:   1099.40
+Transfer/sec:    474.30KB
+--- queries=20 (c=512)
+Running 10s test @ http://127.0.0.1:8000/updates?q=20
+  2 threads and 512 connections
+  Thread Stats   Avg      Stdev     Max   +/- Stdev
+    Latency   801.61ms   67.80ms 918.38ms   71.34%
+    Req/Sec   393.79    419.45     1.97k    82.01%
+  Latency Distribution
+     50%  818.94ms
+     75%  851.22ms
+     90%  872.52ms
+     99%  897.43ms
+  6002 requests in 10.06s, 4.35MB read
+Requests/sec:    596.38
+Transfer/sec:    442.40KB
+
+[rust] done -> results/rust-pg/summary.csv
+impl,test,level,rps,latency_avg_ms,latency_p99_ms,requests,errors,non2xx,transfer_mb_s
+rust,db,16,12562.94,1.270,3.420,125788,0,0,1.830
+rust,db,64,14746.80,4.270,8.570,147811,0,0,2.150
+rust,db,256,16695.88,15.000,23.280,168223,0,0,2.430
+rust,db,512,16316.79,30.860,46.650,164440,0,0,2.380
+rust,queries,1,14314.59,35.060,54.970,144465,0,0,2.110
+rust,queries,5,3119.34,162.110,213.050,31333,0,0,0.842
+rust,queries,10,1606.30,312.120,407.990,16157,0,0,0.677
+rust,queries,20,845.34,584.830,682.470,8496,0,0,0.612
+rust,fortunes,16,15096.42,1.060,3.690,151084,0,0,19.640
+rust,fortunes,64,16902.56,3.650,8.270,169397,0,0,21.990
+rust,fortunes,256,18160.39,13.510,24.410,183310,0,0,23.620
+rust,fortunes,512,19338.88,25.300,42.100,195254,0,0,25.160
+rust,updates,1,3151.30,160.480,208.750,31661,0,0,0.465
+rust,updates,5,1700.06,295.530,355.760,17103,0,0,0.459
+rust,updates,10,1099.40,451.010,543.350,11048,0,0,0.463
+rust,updates,20,596.38,801.610,897.430,6002,0,0,0.432
+
+Rust summary:
+impl,test,level,rps,latency_avg_ms,latency_p99_ms,requests,errors,non2xx,transfer_mb_s
+rust,plaintext,256,209941.35,11.380,49.760,2121792,0,0,28.830
+rust,plaintext,1024,215880.89,38.480,0.000,2165760,0,0,29.650
+rust,plaintext,4096,206719.50,155.450,0.000,2085648,0,0,28.390
+rust,json,16,45471.27,0.416,2.670,455064,0,0,6.460
+rust,json,64,46957.80,1.340,4.590,470450,0,0,6.670
+rust,json,256,46985.33,5.070,10.040,471973,0,0,6.680
+rust,json,512,47181.30,10.280,17.860,475422,0,0,6.700
+rust,db,16,12562.94,1.270,3.420,125788,0,0,1.830
+rust,db,64,14746.80,4.270,8.570,147811,0,0,2.150
+rust,db,256,16695.88,15.000,23.280,168223,0,0,2.430
+rust,db,512,16316.79,30.860,46.650,164440,0,0,2.380
+rust,queries,1,14314.59,35.060,54.970,144465,0,0,2.110
+rust,queries,5,3119.34,162.110,213.050,31333,0,0,0.842
+rust,queries,10,1606.30,312.120,407.990,16157,0,0,0.677
+rust,queries,20,845.34,584.830,682.470,8496,0,0,0.612
+rust,fortunes,16,15096.42,1.060,3.690,151084,0,0,19.640
+rust,fortunes,64,16902.56,3.650,8.270,169397,0,0,21.990
+rust,fortunes,256,18160.39,13.510,24.410,183310,0,0,23.620
+rust,fortunes,512,19338.88,25.300,42.100,195254,0,0,25.160
+rust,updates,1,3151.30,160.480,208.750,31661,0,0,0.465
+rust,updates,5,1700.06,295.530,355.760,17103,0,0,0.459
+rust,updates,10,1099.40,451.010,543.350,11048,0,0,0.463
+rust,updates,20,596.38,801.610,897.430,6002,0,0,0.432
+################ rust exit=0 2026-11-22T13:29:41-03:00 ################
+################ rust-tuned 2026-11-22T13:29:41-03:00 ################
+warning: struct `Message` is never constructed
+ --> src/common/models.rs:4:12
+  |
+4 | pub struct Message {
+  |            ^^^^^^^
+  |
+  = note: `#[warn(dead_code)]` (part of `#[warn(unused)]`) on by default
+
+warning: struct `Fortune` is never constructed
+ --> src/common/models.rs:9:12
+  |
+9 | pub struct Fortune {
+  |            ^^^^^^^
+
+warning: struct `FortuneInfo` is never constructed
+  --> src/common/models.rs:15:12
+   |
+15 | pub struct FortuneInfo {
+   |            ^^^^^^^^^^^
+
+warning: struct `World` is never constructed
+  --> src/common/models.rs:21:12
+   |
+21 | pub struct World {
+   |            ^^^^^
+
+warning: field `0` is never read
+  --> src/common/simd_json.rs:18:10
+   |
+18 |     Json(JsonRejection),
+   |     ---- ^^^^^^^^^^^^^
+   |     |
+   |     field in this variant
+   |
+help: consider changing the field to be of unit type to suppress this warning while preserving the field numbering, or remove the field
+   |
+18 -     Json(JsonRejection),
+18 +     Json(()),
+   |
+
+warning: field `0` is never read
+  --> src/common/simd_json.rs:19:11
+   |
+19 |     Bytes(BytesRejection),
+   |     ----- ^^^^^^^^^^^^^^
+   |     |
+   |     field in this variant
+   |
+help: consider changing the field to be of unit type to suppress this warning while preserving the field numbering, or remove the field
+   |
+19 -     Bytes(BytesRejection),
+19 +     Bytes(()),
+   |
+
+warning: field `0` is never read
+  --> src/common/simd_json.rs:20:10
+   |
+20 |     Simd(String),
+   |     ---- ^^^^^^
+   |     |
+   |     field in this variant
+   |
+help: consider changing the field to be of unit type to suppress this warning while preserving the field numbering, or remove the field
+   |
+20 -     Simd(String),
+20 +     Simd(()),
+   |
+
+warning: struct `Fortune` is never constructed
+ --> src/common/models.rs:9:12
+  |
+9 | pub struct Fortune {
+  |            ^^^^^^^
+  |
+  = note: `#[warn(dead_code)]` (part of `#[warn(unused)]`) on by default
+
+warning: struct `Utf8Html` is never constructed
+  --> src/common/utils.rs:34:12
+   |
+34 | pub struct Utf8Html<T>(pub T);
+   |            ^^^^^^^^
+
+warning: `axum-techempower-tuned` (bin "axum-pg") generated 7 warnings
+warning: `axum-techempower-tuned` (bin "axum") generated 7 warnings (5 duplicates)
+    Finished `release` profile [optimized] target(s) in 17.08s
+[rust-tuned] starting server (cpus 0-1): rust-axum-tuned/target/release/axum
+
+################ [rust-tuned] plaintext ################
+--- primer

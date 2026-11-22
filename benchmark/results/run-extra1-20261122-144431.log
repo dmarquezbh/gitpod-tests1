@@ -1,0 +1,1514 @@
+################ java 2026-11-22T14:44:31-03:00 ################
+[java] starting server (cpus 0-1): java -cp extra/java/out:extra/java/postgresql.jar Bench 18085
+
+################ [java] plaintext ################
+--- primer
+--- warmup
+--- concurrency=256 pipeline=16
+Running 10s test @ http://127.0.0.1:18085/plaintext
+  2 threads and 256 connections
+  Thread Stats   Avg      Stdev     Max   +/- Stdev
+    Latency    36.32ms   60.68ms 405.09ms   19.35%
+    Req/Sec    20.44k     5.90k   31.43k    83.00%
+  Latency Distribution
+     50%    0.00us
+     75%    0.00us
+     90%    0.00us
+     99%    0.00us
+  407289 requests in 10.03s, 44.67MB read
+Requests/sec:  40590.17
+Transfer/sec:      4.45MB
+--- concurrency=1024 pipeline=16
+Running 10s test @ http://127.0.0.1:18085/plaintext
+  2 threads and 1024 connections
+  Thread Stats   Avg      Stdev     Max   +/- Stdev
+    Latency   276.04ms  254.76ms   1.21s    17.99%
+    Req/Sec    12.53k     5.98k   19.97k    48.50%
+  Latency Distribution
+     50%    0.00us
+     75%    0.00us
+     90%    0.00us
+     99%    0.00us
+  249662 requests in 10.09s, 27.38MB read
+  Socket errors: connect 0, read 143, write 0, timeout 0
+Requests/sec:  24752.81
+Transfer/sec:      2.71MB
+--- concurrency=4096 pipeline=16
+Running 10s test @ http://127.0.0.1:18085/plaintext
+  2 threads and 4096 connections
+  Thread Stats   Avg      Stdev     Max   +/- Stdev
+    Latency     1.70s   935.84ms   5.07s    60.54%
+    Req/Sec    10.51k     4.96k   29.11k    55.21%
+  Latency Distribution
+     50%    1.68s 
+     75%    2.47s 
+     90%    3.14s 
+     99%    0.00us
+  203638 requests in 10.04s, 22.33MB read
+  Socket errors: connect 0, read 3976, write 0, timeout 0
+Requests/sec:  20273.57
+Transfer/sec:      2.22MB
+
+################ [java] json ################
+--- primer
+--- warmup
+--- concurrency=16
+Running 10s test @ http://127.0.0.1:18085/json
+  2 threads and 16 connections
+  Thread Stats   Avg      Stdev     Max   +/- Stdev
+    Latency     1.06ms    1.08ms  28.96ms   90.02%
+    Req/Sec     8.98k     3.45k   13.66k    70.50%
+  Latency Distribution
+     50%  726.00us
+     75%    1.09ms
+     90%    2.14ms
+     99%    5.31ms
+  178777 requests in 10.01s, 23.02MB read
+Requests/sec:  17867.73
+Transfer/sec:      2.30MB
+--- concurrency=64
+Running 10s test @ http://127.0.0.1:18085/json
+  2 threads and 64 connections
+  Thread Stats   Avg      Stdev     Max   +/- Stdev
+    Latency     3.65ms    2.75ms  39.38ms   82.76%
+    Req/Sec     9.61k     4.32k   15.41k    56.00%
+  Latency Distribution
+     50%    2.71ms
+     75%    4.28ms
+     90%    7.43ms
+     99%   13.20ms
+  191407 requests in 10.03s, 24.64MB read
+Requests/sec:  19086.24
+Transfer/sec:      2.46MB
+--- concurrency=256
+Running 10s test @ http://127.0.0.1:18085/json
+  2 threads and 256 connections
+  Thread Stats   Avg      Stdev     Max   +/- Stdev
+    Latency    17.13ms   12.49ms 142.19ms   83.81%
+    Req/Sec     7.64k     3.61k   12.00k    54.00%
+  Latency Distribution
+     50%   12.52ms
+     75%   20.49ms
+     90%   35.22ms
+     99%   61.32ms
+  152695 requests in 10.10s, 19.66MB read
+  Socket errors: connect 0, read 16351, write 0, timeout 0
+Requests/sec:  15123.54
+Transfer/sec:      1.95MB
+--- concurrency=512
+Running 10s test @ http://127.0.0.1:18085/json
+  2 threads and 512 connections
+  Thread Stats   Avg      Stdev     Max   +/- Stdev
+    Latency    34.30ms   32.10ms 342.17ms   89.44%
+    Req/Sec     6.08k     3.15k   12.76k    57.07%
+  Latency Distribution
+     50%   23.26ms
+     75%   41.96ms
+     90%   68.73ms
+     99%  149.38ms
+  118853 requests in 10.07s, 15.30MB read
+  Socket errors: connect 0, read 32013, write 0, timeout 0
+Requests/sec:  11799.43
+Transfer/sec:      1.52MB
+
+################ [java] db ################
+--- primer
+--- warmup
+--- concurrency=16
+Running 10s test @ http://127.0.0.1:18085/db
+  2 threads and 16 connections
+  Thread Stats   Avg      Stdev     Max   +/- Stdev
+    Latency     2.55ms    1.85ms  21.21ms   84.76%
+    Req/Sec     3.41k     1.43k    4.95k    67.50%
+  Latency Distribution
+     50%    1.90ms
+     75%    2.90ms
+     90%    5.15ms
+     99%    9.39ms
+  67953 requests in 10.03s, 8.99MB read
+Requests/sec:   6777.63
+Transfer/sec:      0.90MB
+--- concurrency=64
+Running 10s test @ http://127.0.0.1:18085/db
+  2 threads and 64 connections
+  Thread Stats   Avg      Stdev     Max   +/- Stdev
+    Latency    10.85ms    8.53ms  91.11ms   81.57%
+    Req/Sec     3.22k     1.58k    5.22k    39.50%
+  Latency Distribution
+     50%    7.78ms
+     75%   13.77ms
+     90%   22.53ms
+     99%   41.38ms
+  64363 requests in 10.08s, 8.52MB read
+Requests/sec:   6384.83
+Transfer/sec:    865.30KB
+--- concurrency=256
+Running 10s test @ http://127.0.0.1:18085/db
+  2 threads and 256 connections
+  Thread Stats   Avg      Stdev     Max   +/- Stdev
+    Latency    48.01ms   48.59ms 576.44ms   87.60%
+    Req/Sec     3.29k     1.58k    5.23k    52.26%
+  Latency Distribution
+     50%   30.19ms
+     75%   64.97ms
+     90%  107.21ms
+     99%  231.15ms
+  65608 requests in 10.10s, 8.68MB read
+  Socket errors: connect 0, read 110, write 0, timeout 0
+Requests/sec:   6494.66
+Transfer/sec:      0.86MB
+--- concurrency=512
+Running 10s test @ http://127.0.0.1:18085/db
+  2 threads and 512 connections
+  Thread Stats   Avg      Stdev     Max   +/- Stdev
+    Latency    98.15ms   98.89ms 987.17ms   87.37%
+    Req/Sec     3.13k     1.54k    5.19k    46.97%
+  Latency Distribution
+     50%   60.39ms
+     75%  143.95ms
+     90%  218.12ms
+     99%  458.84ms
+  62180 requests in 10.08s, 8.23MB read
+  Socket errors: connect 0, read 282, write 0, timeout 0
+Requests/sec:   6167.44
+Transfer/sec:    835.85KB
+
+################ [java] queries ################
+--- primer
+--- warmup
+--- queries=1 (c=512)
+Running 10s test @ http://127.0.0.1:18085/queries?q=1
+  2 threads and 512 connections
+  Thread Stats   Avg      Stdev     Max   +/- Stdev
+    Latency    94.26ms   99.63ms 861.12ms   87.77%
+    Req/Sec     3.41k     1.49k    5.57k    57.36%
+  Latency Distribution
+     50%   59.30ms
+     75%  127.48ms
+     90%  210.82ms
+     99%  475.54ms
+  67432 requests in 10.09s, 9.05MB read
+  Socket errors: connect 0, read 162, write 0, timeout 0
+Requests/sec:   6684.99
+Transfer/sec:      0.90MB
+--- queries=5 (c=512)
+Running 10s test @ http://127.0.0.1:18085/queries?q=5
+  2 threads and 512 connections
+  Thread Stats   Avg      Stdev     Max   +/- Stdev
+    Latency   286.29ms  191.44ms   1.42s    73.13%
+    Req/Sec     0.92k   452.41     1.59k    49.50%
+  Latency Distribution
+     50%  200.51ms
+     75%  377.76ms
+     90%  577.56ms
+     99%  914.13ms
+  18361 requests in 10.08s, 4.71MB read
+Requests/sec:   1820.65
+Transfer/sec:    478.12KB
+--- queries=10 (c=512)
+Running 10s test @ http://127.0.0.1:18085/queries?q=10
+  2 threads and 512 connections
+  Thread Stats   Avg      Stdev     Max   +/- Stdev
+    Latency   504.65ms  270.59ms   2.07s    72.89%
+    Req/Sec   509.88    436.10     1.50k    64.36%
+  Latency Distribution
+     50%  383.80ms
+     75%  705.41ms
+     90%  893.16ms
+     99%    1.28s 
+  9838 requests in 10.11s, 4.01MB read
+Requests/sec:    973.47
+Transfer/sec:    406.66KB
+--- queries=20 (c=512)
+Running 10s test @ http://127.0.0.1:18085/queries?q=20
+  2 threads and 512 connections
+  Thread Stats   Avg      Stdev     Max   +/- Stdev
+    Latency   924.57ms  426.47ms   3.60s    85.28%
+    Req/Sec   260.71    182.67   770.00     73.47%
+  Latency Distribution
+     50%    1.02s 
+     75%    1.22s 
+     90%    1.25s 
+     99%    2.40s 
+  5152 requests in 10.10s, 3.66MB read
+Requests/sec:    510.08
+Transfer/sec:    371.37KB
+
+################ [java] fortunes ################
+--- primer
+--- warmup
+--- concurrency=16
+Running 10s test @ http://127.0.0.1:18085/fortunes
+  2 threads and 16 connections
+  Thread Stats   Avg      Stdev     Max   +/- Stdev
+    Latency     2.39ms    1.72ms  17.12ms   84.55%
+    Req/Sec     3.64k     1.54k    5.47k    68.00%
+  Latency Distribution
+     50%    1.77ms
+     75%    2.72ms
+     90%    4.83ms
+     99%    8.70ms
+  72530 requests in 10.03s, 93.38MB read
+Requests/sec:   7228.80
+Transfer/sec:      9.31MB
+--- concurrency=64
+Running 10s test @ http://127.0.0.1:18085/fortunes
+  2 threads and 64 connections
+  Thread Stats   Avg      Stdev     Max   +/- Stdev
+    Latency    10.23ms    8.36ms 108.49ms   83.78%
+    Req/Sec     3.45k     1.71k    5.53k    45.50%
+  Latency Distribution
+     50%    7.19ms
+     75%   13.12ms
+     90%   21.17ms
+     99%   39.67ms
+  68959 requests in 10.08s, 88.78MB read
+Requests/sec:   6841.24
+Transfer/sec:      8.81MB
+--- concurrency=256
+Running 10s test @ http://127.0.0.1:18085/fortunes
+  2 threads and 256 connections
+  Thread Stats   Avg      Stdev     Max   +/- Stdev
+    Latency    47.04ms   47.69ms 463.02ms   86.90%
+    Req/Sec     3.35k     1.69k    5.89k    45.45%
+  Latency Distribution
+     50%   31.59ms
+     75%   65.24ms
+     90%  108.47ms
+     99%  222.29ms
+  66477 requests in 10.05s, 85.59MB read
+  Socket errors: connect 0, read 1016, write 0, timeout 0
+Requests/sec:   6613.37
+Transfer/sec:      8.51MB
+--- concurrency=512
+Running 10s test @ http://127.0.0.1:18085/fortunes
+  2 threads and 512 connections
+  Thread Stats   Avg      Stdev     Max   +/- Stdev
+    Latency    90.45ms   88.97ms   1.23s    86.19%
+    Req/Sec     3.22k     1.62k    6.06k    52.82%
+  Latency Distribution
+     50%   62.75ms
+     75%  130.74ms
+     90%  203.16ms
+     99%  403.45ms
+  63258 requests in 10.08s, 81.44MB read
+  Socket errors: connect 0, read 4381, write 0, timeout 0
+Requests/sec:   6276.09
+Transfer/sec:      8.08MB
+
+################ [java] updates ################
+--- primer
+--- warmup
+--- queries=1 (c=512)
+Running 10s test @ http://127.0.0.1:18085/updates?q=1
+  2 threads and 512 connections
+  Thread Stats   Avg      Stdev     Max   +/- Stdev
+    Latency   162.00ms  137.07ms   1.19s    68.84%
+    Req/Sec     1.80k   807.31     3.26k    57.07%
+  Latency Distribution
+     50%  106.42ms
+     75%  204.05ms
+     90%  330.31ms
+     99%  646.31ms
+  35554 requests in 10.02s, 4.77MB read
+Requests/sec:   3547.45
+Transfer/sec:    487.70KB
+--- queries=5 (c=512)
+Running 10s test @ http://127.0.0.1:18085/updates?q=5
+  2 threads and 512 connections
+  Thread Stats   Avg      Stdev     Max   +/- Stdev
+    Latency   601.25ms  301.83ms   2.74s    69.75%
+    Req/Sec   422.21    349.45     1.29k    63.59%
+  Latency Distribution
+     50%  487.32ms
+     75%  847.86ms
+     90%  970.32ms
+     99%    1.39s 
+  8233 requests in 10.07s, 2.11MB read
+Requests/sec:    817.61
+Transfer/sec:    214.69KB
+--- queries=10 (c=512)
+Running 10s test @ http://127.0.0.1:18085/updates?q=10
+  2 threads and 512 connections
+  Thread Stats   Avg      Stdev     Max   +/- Stdev
+    Latency     1.13s   468.00ms   4.02s    84.37%
+    Req/Sec   314.23    236.22   727.00     53.33%
+  Latency Distribution
+     50%    1.34s 
+     75%    1.37s 
+     90%    1.42s 
+     99%    2.69s 
+  4325 requests in 10.08s, 1.76MB read
+Requests/sec:    428.86
+Transfer/sec:    179.18KB
+--- queries=20 (c=512)
+Running 10s test @ http://127.0.0.1:18085/updates?q=20
+  2 threads and 512 connections
+  Thread Stats   Avg      Stdev     Max   +/- Stdev
+    Latency     2.05s   878.04ms   5.30s    79.75%
+    Req/Sec   148.33    104.38   400.00     67.86%
+  Latency Distribution
+     50%    2.52s 
+     75%    2.63s 
+     90%    2.67s 
+     99%    4.11s 
+  2141 requests in 10.08s, 1.52MB read
+Requests/sec:    212.37
+Transfer/sec:    154.64KB
+
+[java] done -> results/java/summary.csv
+impl,test,level,rps,latency_avg_ms,latency_p99_ms,requests,errors,non2xx,transfer_mb_s
+java,plaintext,256,40590.17,36.320,0.000,407289,0,0,4.450
+java,plaintext,1024,24752.81,276.040,0.000,249662,143,0,2.710
+java,plaintext,4096,20273.57,1700.000,0.000,203638,3976,0,2.220
+java,json,16,17867.73,1.060,5.310,178777,0,0,2.300
+java,json,64,19086.24,3.650,13.200,191407,0,0,2.460
+java,json,256,15123.54,17.130,61.320,152695,16351,0,1.950
+java,json,512,11799.43,34.300,149.380,118853,32013,0,1.520
+java,db,16,6777.63,2.550,9.390,67953,0,0,0.900
+java,db,64,6384.83,10.850,41.380,64363,0,0,0.845
+java,db,256,6494.66,48.010,231.150,65608,110,0,0.860
+java,db,512,6167.44,98.150,458.840,62180,282,0,0.816
+java,queries,1,6684.99,94.260,475.540,67432,162,0,0.900
+java,queries,5,1820.65,286.290,914.130,18361,0,0,0.467
+java,queries,10,973.47,504.650,1280.000,9838,0,0,0.397
+java,queries,20,510.08,924.570,2400.000,5152,0,0,0.363
+java,fortunes,16,7228.80,2.390,8.700,72530,0,0,9.310
+java,fortunes,64,6841.24,10.230,39.670,68959,0,0,8.810
+java,fortunes,256,6613.37,47.040,222.290,66477,1016,0,8.510
+java,fortunes,512,6276.09,90.450,403.450,63258,4381,0,8.080
+java,updates,1,3547.45,162.000,646.310,35554,0,0,0.476
+java,updates,5,817.61,601.250,1390.000,8233,0,0,0.210
+java,updates,10,428.86,1130.000,2690.000,4325,0,0,0.175
+java,updates,20,212.37,2050.000,4110.000,2141,0,0,0.151
+################ java exit=0 2026-11-22T14:51:25-03:00 ################
+################ python 2026-11-22T14:51:25-03:00 ################
+[python] starting server (cpus 0-1): /home/dmarques/.local/opt/pybench/bin/uvicorn app:app --host 127.0.0.1 --port 18086 --workers 2 --log-level warning --app-dir extra/python
+
+################ [python] plaintext ################
+--- primer
+--- warmup
+--- concurrency=256 pipeline=16
+Running 10s test @ http://127.0.0.1:18086/plaintext
+  2 threads and 256 connections
+  Thread Stats   Avg      Stdev     Max   +/- Stdev
+    Latency   358.26ms  491.92ms   1.81s     0.00%
+    Req/Sec     1.48k   303.38     1.96k    88.00%
+  Latency Distribution
+     50%    0.00us
+     75%    0.00us
+     90%    0.00us
+     99%    0.00us
+  29535 requests in 10.02s, 4.14MB read
+Requests/sec:   2947.11
+Transfer/sec:    423.10KB
+--- concurrency=1024 pipeline=16
+Running 10s test @ http://127.0.0.1:18086/plaintext
+  2 threads and 1024 connections
+  Thread Stats   Avg      Stdev     Max   +/- Stdev
+    Latency   502.07ms    1.75s    7.22s     0.00%
+    Req/Sec     1.10k   654.60     2.72k    59.39%
+  Latency Distribution
+     50%    0.00us
+     75%    0.00us
+     90%    0.00us
+     99%    0.00us
+  21641 requests in 10.08s, 3.03MB read
+Requests/sec:   2147.63
+Transfer/sec:    308.33KB
+--- concurrency=4096 pipeline=16
+Running 10s test @ http://127.0.0.1:18086/plaintext
+  2 threads and 4096 connections
+  Thread Stats   Avg      Stdev     Max   +/- Stdev
+    Latency     0.00us    0.00us   0.00us    -nan%
+    Req/Sec     1.01k   639.52     2.87k    64.89%
+  Latency Distribution
+     50%    0.00us
+     75%    0.00us
+     90%    0.00us
+     99%    0.00us
+  19045 requests in 10.07s, 2.67MB read
+Requests/sec:   1890.43
+Transfer/sec:    271.39KB
+
+################ [python] json ################
+--- primer
+--- warmup
+--- concurrency=16
+Running 10s test @ http://127.0.0.1:18086/json
+  2 threads and 16 connections
+  Thread Stats   Avg      Stdev     Max   +/- Stdev
+    Latency    44.93ms    3.51ms  58.01ms   89.99%
+    Req/Sec   178.18     14.40   242.00     69.00%
+  Latency Distribution
+     50%   44.69ms
+     75%   46.10ms
+     90%   48.10ms
+     99%   52.92ms
+  3556 requests in 10.02s, 529.43KB read
+Requests/sec:    354.93
+Transfer/sec:     52.84KB
+--- concurrency=64
+Running 10s test @ http://127.0.0.1:18086/json
+  2 threads and 64 connections
+  Thread Stats   Avg      Stdev     Max   +/- Stdev
+    Latency    45.79ms    6.76ms 110.18ms   90.37%
+    Req/Sec   700.38     70.27   818.00     80.00%
+  Latency Distribution
+     50%   43.96ms
+     75%   46.09ms
+     90%   51.91ms
+     99%   75.06ms
+  13959 requests in 10.02s, 2.03MB read
+Requests/sec:   1393.34
+Transfer/sec:    207.60KB
+--- concurrency=256
+Running 10s test @ http://127.0.0.1:18086/json
+  2 threads and 256 connections
+  Thread Stats   Avg      Stdev     Max   +/- Stdev
+    Latency    88.81ms   27.97ms 166.68ms   61.10%
+    Req/Sec     1.44k   141.31     1.68k    80.00%
+  Latency Distribution
+     50%   94.75ms
+     75%  113.05ms
+     90%  120.93ms
+     99%  148.18ms
+  28670 requests in 10.02s, 4.17MB read
+Requests/sec:   2861.31
+Transfer/sec:    426.46KB
+--- concurrency=512
+Running 10s test @ http://127.0.0.1:18086/json
+  2 threads and 512 connections
+  Thread Stats   Avg      Stdev     Max   +/- Stdev
+    Latency   253.76ms  137.16ms 765.30ms   82.23%
+    Req/Sec     1.01k   541.44     1.80k    50.00%
+  Latency Distribution
+     50%  184.12ms
+     75%  311.05ms
+     90%  492.03ms
+     99%  669.79ms
+  20122 requests in 10.04s, 2.92MB read
+Requests/sec:   2003.63
+Transfer/sec:    297.90KB
+
+################ [python] db ################
+--- primer
+--- warmup
+--- concurrency=16
+Running 10s test @ http://127.0.0.1:18086/db
+  2 threads and 16 connections
+  Thread Stats   Avg      Stdev     Max   +/- Stdev
+    Latency    47.73ms    4.90ms  70.68ms   84.70%
+    Req/Sec   167.65     15.91   222.00     83.00%
+  Latency Distribution
+     50%   46.72ms
+     75%   49.99ms
+     90%   53.96ms
+     99%   61.88ms
+  3346 requests in 10.01s, 510.85KB read
+Requests/sec:    334.14
+Transfer/sec:     51.02KB
+--- concurrency=64
+Running 10s test @ http://127.0.0.1:18086/db
+  2 threads and 64 connections
+  Thread Stats   Avg      Stdev     Max   +/- Stdev
+    Latency    61.79ms   13.35ms 133.07ms   60.56%
+    Req/Sec   518.32     46.27   616.00     71.50%
+  Latency Distribution
+     50%   63.96ms
+     75%   70.90ms
+     90%   76.91ms
+     99%   96.26ms
+  10327 requests in 10.01s, 1.54MB read
+Requests/sec:   1031.44
+Transfer/sec:    157.45KB
+--- concurrency=256
+Running 10s test @ http://127.0.0.1:18086/db
+  2 threads and 256 connections
+  Thread Stats   Avg      Stdev     Max   +/- Stdev
+    Latency   204.83ms   76.70ms 786.53ms   92.73%
+    Req/Sec   636.40    154.86     0.90k    84.00%
+  Latency Distribution
+     50%  192.16ms
+     75%  219.71ms
+     90%  241.27ms
+     99%  590.87ms
+  12687 requests in 10.04s, 1.89MB read
+Requests/sec:   1264.01
+Transfer/sec:    192.73KB
+--- concurrency=512
+Running 10s test @ http://127.0.0.1:18086/db
+  2 threads and 512 connections
+  Thread Stats   Avg      Stdev     Max   +/- Stdev
+    Latency   537.48ms  246.75ms   1.08s    68.53%
+    Req/Sec   451.83    299.70     1.28k    64.00%
+  Latency Distribution
+     50%  445.00ms
+     75%  741.62ms
+     90%  928.86ms
+     99%    1.04s 
+  9019 requests in 10.09s, 1.35MB read
+Requests/sec:    893.91
+Transfer/sec:    136.70KB
+
+################ [python] queries ################
+--- primer
+--- warmup
+--- queries=1 (c=512)
+Running 10s test @ http://127.0.0.1:18086/queries?q=1
+  2 threads and 512 connections
+  Thread Stats   Avg      Stdev     Max   +/- Stdev
+    Latency   486.72ms  208.18ms   1.05s    79.45%
+    Req/Sec   517.03    361.95     1.62k    65.82%
+  Latency Distribution
+     50%  418.03ms
+     75%  493.31ms
+     90%  890.09ms
+     99%    1.01s 
+  10169 requests in 10.08s, 1.54MB read
+Requests/sec:   1008.98
+Transfer/sec:    156.02KB
+--- queries=5 (c=512)
+Running 10s test @ http://127.0.0.1:18086/queries?q=5
+  2 threads and 512 connections
+  Thread Stats   Avg      Stdev     Max   +/- Stdev
+    Latency     1.53s   630.23ms   2.62s    56.97%
+    Req/Sec   152.04    104.68   430.00     62.94%
+  Latency Distribution
+     50%    1.43s 
+     75%    2.05s 
+     90%    2.46s 
+     99%    2.53s 
+  3005 requests in 10.10s, 841.14KB read
+Requests/sec:    297.64
+Transfer/sec:     83.31KB
+--- queries=10 (c=512)
+Running 10s test @ http://127.0.0.1:18086/queries?q=10
+  2 threads and 512 connections
+  Thread Stats   Avg      Stdev     Max   +/- Stdev
+    Latency     2.79s     1.12s    4.47s    77.11%
+    Req/Sec    77.69     62.74   310.00     76.29%
+  Latency Distribution
+     50%    3.19s 
+     75%    3.65s 
+     90%    3.83s 
+     99%    4.12s 
+  1520 requests in 10.02s, 661.68KB read
+Requests/sec:    151.76
+Transfer/sec:     66.06KB
+--- queries=20 (c=512)
+Running 10s test @ http://127.0.0.1:18086/queries?q=20
+  2 threads and 512 connections
+  Thread Stats   Avg      Stdev     Max   +/- Stdev
+    Latency     3.93s     1.64s    7.99s    71.38%
+    Req/Sec    40.69     30.14   130.00     68.26%
+  Latency Distribution
+     50%    3.86s 
+     75%    4.60s 
+     90%    6.53s 
+     99%    7.90s 
+  708 requests in 10.05s, 527.54KB read
+  Socket errors: connect 0, read 0, write 0, timeout 72
+Requests/sec:     70.41
+Transfer/sec:     52.47KB
+
+################ [python] fortunes ################
+--- primer
+--- warmup
+--- concurrency=16
+Running 10s test @ http://127.0.0.1:18086/fortunes
+  2 threads and 16 connections
+  Thread Stats   Avg      Stdev     Max   +/- Stdev
+    Latency    45.82ms    3.67ms  65.95ms   87.67%
+    Req/Sec   174.76     10.96   222.00     62.50%
+  Latency Distribution
+     50%   45.07ms
+     75%   47.03ms
+     90%   49.78ms
+     99%   54.97ms
+  3487 requests in 10.01s, 4.55MB read
+Requests/sec:    348.35
+Transfer/sec:    465.22KB
+--- concurrency=64
+Running 10s test @ http://127.0.0.1:18086/fortunes
+  2 threads and 64 connections
+  Thread Stats   Avg      Stdev     Max   +/- Stdev
+    Latency    47.44ms    4.74ms  78.27ms   78.87%
+    Req/Sec   675.83     49.31   757.00     80.50%
+  Latency Distribution
+     50%   46.03ms
+     75%   49.95ms
+     90%   53.96ms
+     99%   62.04ms
+  13457 requests in 10.01s, 17.55MB read
+Requests/sec:   1344.75
+Transfer/sec:      1.75MB
+--- concurrency=256
+Running 10s test @ http://127.0.0.1:18086/fortunes
+  2 threads and 256 connections
+  Thread Stats   Avg      Stdev     Max   +/- Stdev
+    Latency   139.60ms   13.80ms 219.06ms   73.72%
+    Req/Sec     0.91k    91.23     1.09k    74.50%
+  Latency Distribution
+     50%  138.96ms
+     75%  147.88ms
+     90%  156.10ms
+     99%  174.84ms
+  18211 requests in 10.02s, 23.75MB read
+Requests/sec:   1816.67
+Transfer/sec:      2.37MB
+--- concurrency=512
+Running 10s test @ http://127.0.0.1:18086/fortunes
+  2 threads and 512 connections
+  Thread Stats   Avg      Stdev     Max   +/- Stdev
+    Latency   361.86ms  171.59ms 940.08ms   82.33%
+    Req/Sec   691.14    443.85     1.75k    63.32%
+  Latency Distribution
+     50%  287.31ms
+     75%  411.85ms
+     90%  659.89ms
+     99%  876.55ms
+  13719 requests in 10.06s, 17.89MB read
+Requests/sec:   1364.19
+Transfer/sec:      1.78MB
+
+################ [python] updates ################
+--- primer
+--- warmup
+--- queries=1 (c=512)
+Running 10s test @ http://127.0.0.1:18086/updates?q=1
+  2 threads and 512 connections
+  Thread Stats   Avg      Stdev     Max   +/- Stdev
+    Latency   840.61ms  289.87ms   1.30s    59.26%
+    Req/Sec   285.68    221.97   848.00     65.31%
+  Latency Distribution
+     50%  852.50ms
+     75%    1.11s 
+     90%    1.21s 
+     99%    1.27s 
+  5668 requests in 10.07s, 0.85MB read
+Requests/sec:    562.62
+Transfer/sec:     86.72KB
+--- queries=5 (c=512)
+Running 10s test @ http://127.0.0.1:18086/updates?q=5
+  2 threads and 512 connections
+  Thread Stats   Avg      Stdev     Max   +/- Stdev
+    Latency     2.71s     1.20s    4.81s    58.47%
+    Req/Sec    87.02     71.83   323.00     73.60%
+  Latency Distribution
+     50%    2.94s 
+     75%    3.64s 
+     90%    4.12s 
+     99%    4.53s 
+  1570 requests in 10.08s, 438.55KB read
+Requests/sec:    155.70
+Transfer/sec:     43.49KB
+--- queries=10 (c=512)
+Running 10s test @ http://127.0.0.1:18086/updates?q=10
+  2 threads and 512 connections
+  Thread Stats   Avg      Stdev     Max   +/- Stdev
+    Latency     3.85s     1.65s    7.97s    68.85%
+    Req/Sec    39.52     30.69   131.00     80.75%
+  Latency Distribution
+     50%    3.72s 
+     75%    4.65s 
+     90%    6.34s 
+     99%    7.78s 
+  674 requests in 10.09s, 292.87KB read
+  Socket errors: connect 0, read 0, write 0, timeout 64
+Requests/sec:     66.79
+Transfer/sec:     29.02KB
+--- queries=20 (c=512)
+Running 10s test @ http://127.0.0.1:18086/updates?q=20
+  2 threads and 512 connections
+  Thread Stats   Avg      Stdev     Max   +/- Stdev
+    Latency     4.81s     2.09s    7.97s    58.28%
+    Req/Sec    20.72     18.22    70.00     72.82%
+  Latency Distribution
+     50%    5.17s 
+     75%    6.82s 
+     90%    7.47s 
+     99%    7.97s 
+  253 requests in 10.08s, 188.39KB read
+  Socket errors: connect 0, read 0, write 0, timeout 90
+Requests/sec:     25.10
+Transfer/sec:     18.69KB
+
+[python] done -> results/python/summary.csv
+impl,test,level,rps,latency_avg_ms,latency_p99_ms,requests,errors,non2xx,transfer_mb_s
+python,plaintext,256,2947.11,358.260,0.000,29535,0,0,0.413
+python,plaintext,1024,2147.63,502.070,0.000,21641,0,0,0.301
+python,plaintext,4096,1890.43,0.000,0.000,19045,0,0,0.265
+python,json,16,354.93,44.930,52.920,3556,0,0,0.052
+python,json,64,1393.34,45.790,75.060,13959,0,0,0.203
+python,json,256,2861.31,88.810,148.180,28670,0,0,0.416
+python,json,512,2003.63,253.760,669.790,20122,0,0,0.291
+python,db,16,334.14,47.730,61.880,3346,0,0,0.050
+python,db,64,1031.44,61.790,96.260,10327,0,0,0.154
+python,db,256,1264.01,204.830,590.870,12687,0,0,0.188
+python,db,512,893.91,537.480,1040.000,9019,0,0,0.133
+python,queries,1,1008.98,486.720,1010.000,10169,0,0,0.152
+python,queries,5,297.64,1530.000,2530.000,3005,0,0,0.081
+python,queries,10,151.76,2790.000,4120.000,1520,0,0,0.065
+python,queries,20,70.41,3930.000,7900.000,708,72,0,0.051
+python,fortunes,16,348.35,45.820,54.970,3487,0,0,0.454
+python,fortunes,64,1344.75,47.440,62.040,13457,0,0,1.750
+python,fortunes,256,1816.67,139.600,174.840,18211,0,0,2.370
+python,fortunes,512,1364.19,361.860,876.550,13719,0,0,1.780
+python,updates,1,562.62,840.610,1270.000,5668,0,0,0.085
+python,updates,5,155.70,2710.000,4530.000,1570,0,0,0.042
+python,updates,10,66.79,3850.000,7780.000,674,64,0,0.028
+python,updates,20,25.10,4810.000,7970.000,253,90,0,0.018
+################ python exit=0 2026-11-22T14:58:26-03:00 ################
+################ node 2026-11-22T14:58:26-03:00 ################
+[node] starting server (cpus 0-1): node extra/js/server.js 18087
+
+################ [node] plaintext ################
+--- primer
+--- warmup
+--- concurrency=256 pipeline=16
+Running 10s test @ http://127.0.0.1:18087/plaintext
+  2 threads and 256 connections
+  Thread Stats   Avg      Stdev     Max   +/- Stdev
+    Latency   388.87ms    1.05s    7.86s    91.88%
+    Req/Sec     9.65k     3.21k   16.66k    67.00%
+  Latency Distribution
+     50%   88.52ms
+     75%  127.59ms
+     90%  760.54ms
+     99%    5.59s 
+  192172 requests in 10.02s, 29.87MB read
+  Socket errors: connect 0, read 0, write 0, timeout 13
+Requests/sec:  19183.89
+Transfer/sec:      2.98MB
+--- concurrency=1024 pipeline=16
+Running 10s test @ http://127.0.0.1:18087/plaintext
+  2 threads and 1024 connections
+  Thread Stats   Avg      Stdev     Max   +/- Stdev
+    Latency   349.35ms  318.12ms   7.70s    98.82%
+    Req/Sec    13.27k     7.64k   22.98k    61.19%
+  Latency Distribution
+     50%  326.47ms
+     75%  468.22ms
+     90%  557.11ms
+     99%  693.00ms
+  196636 requests in 10.07s, 30.57MB read
+  Socket errors: connect 0, read 0, write 0, timeout 3
+Requests/sec:  19525.44
+Transfer/sec:      3.04MB
+--- concurrency=4096 pipeline=16
+Running 10s test @ http://127.0.0.1:18087/plaintext
+  2 threads and 4096 connections
+  Thread Stats   Avg      Stdev     Max   +/- Stdev
+    Latency     1.00s   455.65ms   2.05s    60.47%
+    Req/Sec    15.88k     7.30k   22.92k    81.03%
+  Latency Distribution
+     50%    1.01s 
+     75%    1.42s 
+     90%    1.66s 
+     99%    1.87s 
+  192178 requests in 10.07s, 29.87MB read
+Requests/sec:  19087.05
+Transfer/sec:      2.97MB
+
+################ [node] json ################
+--- primer
+--- warmup
+--- concurrency=16
+Running 10s test @ http://127.0.0.1:18087/json
+  2 threads and 16 connections
+  Thread Stats   Avg      Stdev     Max   +/- Stdev
+    Latency     1.24ms  325.39us   9.14ms   92.23%
+    Req/Sec     6.45k   638.52    13.51k    86.57%
+  Latency Distribution
+     50%    1.21ms
+     75%    1.27ms
+     90%    1.38ms
+     99%    2.56ms
+  129100 requests in 10.10s, 22.53MB read
+Requests/sec:  12782.17
+Transfer/sec:      2.23MB
+--- concurrency=64
+Running 10s test @ http://127.0.0.1:18087/json
+  2 threads and 64 connections
+  Thread Stats   Avg      Stdev     Max   +/- Stdev
+    Latency     5.19ms    1.82ms 104.53ms   99.44%
+    Req/Sec     6.25k   338.10     7.21k    71.00%
+  Latency Distribution
+     50%    5.26ms
+     75%    5.47ms
+     90%    5.67ms
+     99%    6.36ms
+  124370 requests in 10.00s, 21.71MB read
+Requests/sec:  12432.46
+Transfer/sec:      2.17MB
+--- concurrency=256
+Running 10s test @ http://127.0.0.1:18087/json
+  2 threads and 256 connections
+  Thread Stats   Avg      Stdev     Max   +/- Stdev
+    Latency    41.66ms  138.56ms   1.86s    96.99%
+    Req/Sec     6.21k   597.21     8.19k    78.00%
+  Latency Distribution
+     50%   20.51ms
+     75%   22.03ms
+     90%   22.65ms
+     99%  868.65ms
+  123574 requests in 10.02s, 21.57MB read
+Requests/sec:  12335.85
+Transfer/sec:      2.15MB
+--- concurrency=512
+Running 10s test @ http://127.0.0.1:18087/json
+  2 threads and 512 connections
+  Thread Stats   Avg      Stdev     Max   +/- Stdev
+    Latency   101.99ms  359.02ms   4.31s    96.41%
+    Req/Sec     6.19k   760.20     8.36k    60.50%
+  Latency Distribution
+     50%   40.97ms
+     75%   42.57ms
+     90%   44.07ms
+     99%    2.26s 
+  123182 requests in 10.04s, 21.50MB read
+Requests/sec:  12267.34
+Transfer/sec:      2.14MB
+
+################ [node] db ################
+--- primer
+--- warmup
+--- concurrency=16
+Running 10s test @ http://127.0.0.1:18087/db
+  2 threads and 16 connections
+  Thread Stats   Avg      Stdev     Max   +/- Stdev
+    Latency     3.79ms    0.92ms  17.42ms   83.48%
+    Req/Sec     2.13k   169.61     2.30k    95.00%
+  Latency Distribution
+     50%    3.71ms
+     75%    4.15ms
+     90%    4.60ms
+     99%    6.89ms
+  42343 requests in 10.01s, 7.54MB read
+Requests/sec:   4230.56
+Transfer/sec:    771.64KB
+--- concurrency=64
+Running 10s test @ http://127.0.0.1:18087/db
+  2 threads and 64 connections
+  Thread Stats   Avg      Stdev     Max   +/- Stdev
+    Latency    22.31ms   12.83ms  71.67ms   85.26%
+    Req/Sec     1.52k   704.24     2.38k    57.00%
+  Latency Distribution
+     50%   15.70ms
+     75%   27.81ms
+     90%   49.52ms
+     99%   56.56ms
+  30354 requests in 10.01s, 5.41MB read
+Requests/sec:   3031.96
+Transfer/sec:    553.05KB
+--- concurrency=256
+Running 10s test @ http://127.0.0.1:18087/db
+  2 threads and 256 connections
+  Thread Stats   Avg      Stdev     Max   +/- Stdev
+    Latency    84.20ms   47.97ms 482.75ms   85.54%
+    Req/Sec     1.60k   626.68     2.27k    68.50%
+  Latency Distribution
+     50%   63.53ms
+     75%   78.12ms
+     90%  169.61ms
+     99%  242.27ms
+  31896 requests in 10.02s, 5.68MB read
+Requests/sec:   3182.37
+Transfer/sec:    580.45KB
+--- concurrency=512
+Running 10s test @ http://127.0.0.1:18087/db
+  2 threads and 512 connections
+  Thread Stats   Avg      Stdev     Max   +/- Stdev
+    Latency   160.58ms   78.78ms 451.88ms   85.70%
+    Req/Sec     1.62k   729.66     2.48k    60.50%
+  Latency Distribution
+     50%  123.17ms
+     75%  177.14ms
+     90%  305.00ms
+     99%  385.64ms
+  32204 requests in 10.06s, 5.74MB read
+Requests/sec:   3200.41
+Transfer/sec:    583.75KB
+
+################ [node] queries ################
+--- primer
+--- warmup
+--- queries=1 (c=512)
+Running 10s test @ http://127.0.0.1:18087/queries?q=1
+  2 threads and 512 connections
+  Thread Stats   Avg      Stdev     Max   +/- Stdev
+    Latency   152.64ms   70.25ms 596.70ms   84.69%
+    Req/Sec     1.73k   624.13     2.45k    69.00%
+  Latency Distribution
+     50%  127.24ms
+     75%  132.91ms
+     90%  237.28ms
+     99%  387.19ms
+  34526 requests in 10.04s, 6.22MB read
+Requests/sec:   3437.45
+Transfer/sec:    633.71KB
+--- queries=5 (c=512)
+Running 10s test @ http://127.0.0.1:18087/queries?q=5
+  2 threads and 512 connections
+  Thread Stats   Avg      Stdev     Max   +/- Stdev
+    Latency   536.20ms  202.40ms 974.25ms   76.50%
+    Req/Sec   535.03    541.57     2.05k    85.21%
+  Latency Distribution
+     50%  404.97ms
+     75%  691.43ms
+     90%  900.67ms
+     99%  964.52ms
+  9282 requests in 10.06s, 2.81MB read
+Requests/sec:    922.93
+Transfer/sec:    285.63KB
+--- queries=10 (c=512)
+Running 10s test @ http://127.0.0.1:18087/queries?q=10
+  2 threads and 512 connections
+  Thread Stats   Avg      Stdev     Max   +/- Stdev
+    Latency     1.03s   255.35ms   1.34s    55.39%
+    Req/Sec   459.60    500.44     1.91k    85.54%
+  Latency Distribution
+     50%    1.20s 
+     75%    1.26s 
+     90%    1.28s 
+     99%    1.33s 
+  4613 requests in 10.09s, 2.09MB read
+Requests/sec:    457.38
+Transfer/sec:    212.50KB
+--- queries=20 (c=512)
+Running 10s test @ http://127.0.0.1:18087/queries?q=20
+  2 threads and 512 connections
+  Thread Stats   Avg      Stdev     Max   +/- Stdev
+    Latency     1.93s   473.13ms   2.59s    39.26%
+    Req/Sec   422.31    459.50     1.69k    86.27%
+  Latency Distribution
+     50%    2.00s 
+     75%    2.40s 
+     90%    2.57s 
+     99%    2.59s 
+  2560 requests in 10.08s, 1.94MB read
+Requests/sec:    253.96
+Transfer/sec:    196.79KB
+
+################ [node] fortunes ################
+--- primer
+--- warmup
+--- concurrency=16
+Running 10s test @ http://127.0.0.1:18087/fortunes
+  2 threads and 16 connections
+  Thread Stats   Avg      Stdev     Max   +/- Stdev
+    Latency     4.23ms    1.75ms  24.91ms   94.20%
+    Req/Sec     1.96k   346.35     2.16k    92.00%
+  Latency Distribution
+     50%    3.83ms
+     75%    4.66ms
+     90%    5.25ms
+     99%   12.87ms
+  38928 requests in 10.01s, 51.90MB read
+Requests/sec:   3890.01
+Transfer/sec:      5.19MB
+--- concurrency=64
+Running 10s test @ http://127.0.0.1:18087/fortunes
+  2 threads and 64 connections
+  Thread Stats   Avg      Stdev     Max   +/- Stdev
+    Latency    18.86ms    8.50ms  77.19ms   91.60%
+    Req/Sec     1.78k   461.39     2.18k    87.00%
+  Latency Distribution
+     50%   16.48ms
+     75%   17.42ms
+     90%   19.67ms
+     99%   56.50ms
+  35412 requests in 10.01s, 47.21MB read
+Requests/sec:   3538.01
+Transfer/sec:      4.72MB
+--- concurrency=256
+Running 10s test @ http://127.0.0.1:18087/fortunes
+  2 threads and 256 connections
+  Thread Stats   Avg      Stdev     Max   +/- Stdev
+    Latency    76.87ms   31.71ms 374.45ms   89.95%
+    Req/Sec     1.71k   442.71     2.42k    84.00%
+  Latency Distribution
+     50%   69.05ms
+     75%   71.50ms
+     90%   76.59ms
+     99%  214.18ms
+  34061 requests in 10.02s, 45.41MB read
+Requests/sec:   3398.15
+Transfer/sec:      4.53MB
+--- concurrency=512
+Running 10s test @ http://127.0.0.1:18087/fortunes
+  2 threads and 512 connections
+  Thread Stats   Avg      Stdev     Max   +/- Stdev
+    Latency   151.86ms   55.51ms 500.96ms   90.40%
+    Req/Sec     1.72k   549.32     2.44k    68.00%
+  Latency Distribution
+     50%  136.57ms
+     75%  141.16ms
+     90%  191.11ms
+     99%  419.25ms
+  34204 requests in 10.05s, 45.60MB read
+Requests/sec:   3404.95
+Transfer/sec:      4.54MB
+
+################ [node] updates ################
+--- primer
+--- warmup
+--- queries=1 (c=512)
+Running 10s test @ http://127.0.0.1:18087/updates?q=1
+  2 threads and 512 connections
+  Thread Stats   Avg      Stdev     Max   +/- Stdev
+    Latency   254.30ms  117.79ms 613.93ms   84.12%
+    Req/Sec     1.00k   695.70     2.35k    58.79%
+  Latency Distribution
+     50%  194.43ms
+     75%  285.29ms
+     90%  461.45ms
+     99%  600.97ms
+  19923 requests in 10.06s, 3.59MB read
+Requests/sec:   1980.72
+Transfer/sec:    365.15KB
+--- queries=5 (c=512)
+Running 10s test @ http://127.0.0.1:18087/updates?q=5
+  2 threads and 512 connections
+  Thread Stats   Avg      Stdev     Max   +/- Stdev
+    Latency     1.03s   274.14ms   1.33s    47.85%
+    Req/Sec   399.90    361.05     1.48k    74.19%
+  Latency Distribution
+     50%    1.19s 
+     75%    1.29s 
+     90%    1.32s 
+     99%    1.32s 
+  4608 requests in 10.06s, 1.39MB read
+Requests/sec:    458.12
+Transfer/sec:    141.79KB
+--- queries=10 (c=512)
+Running 10s test @ http://127.0.0.1:18087/updates?q=10
+  2 threads and 512 connections
+  Thread Stats   Avg      Stdev     Max   +/- Stdev
+    Latency     2.00s   469.81ms   2.60s    47.46%
+    Req/Sec   383.74    406.09     1.64k    82.35%
+  Latency Distribution
+     50%    1.99s 
+     75%    2.48s 
+     90%    2.59s 
+     99%    2.60s 
+  2048 requests in 10.06s, 0.93MB read
+Requests/sec:    203.50
+Transfer/sec:     94.55KB
+--- queries=20 (c=512)
+Running 10s test @ http://127.0.0.1:18087/updates?q=20
+  2 threads and 512 connections
+  Thread Stats   Avg      Stdev     Max   +/- Stdev
+    Latency     3.94s   703.12ms   4.95s    52.73%
+    Req/Sec   309.19    375.74     1.41k    77.78%
+  Latency Distribution
+     50%    4.39s 
+     75%    4.54s 
+     90%    4.90s 
+     99%    4.95s 
+  1024 requests in 10.07s, 793.69KB read
+Requests/sec:    101.68
+Transfer/sec:     78.81KB
+
+[node] done -> results/node/summary.csv
+impl,test,level,rps,latency_avg_ms,latency_p99_ms,requests,errors,non2xx,transfer_mb_s
+node,plaintext,256,19183.89,388.870,5590.000,192172,13,0,2.980
+node,plaintext,1024,19525.44,349.350,693.000,196636,3,0,3.040
+node,plaintext,4096,19087.05,1000.000,1870.000,192178,0,0,2.970
+node,json,16,12782.17,1.240,2.560,129100,0,0,2.230
+node,json,64,12432.46,5.190,6.360,124370,0,0,2.170
+node,json,256,12335.85,41.660,868.650,123574,0,0,2.150
+node,json,512,12267.34,101.990,2260.000,123182,0,0,2.140
+node,db,16,4230.56,3.790,6.890,42343,0,0,0.754
+node,db,64,3031.96,22.310,56.560,30354,0,0,0.540
+node,db,256,3182.37,84.200,242.270,31896,0,0,0.567
+node,db,512,3200.41,160.580,385.640,32204,0,0,0.570
+node,queries,1,3437.45,152.640,387.190,34526,0,0,0.619
+node,queries,5,922.93,536.200,964.520,9282,0,0,0.279
+node,queries,10,457.38,1030.000,1330.000,4613,0,0,0.208
+node,queries,20,253.96,1930.000,2590.000,2560,0,0,0.192
+node,fortunes,16,3890.01,4.230,12.870,38928,0,0,5.190
+node,fortunes,64,3538.01,18.860,56.500,35412,0,0,4.720
+node,fortunes,256,3398.15,76.870,214.180,34061,0,0,4.530
+node,fortunes,512,3404.95,151.860,419.250,34204,0,0,4.540
+node,updates,1,1980.72,254.300,600.970,19923,0,0,0.357
+node,updates,5,458.12,1030.000,1320.000,4608,0,0,0.138
+node,updates,10,203.50,2000.000,2600.000,2048,0,0,0.092
+node,updates,20,101.68,3940.000,4950.000,1024,0,0,0.077
+################ node exit=0 2026-11-22T15:05:14-03:00 ################
+################ bun 2026-11-22T15:05:14-03:00 ################
+[bun] starting server (cpus 0-1): /home/dmarques/.local/opt/bun/bin/bun extra/js/server.js 18090
+
+################ [bun] plaintext ################
+--- primer
+--- warmup
+--- concurrency=256 pipeline=16
+Running 10s test @ http://127.0.0.1:18090/plaintext
+  2 threads and 256 connections
+  Thread Stats   Avg      Stdev     Max   +/- Stdev
+    Latency   121.52ms   62.44ms 441.76ms   58.14%
+    Req/Sec     9.29k     5.20k   19.38k    58.73%
+  Latency Distribution
+     50%  121.32ms
+     75%  175.19ms
+     90%  207.30ms
+     99%  231.70ms
+  184138 requests in 10.03s, 28.62MB read
+Requests/sec:  18363.05
+Transfer/sec:      2.85MB
+--- concurrency=1024 pipeline=16
+Running 10s test @ http://127.0.0.1:18090/plaintext
+  2 threads and 1024 connections
+  Thread Stats   Avg      Stdev     Max   +/- Stdev
+    Latency   515.59ms  268.81ms   1.25s    59.30%
+    Req/Sec     8.62k     2.76k   17.74k    75.38%
+  Latency Distribution
+     50%  512.48ms
+     75%  738.19ms
+     90%  879.89ms
+     99%    1.08s 
+  171022 requests in 10.05s, 26.59MB read
+Requests/sec:  17013.11
+Transfer/sec:      2.64MB
+--- concurrency=4096 pipeline=16
+Running 10s test @ http://127.0.0.1:18090/plaintext
+  2 threads and 4096 connections
+  Thread Stats   Avg      Stdev     Max   +/- Stdev
+    Latency     2.03s     1.10s    4.33s    58.66%
+    Req/Sec    10.30k     6.09k   18.78k    59.48%
+  Latency Distribution
+     50%    1.97s 
+     75%    2.98s 
+     90%    3.60s 
+     99%    4.14s 
+  160768 requests in 10.08s, 24.99MB read
+Requests/sec:  15944.21
+Transfer/sec:      2.48MB
+
+################ [bun] json ################
+--- primer
+--- warmup
+--- concurrency=16
+Running 10s test @ http://127.0.0.1:18090/json
+  2 threads and 16 connections
+  Thread Stats   Avg      Stdev     Max   +/- Stdev
+    Latency     1.03ms  387.08us  11.83ms   92.20%
+    Req/Sec     7.85k   566.52     9.46k    69.80%
+  Latency Distribution
+     50%    0.98ms
+     75%    1.06ms
+     90%    1.17ms
+     99%    2.18ms
+  157825 requests in 10.10s, 27.54MB read
+Requests/sec:  15624.35
+Transfer/sec:      2.73MB
+--- concurrency=64
+Running 10s test @ http://127.0.0.1:18090/json
+  2 threads and 64 connections
+  Thread Stats   Avg      Stdev     Max   +/- Stdev
+    Latency     4.09ms  592.43us  11.52ms   69.70%
+    Req/Sec     7.85k   532.92     9.16k    69.50%
+  Latency Distribution
+     50%    4.09ms
+     75%    4.43ms
+     90%    4.64ms
+     99%    5.55ms
+  156288 requests in 10.00s, 27.28MB read
+Requests/sec:  15625.53
+Transfer/sec:      2.73MB
+--- concurrency=256
+Running 10s test @ http://127.0.0.1:18090/json
+  2 threads and 256 connections
+  Thread Stats   Avg      Stdev     Max   +/- Stdev
+    Latency    16.29ms    1.78ms  33.60ms   60.63%
+    Req/Sec     7.88k   556.50     9.04k    70.00%
+  Latency Distribution
+     50%   16.17ms
+     75%   17.80ms
+     90%   18.47ms
+     99%   19.69ms
+  156956 requests in 10.02s, 27.39MB read
+Requests/sec:  15669.27
+Transfer/sec:      2.73MB
+--- concurrency=512
+Running 10s test @ http://127.0.0.1:18090/json
+  2 threads and 512 connections
+  Thread Stats   Avg      Stdev     Max   +/- Stdev
+    Latency    33.06ms    3.16ms  64.55ms   65.66%
+    Req/Sec     7.76k   740.15     9.80k    71.50%
+  Latency Distribution
+     50%   33.10ms
+     75%   35.38ms
+     90%   36.89ms
+     99%   39.08ms
+  154566 requests in 10.04s, 26.98MB read
+Requests/sec:  15402.18
+Transfer/sec:      2.69MB
+
+################ [bun] db ################
+--- primer
+--- warmup
+--- concurrency=16
+Running 10s test @ http://127.0.0.1:18090/db
+  2 threads and 16 connections
+  Thread Stats   Avg      Stdev     Max   +/- Stdev
+    Latency     4.38ms    2.68ms  25.91ms   84.78%
+    Req/Sec     1.96k   800.17     2.74k    69.00%
+  Latency Distribution
+     50%    3.33ms
+     75%    4.59ms
+     90%    8.55ms
+     99%   13.70ms
+  38971 requests in 10.01s, 6.94MB read
+Requests/sec:   3891.38
+Transfer/sec:    709.83KB
+--- concurrency=64
+Running 10s test @ http://127.0.0.1:18090/db
+  2 threads and 64 connections
+  Thread Stats   Avg      Stdev     Max   +/- Stdev
+    Latency    18.33ms   10.31ms  63.57ms   83.52%
+    Req/Sec     1.83k   847.54     2.80k    59.00%
+  Latency Distribution
+     50%   13.05ms
+     75%   20.97ms
+     90%   38.10ms
+     99%   47.50ms
+  36494 requests in 10.04s, 6.50MB read
+Requests/sec:   3636.05
+Transfer/sec:    663.25KB
+--- concurrency=256
+Running 10s test @ http://127.0.0.1:18090/db
+  2 threads and 256 connections
+  Thread Stats   Avg      Stdev     Max   +/- Stdev
+    Latency    76.86ms   40.87ms 209.28ms   84.56%
+    Req/Sec     1.73k   811.69     2.65k    61.50%
+  Latency Distribution
+     50%   55.69ms
+     75%   89.58ms
+     90%  162.10ms
+     99%  187.43ms
+  34563 requests in 10.03s, 6.16MB read
+Requests/sec:   3444.76
+Transfer/sec:    628.35KB
+--- concurrency=512
+Running 10s test @ http://127.0.0.1:18090/db
+  2 threads and 512 connections
+  Thread Stats   Avg      Stdev     Max   +/- Stdev
+    Latency   144.57ms   70.94ms 345.08ms   84.58%
+    Req/Sec     1.79k   830.68     2.79k    76.50%
+  Latency Distribution
+     50%  108.47ms
+     75%  165.56ms
+     90%  301.59ms
+     99%  331.55ms
+  35713 requests in 10.05s, 6.36MB read
+Requests/sec:   3554.19
+Transfer/sec:    648.32KB
+
+################ [bun] queries ################
+--- primer
+--- warmup
+--- queries=1 (c=512)
+Running 10s test @ http://127.0.0.1:18090/queries?q=1
+  2 threads and 512 connections
+  Thread Stats   Avg      Stdev     Max   +/- Stdev
+    Latency   138.72ms   64.64ms 366.05ms   87.20%
+    Req/Sec     1.88k   753.50     2.60k    79.00%
+  Latency Distribution
+     50%  111.45ms
+     75%  120.53ms
+     90%  223.34ms
+     99%  345.66ms
+  37519 requests in 10.04s, 6.75MB read
+Requests/sec:   3737.95
+Transfer/sec:    689.13KB
+--- queries=5 (c=512)
+Running 10s test @ http://127.0.0.1:18090/queries?q=5
+  2 threads and 512 connections
+  Thread Stats   Avg      Stdev     Max   +/- Stdev
+    Latency   478.18ms  199.23ms 998.08ms   79.63%
+    Req/Sec   764.64    718.09     2.56k    65.18%
+  Latency Distribution
+     50%  348.43ms
+     75%  605.19ms
+     90%  845.83ms
+     99%  959.31ms
+  10464 requests in 10.06s, 3.16MB read
+Requests/sec:   1039.85
+Transfer/sec:    321.85KB
+--- queries=10 (c=512)
+Running 10s test @ http://127.0.0.1:18090/queries?q=10
+  2 threads and 512 connections
+  Thread Stats   Avg      Stdev     Max   +/- Stdev
+    Latency     1.09s   278.51ms   1.49s    61.33%
+    Req/Sec   613.68    653.90     2.39k    86.36%
+  Latency Distribution
+     50%    1.16s 
+     75%    1.34s 
+     90%    1.47s 
+     99%    1.48s 
+  4608 requests in 10.07s, 2.09MB read
+Requests/sec:    457.50
+Transfer/sec:    212.61KB
+--- queries=20 (c=512)
+Running 10s test @ http://127.0.0.1:18090/queries?q=20
+  2 threads and 512 connections
+  Thread Stats   Avg      Stdev     Max   +/- Stdev
+    Latency     1.87s   432.42ms   2.39s    60.00%
+    Req/Sec   730.70      0.92k    2.45k    75.00%
+  Latency Distribution
+     50%    1.83s 
+     75%    2.29s 
+     90%    2.38s 
+     99%    2.39s 
+  2560 requests in 10.09s, 1.94MB read
+Requests/sec:    253.79
+Transfer/sec:    196.74KB
+
+################ [bun] fortunes ################
+--- primer
+--- warmup
+--- concurrency=16
+Running 10s test @ http://127.0.0.1:18090/fortunes
+  2 threads and 16 connections
+  Thread Stats   Avg      Stdev     Max   +/- Stdev
+    Latency     3.86ms    1.90ms  20.13ms   91.25%
+    Req/Sec     2.18k   561.78     2.52k    86.00%
+  Latency Distribution
+     50%    3.26ms
+     75%    3.98ms
+     90%    5.34ms
+     99%   12.29ms
+  43421 requests in 10.01s, 57.89MB read
+Requests/sec:   4339.45
+Transfer/sec:      5.79MB
+--- concurrency=64
+Running 10s test @ http://127.0.0.1:18090/fortunes
+  2 threads and 64 connections
+  Thread Stats   Avg      Stdev     Max   +/- Stdev
+    Latency    16.86ms    8.70ms  69.21ms   87.88%
+    Req/Sec     2.01k   645.47     2.49k    80.00%
+  Latency Distribution
+     50%   13.60ms
+     75%   15.13ms
+     90%   28.12ms
+     99%   49.67ms
+  40093 requests in 10.01s, 53.45MB read
+Requests/sec:   4006.30
+Transfer/sec:      5.34MB
+--- concurrency=256
+Running 10s test @ http://127.0.0.1:18090/fortunes
+  2 threads and 256 connections
+  Thread Stats   Avg      Stdev     Max   +/- Stdev
+    Latency    73.10ms   35.61ms 260.71ms   86.65%
+    Req/Sec     1.84k   667.16     2.59k    64.82%
+  Latency Distribution
+     50%   60.53ms
+     75%   62.84ms
+     90%  120.41ms
+     99%  200.20ms
+  36608 requests in 10.02s, 48.81MB read
+Requests/sec:   3652.48
+Transfer/sec:      4.87MB
+--- concurrency=512
+Running 10s test @ http://127.0.0.1:18090/fortunes
+  2 threads and 512 connections
+  Thread Stats   Avg      Stdev     Max   +/- Stdev
+    Latency   144.16ms   64.46ms 378.63ms   86.03%
+    Req/Sec     1.86k   713.65     2.59k    75.52%
+  Latency Distribution
+     50%  118.43ms
+     75%  123.64ms
+     90%  222.75ms
+     99%  361.98ms
+  35953 requests in 10.05s, 47.93MB read
+Requests/sec:   3579.04
+Transfer/sec:      4.77MB
+
+################ [bun] updates ################
+--- primer
+--- warmup
+--- queries=1 (c=512)
+Running 10s test @ http://127.0.0.1:18090/updates?q=1
+  2 threads and 512 connections
+  Thread Stats   Avg      Stdev     Max   +/- Stdev
+    Latency   224.49ms  111.47ms 588.84ms   83.39%
+    Req/Sec     1.20k   716.10     2.59k    61.38%
+  Latency Distribution
+     50%  168.98ms
+     75%  239.68ms
+     90%  421.47ms
+     99%  572.37ms
+  23040 requests in 10.05s, 4.15MB read
+Requests/sec:   2293.08
+Transfer/sec:    422.74KB
+--- queries=5 (c=512)
+Running 10s test @ http://127.0.0.1:18090/updates?q=5
+  2 threads and 512 connections
+  Thread Stats   Avg      Stdev     Max   +/- Stdev
+    Latency   898.21ms  242.74ms   1.20s    30.59%
+    Req/Sec   688.69    741.24     2.58k    80.00%
+  Latency Distribution
+     50%  855.65ms
+     75%    1.17s 
+     90%    1.18s 
+     99%    1.20s 
+  5580 requests in 10.08s, 1.69MB read
+Requests/sec:    553.53
+Transfer/sec:    171.31KB
+--- queries=10 (c=512)
+Running 10s test @ http://127.0.0.1:18090/updates?q=10
+  2 threads and 512 connections
+  Thread Stats   Avg      Stdev     Max   +/- Stdev
+    Latency     1.83s   356.74ms   2.27s    69.65%
+    Req/Sec   564.38    591.47     2.54k    89.66%
+  Latency Distribution
+     50%    1.91s 
+     75%    2.10s 
+     90%    2.19s 
+     99%    2.25s 
+  2560 requests in 10.06s, 1.16MB read
+Requests/sec:    254.51
+Transfer/sec:    118.25KB
+--- queries=20 (c=512)
+Running 10s test @ http://127.0.0.1:18090/updates?q=20
+  2 threads and 512 connections
+  Thread Stats   Avg      Stdev     Max   +/- Stdev
+    Latency     3.58s   601.07ms   4.24s    52.83%
+    Req/Sec   448.78    346.96     0.91k    50.00%
+  Latency Distribution
+     50%    4.11s 
+     75%    4.17s 
+     90%    4.19s 
+     99%    4.21s 
+  1024 requests in 10.06s, 793.51KB read
+Requests/sec:    101.76
+Transfer/sec:     78.86KB
+
+[bun] done -> results/bun/summary.csv
+impl,test,level,rps,latency_avg_ms,latency_p99_ms,requests,errors,non2xx,transfer_mb_s
+bun,plaintext,256,18363.05,121.520,231.700,184138,0,0,2.850
+bun,plaintext,1024,17013.11,515.590,1080.000,171022,0,0,2.640
+bun,plaintext,4096,15944.21,2030.000,4140.000,160768,0,0,2.480
+bun,json,16,15624.35,1.030,2.180,157825,0,0,2.730
+bun,json,64,15625.53,4.090,5.550,156288,0,0,2.730
+bun,json,256,15669.27,16.290,19.690,156956,0,0,2.730
+bun,json,512,15402.18,33.060,39.080,154566,0,0,2.690
+bun,db,16,3891.38,4.380,13.700,38971,0,0,0.693
+bun,db,64,3636.05,18.330,47.500,36494,0,0,0.648
+bun,db,256,3444.76,76.860,187.430,34563,0,0,0.614
+bun,db,512,3554.19,144.570,331.550,35713,0,0,0.633
+bun,queries,1,3737.95,138.720,345.660,37519,0,0,0.673
+bun,queries,5,1039.85,478.180,959.310,10464,0,0,0.314
+bun,queries,10,457.50,1090.000,1480.000,4608,0,0,0.208
+bun,queries,20,253.79,1870.000,2390.000,2560,0,0,0.192
+bun,fortunes,16,4339.45,3.860,12.290,43421,0,0,5.790
+bun,fortunes,64,4006.30,16.860,49.670,40093,0,0,5.340
+bun,fortunes,256,3652.48,73.100,200.200,36608,0,0,4.870
+bun,fortunes,512,3579.04,144.160,361.980,35953,0,0,4.770
+bun,updates,1,2293.08,224.490,572.370,23040,0,0,0.413
+bun,updates,5,553.53,898.210,1200.000,5580,0,0,0.167
+bun,updates,10,254.51,1830.000,2250.000,2560,0,0,0.115
+bun,updates,20,101.76,3580.000,4210.000,1024,0,0,0.077
+################ bun exit=0 2026-11-22T15:12:02-03:00 ################

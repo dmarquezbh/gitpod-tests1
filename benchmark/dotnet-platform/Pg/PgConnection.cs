@@ -18,6 +18,7 @@ namespace DotnetBench.Platform.Pg;
 public sealed class PgConnection : IThreadPoolWorkItem
 {
     public const string WorldStatement = "w";
+    public const string WorldsAnyStatement = "wa";
     public const string FortunesStatement = "f";
     public const string UpdateStatement = "u";
 
@@ -69,7 +70,7 @@ public sealed class PgConnection : IThreadPoolWorkItem
 
     public ValueTask<World> QueryWorld(int id)
     {
-        var op = SingleWorldOp.Rent();
+        var op = SingleWorldOp.Rent(id);
         lock (_writeLock)
         {
             _pending.Enqueue(op);
@@ -92,6 +93,21 @@ public sealed class PgConnection : IThreadPoolWorkItem
             FlushLocked();
         }
         return new ValueTask<World[]>(op, op.Version);
+    }
+
+    /// <summary>One SELECT with an int4[] parameter: all rows of the request in one Bind/Execute.
+    /// Rows come back deduplicated and unordered; the caller maps them to the requested ids.</summary>
+    public ValueTask<WorldRows> QueryWorldsAny(ReadOnlySpan<int> ids)
+    {
+        var op = new WorldsAnyOp(ids.Length);
+        lock (_writeLock)
+        {
+            _pending.Enqueue(op);
+            WriteBindWorldsAny(ids);
+            WriteSync();
+            FlushLocked();
+        }
+        return new ValueTask<WorldRows>(op, op.Version);
     }
 
     public ValueTask UpdateWorlds(int[] ids, int[] numbers)
@@ -142,6 +158,36 @@ public sealed class PgConnection : IThreadPoolWorkItem
         BinaryPrimitives.WriteInt16BigEndian(s[22..], 1); BinaryPrimitives.WriteInt16BigEndian(s[24..], 1);   // result formats: binary
         WriteExecute(s[26..]);
         _writeLength += 26 + 10;
+    }
+
+    void WriteBindWorldsAny(ReadOnlySpan<int> ids)
+    {
+        var arrayLen = 20 + ids.Length * 8;
+        var bindLen = 4 + 1 + 3 + 2 + 2 + 2 + (4 + arrayLen) + 2 + 2;
+        Ensure(1 + bindLen + 10);
+        var s = _writeBuffer.AsSpan(_writeLength);
+        s[0] = (byte)'B'; BinaryPrimitives.WriteInt32BigEndian(s[1..], bindLen);
+        s[5] = 0;                                   // portal ""
+        s[6] = (byte)'w'; s[7] = (byte)'a'; s[8] = 0; // statement "wa"
+        BinaryPrimitives.WriteInt16BigEndian(s[9..], 1); BinaryPrimitives.WriteInt16BigEndian(s[11..], 1);   // param formats: binary
+        BinaryPrimitives.WriteInt16BigEndian(s[13..], 1);                                                     // 1 param
+        BinaryPrimitives.WriteInt32BigEndian(s[15..], arrayLen);
+        var p = 19;
+        BinaryPrimitives.WriteInt32BigEndian(s[p..], 1);            // ndim
+        BinaryPrimitives.WriteInt32BigEndian(s[(p + 4)..], 0);      // no nulls
+        BinaryPrimitives.WriteInt32BigEndian(s[(p + 8)..], Int4Oid);
+        BinaryPrimitives.WriteInt32BigEndian(s[(p + 12)..], ids.Length);
+        BinaryPrimitives.WriteInt32BigEndian(s[(p + 16)..], 1);     // lower bound
+        p += 20;
+        foreach (var id in ids)
+        {
+            BinaryPrimitives.WriteInt32BigEndian(s[p..], 4);
+            BinaryPrimitives.WriteInt32BigEndian(s[(p + 4)..], id);
+            p += 8;
+        }
+        BinaryPrimitives.WriteInt16BigEndian(s[p..], 1); p += 2; BinaryPrimitives.WriteInt16BigEndian(s[p..], 1); p += 2;
+        WriteExecute(s[p..]);
+        _writeLength += p + 10;
     }
 
     void WriteBindNoParams(string statement)
@@ -433,7 +479,8 @@ public sealed class PgConnection : IThreadPoolWorkItem
     async Task PrepareAsync()
     {
         var buffer = new List<byte>();
-        AppendParse(buffer, WorldStatement, "SELECT id, randomnumber FROM world WHERE id = $1", [Int4Oid]);
+        AppendParse(buffer, WorldStatement, "SELECT randomnumber FROM world WHERE id = $1", [Int4Oid]);
+        AppendParse(buffer, WorldsAnyStatement, "SELECT w.id, w.randomnumber FROM unnest($1::int[]) WITH ORDINALITY AS u(id, ord) JOIN world w ON w.id = u.id ORDER BY u.ord", [Int4ArrayOid]);
         AppendParse(buffer, FortunesStatement, "SELECT id, message FROM fortune", []);
         AppendParse(buffer, UpdateStatement,
             "UPDATE world SET randomnumber = new.rnum FROM (SELECT * FROM UNNEST($1::int[], $2::int[]) AS v(id, rnum) ORDER BY 1) AS new WHERE world.id = new.id",

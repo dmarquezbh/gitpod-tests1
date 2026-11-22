@@ -13,4 +13,5 @@ export POSTGRES_DATA_SOURCES="${POSTGRES_DATA_SOURCES:-1}"  # round 3: 4 data so
 DURATION="${DURATION:-10}"
 ( cd dotnet && dotnet publish -c Release -o out )
 rm -rf results/dotnet
-tools/run-suite.sh --name dotnet --port 8080 --tests "plaintext json db queries fortunes updates" --duration "$DURATION" --out results/dotnet -- dotnet dotnet/out/DotnetBench.dll
+export PORT=18080
+tools/run-suite.sh --name dotnet --port 18080 --tests "plaintext json db queries fortunes updates" --duration "$DURATION" --out results/dotnet -- dotnet dotnet/out/DotnetBench.dll

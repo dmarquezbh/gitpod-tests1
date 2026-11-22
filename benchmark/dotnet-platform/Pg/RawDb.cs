@@ -53,29 +53,27 @@ public sealed class RawDb : IDb
 
     public ValueTask<World> LoadSingleWorld() => Connection.QueryWorld(RandomId());
 
-    public ValueTask<World[]> LoadMultipleWorlds(int count) => LoadMultipleWorlds(count, count > 1 ? HeavyConnection : Connection);
-
-    static ValueTask<World[]> LoadMultipleWorlds(int count, PgConnection connection)
+    public async ValueTask<World[]> LoadMultipleWorlds(int count)
     {
+        if (count == 1) return [await Connection.QueryWorld(RandomId())];
         Span<int> ids = count <= 512 ? stackalloc int[count] : new int[count];
         for (var i = 0; i < count; i++) ids[i] = RandomId();
-        return connection.QueryWorlds(ids);
+        var rows = await (count > 1 ? HeavyConnection : Connection).QueryWorldsAny(ids);
+        return rows.Rows;
     }
 
     public async ValueTask<World[]> UpdateWorlds(int count)
     {
-        var connection = HeavyConnection;
-        var worlds = await LoadMultipleWorlds(count, connection);
         var ids = new int[count];
         var numbers = new int[count];
+        var worlds = new World[count];
         for (var i = 0; i < count; i++)
         {
-            var w = worlds[i] with { RandomNumber = RandomId() };
-            worlds[i] = w;
-            ids[i] = w.Id;
-            numbers[i] = w.RandomNumber;
+            ids[i] = RandomId();
+            numbers[i] = RandomId();
+            worlds[i] = new World(ids[i], numbers[i]);
         }
-        await connection.UpdateWorlds(ids, numbers);
+        await HeavyConnection.UpdateWorlds(ids, numbers);
         return worlds;
     }
 

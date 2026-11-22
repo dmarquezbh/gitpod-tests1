@@ -48,6 +48,7 @@ public sealed unsafe class EventLoop
     int _heavyRotation;
     readonly List<PgLoopConnection> _dirty = new();
     readonly Stack<LoopOp> _opPool = new();
+    readonly List<LoopOp> _singleBatch = new();
     public readonly Random Random = new();
 
     public EventLoop(int index, int port, int heavyConnections, bool pgNoDelay)
@@ -95,6 +96,33 @@ public sealed unsafe class EventLoop
     public LoopOp RentOp() => _opPool.Count > 0 ? _opPool.Pop() : new LoopOp();
     public void ReturnOp(LoopOp op) { op.Reset(); if (_opPool.Count < 4096) _opPool.Push(op); }
 
+    /// <summary>Single-row /db requests wait for the end of the current epoll batch, then go to
+    /// PostgreSQL as one SELECT over an int4[] (one Bind/Execute for the whole batch).</summary>
+    public void EnqueueSingle(LoopOp op) => _singleBatch.Add(op);
+
+    void FlushSingleBatch()
+    {
+        if (_singleBatch.Count == 0) return;
+        if (_singleBatch.Count == 1)
+        {
+            // one request: the scalar Bind has less protocol overhead than an array of one
+            var only = _singleBatch[0];
+            _singleBatch.Clear();
+            _primary.Enqueue(only);
+            _primary.Write.WriteBindWorld(only.SingleId);
+        }
+        else
+        {
+            var op = new SingleBatchOp(_singleBatch);
+            _singleBatch.Clear();
+            _primary.Enqueue(op);
+            _primary.Write.WriteBindWorldsAny(op.Ids);
+        }
+        _primary.Write.WriteSync();
+        MarkDirty(_primary);
+    }
+
+
     public void Run()
     {
         var events = stackalloc EpollEvent[512];
@@ -117,6 +145,7 @@ public sealed unsafe class EventLoop
                 if ((flags & EPOLLIN) != 0) socket.OnReadable();
                 if ((flags & EPOLLOUT) != 0 && _byFd[fd] == socket) socket.OnWritable();
             }
+            FlushSingleBatch();
             if (_dirty.Count > 0)
             {
                 foreach (var pg in _dirty) { pg.Dirty = false; pg.Flush(); }
@@ -269,19 +298,21 @@ public sealed unsafe class HttpConn(EventLoop loop, int fd) : LoopSocket(fd)
 }
 
 /// <summary>A pending database operation owned by one HTTP connection; completed by the PostgreSQL read path.</summary>
-public sealed class LoopOp
+public sealed class LoopOp : PendingOp
 {
     public HttpConn Conn = null!;
     public HttpApplication.Route Route;
     public int Count;
     public World Single;
+    public int SingleId => _singleId;
     public World[]? Worlds;
     public List<Fortune>? Fortunes;
-    int _index, _stage;
+    int _index, _stage, _singleId;
+    int[]? _ids, _numbers;
     PgLoopConnection _pg = null!;
     EventLoop _loop = null!;
 
-    public void Reset() { Conn = null!; Worlds = null; Fortunes = null; _index = 0; _stage = 0; _pg = null!; _loop = null!; }
+    public void Reset() { Conn = null!; Worlds = null; Fortunes = null; _index = 0; _stage = 0; _singleId = 0; _ids = null; _numbers = null; _pg = null!; _loop = null!; }
 
     public void Start(HttpConn conn, HttpApplication.Route route, int count, EventLoop loop)
     {
@@ -290,10 +321,9 @@ public sealed class LoopOp
         switch (route)
         {
             case HttpApplication.Route.Db:
-                _pg = loop.PrimaryPg;
-                _pg.Enqueue(this);
-                _pg.Write.WriteBindWorld(rng.Next(1, 10_001));
-                break;
+                _singleId = rng.Next(1, 10_001);
+                loop.EnqueueSingle(this);
+                return;                                  // flushed once per epoll batch
             case HttpApplication.Route.Fortunes:
                 Fortunes = new List<Fortune>(16) { new(0, "Additional fortune added at request time.") };
                 _pg = loop.PrimaryPg;
@@ -301,26 +331,41 @@ public sealed class LoopOp
                 _pg.Write.WriteBindNoParams(PgProtocol.FortunesStatement);
                 break;
             case HttpApplication.Route.Queries:
+                Worlds = new World[count];
+                _ids = new int[count];
+                for (var i = 0; i < count; i++) _ids[i] = rng.Next(1, 10_001);
+                if (count == 1) { _singleId = _ids[0]; loop.EnqueueSingle(this); return; }   // batched with /db at end of the epoll round
+                _pg = loop.HeavyPg;
+                _pg.Enqueue(this);
+                _pg.Write.WriteBindWorldsAny(_ids);
+                break;
             case HttpApplication.Route.Updates:
                 Worlds = new World[count];
-                _pg = count > 1 || route == HttpApplication.Route.Updates ? loop.HeavyPg : loop.PrimaryPg;
+                _ids = new int[count];
+                _numbers = new int[count];
+                for (var i = 0; i < count; i++)
+                {
+                    _ids[i] = rng.Next(1, 10_001);
+                    _numbers[i] = rng.Next(1, 10_001);
+                    Worlds[i] = new World(_ids[i], _numbers[i]);
+                }
+                _pg = loop.HeavyPg;
                 _pg.Enqueue(this);
-                for (var i = 0; i < count; i++) _pg.Write.WriteBindWorld(rng.Next(1, 10_001));
+                _pg.Write.WriteBindUpdate(_ids, _numbers);
                 break;
         }
         _pg.Write.WriteSync();
         loop.MarkDirty(_pg);
     }
 
-    public void OnDataRow(ReadOnlySpan<byte> row)
+    public override void OnDataRow(ReadOnlySpan<byte> row)
     {
         var offset = 2;
         switch (Route)
         {
             case HttpApplication.Route.Db:
             {
-                var id = PgProtocol.ReadInt4Column(row, ref offset);
-                Single = new World(id, PgProtocol.ReadInt4Column(row, ref offset));
+                Single = new World(_singleId, PgProtocol.ReadInt4Column(row, ref offset));
                 break;
             }
             case HttpApplication.Route.Fortunes:
@@ -330,7 +375,11 @@ public sealed class LoopOp
                 break;
             }
             default:
-                if (_stage == 0 && _index < Worlds!.Length)
+                if (Route == HttpApplication.Route.Queries && Worlds!.Length == 1)
+                {
+                    Worlds[0] = new World(_ids![0], PgProtocol.ReadInt4Column(row, ref offset));
+                }
+                else if (_index < Worlds!.Length)
                 {
                     var id = PgProtocol.ReadInt4Column(row, ref offset);
                     Worlds[_index++] = new World(id, PgProtocol.ReadInt4Column(row, ref offset));
@@ -340,37 +389,20 @@ public sealed class LoopOp
     }
 
     /// <summary>ReadyForQuery for this operation arrived.</summary>
-    public void Complete()
+    public override void Complete()
     {
         switch (Route)
         {
             case HttpApplication.Route.Fortunes:
                 Fortunes!.Sort(static (a, b) => string.CompareOrdinal(a.Message, b.Message));
                 break;
-            case HttpApplication.Route.Updates when _stage == 0:
-            {
-                // stage 2: one UPDATE with the new numbers, pipelined on the same connection
-                _stage = 1;
-                var worlds = Worlds!;
-                var ids = new int[worlds.Length];
-                var numbers = new int[worlds.Length];
-                var rng = _loop.Random;
-                for (var i = 0; i < worlds.Length; i++)
-                {
-                    var w = worlds[i] with { RandomNumber = rng.Next(1, 10_001) };
-                    worlds[i] = w; ids[i] = w.Id; numbers[i] = w.RandomNumber;
-                }
-                _pg.Enqueue(this);
-                _pg.Write.WriteBindUpdate(ids, numbers);
-                _pg.Write.WriteSync();
-                _loop.MarkDirty(_pg);
-                return;                                   // not finished yet
-            }
         }
         var conn = Conn; var loop = _loop;
         conn.OnDbComplete(this);
         loop.ReturnOp(this);
     }
+
+    public override void Fail(Exception e) => Fail(e.Message);
 
     public void Fail(string message)
     {
@@ -390,7 +422,7 @@ public sealed unsafe class PgLoopConnection : LoopSocket
     int _writeSent;
     bool _wantWrite;
     public bool Dirty;
-    readonly Queue<LoopOp> _pending = new();
+    readonly Queue<PendingOp> _pending = new();
     byte[] _read = new byte[64 * 1024];
     int _readLen;
     public readonly bool Heavy;
@@ -442,7 +474,7 @@ public sealed unsafe class PgLoopConnection : LoopSocket
         return socket;
     }
 
-    public void Enqueue(LoopOp op) => _pending.Enqueue(op);
+    public void Enqueue(PendingOp op) => _pending.Enqueue(op);
 
     /// <summary>Send everything queued since the last flush (one write per epoll batch).</summary>
     public void Flush()
@@ -502,7 +534,7 @@ public sealed unsafe class PgLoopConnection : LoopSocket
                     if (_pending.TryDequeue(out var done)) done.Complete();
                     break;
                 case (byte)'E':
-                    if (_pending.TryDequeue(out var failed)) failed.Fail("PostgreSQL error: " + PgProtocol.ParseError(body));
+                    if (_pending.TryDequeue(out var failed)) failed.Fail(new InvalidOperationException("PostgreSQL error: " + PgProtocol.ParseError(body)));
                     break;
             }
         }
@@ -515,3 +547,47 @@ public sealed unsafe class PgLoopConnection : LoopSocket
 
     public override void OnError() => throw new IOException("PostgreSQL connection error (EPOLLERR/EPOLLHUP)");
 }
+
+/// <summary>One SELECT over the int4[] of every /db request seen in an epoll batch; rows come back in
+/// request order (ORDER BY ordinality) and are handed to the waiting operations.</summary>
+public sealed class SingleBatchOp : PendingOp
+{
+    public readonly int[] Ids;
+    readonly LoopOp[] _ops;
+    int _rows;
+
+    public SingleBatchOp(List<LoopOp> ops)
+    {
+        _ops = ops.ToArray();
+        Ids = new int[_ops.Length];
+        for (var i = 0; i < _ops.Length; i++) Ids[i] = _ops[i].SingleId;
+    }
+
+    public override void OnDataRow(ReadOnlySpan<byte> row)
+    {
+        var offset = 2;
+        var id = PgProtocol.ReadInt4Column(row, ref offset);
+        var number = PgProtocol.ReadInt4Column(row, ref offset);
+        if (_rows < _ops.Length)
+        {
+            var op = _ops[_rows++];
+            if (op.Route == HttpApplication.Route.Queries && op.Worlds!.Length == 1) op.Worlds[0] = new World(id, number);
+            else op.Single = new World(id, number);
+        }
+    }
+
+    public override void Complete()
+    {
+        for (var i = 0; i < _ops.Length; i++)
+        {
+            if (i < _rows) _ops[i].Complete();
+            else _ops[i].Fail("missing row in batched /db");
+        }
+    }
+
+    public override void Fail(Exception e)
+    {
+        for (var i = 0; i < _ops.Length; i++) _ops[i].Fail(e.Message);
+    }
+}
+

@@ -14,9 +14,9 @@ export DOTNET_TieredPGO=1
 export HTTP_TRANSPORT="${HTTP_TRANSPORT:-epoll}"                    # epoll (own event loops, libc) | raw | kestrel-sockets
 export POSTGRES_HEAVY_PER_LOOP="${POSTGRES_HEAVY_PER_LOOP:-2}"      # epoll: PostgreSQL connections per loop reserved for multi-row/updates (plus 1 primary)
 export DB_DRIVER="${DB_DRIVER:-raw}"                                # raw | npgsql
-export POSTGRES_RAW_CONNECTIONS="${POSTGRES_RAW_CONNECTIONS:-2}"    # raw driver: primary connections (one per IO thread)
+export POSTGRES_RAW_CONNECTIONS="${POSTGRES_RAW_CONNECTIONS:-32}"    # raw driver: primary connections (one per IO thread)
 export POSTGRES_RAW_HEAVY_CONNECTIONS="${POSTGRES_RAW_HEAVY_CONNECTIONS:-4}"  # raw driver: connections reserved for multi-row queries and updates
-export PG_NODELAY="${PG_NODELAY:-0}"                                # raw driver: 0 = leave Nagle on
+export PG_NODELAY="${PG_NODELAY:-1}"                                # raw driver: 0 = leave Nagle on
 export POSTGRES_MAX_POOL_SIZE="${POSTGRES_MAX_POOL_SIZE:-2}"        # npgsql driver: pool per data source
 export POSTGRES_DATA_SOURCES="${POSTGRES_DATA_SOURCES:-4}"          # npgsql driver: independent data sources
 export DOTNET_gcServer="${DOTNET_gcServer:-0}"

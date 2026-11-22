@@ -7,8 +7,8 @@
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <LangVersion>latest</LangVersion>
 
-    <!-- .NET 11 Runtime Async was measured on this app: no gain on Kestrel (within noise), so it stays off here. -->
-    <UseRuntimeAsync>false</UseRuntimeAsync>
+    <!-- .NET 11 Runtime Async: async methods lowered by the JIT instead of compiler state machines. -->
+    <UseRuntimeAsync>true</UseRuntimeAsync>
 
     <!-- Runtime knobs for throughput -->
     <ServerGarbageCollection>true</ServerGarbageCollection>

@@ -286,9 +286,9 @@ fn main() {
     println!("Starting http server: 0.0.0.1:8080");
     let server = HttpServer {
         db_pool: PgConnectionPool::new(
-            "postgres://benchmarkdbuser:benchmarkdbpass@tfb-database/hello_world",
+            "postgres://benchmarkdbuser:benchmarkdbpass@127.0.0.1/hello_world",
             num_cpus::get(),
         ),
     };
-    server.start("0.0.0.0:8080").unwrap().join().unwrap();
+    server.start("0.0.0.0:18084").unwrap().join().unwrap();
 }

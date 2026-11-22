@@ -1,0 +1,9 @@
+{
+  "name": "tfb-js-bench",
+  "private": true,
+  "version": "1.0.0",
+  "dependencies": {
+    "pg": "^8.16.0"
+  },
+  "type": "commonjs"
+}

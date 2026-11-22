@@ -52,10 +52,12 @@ public sealed class SingleWorldOp : PendingOp<World>
     // so a per-thread free list is safe: whoever takes the result puts it back on its own thread's list.
     [ThreadStatic] static Stack<SingleWorldOp>? t_pool;
 
-    public static SingleWorldOp Rent()
+    public static SingleWorldOp Rent(int id)
     {
         var pool = t_pool;
-        return pool is { Count: > 0 } ? pool.Pop() : new SingleWorldOp();
+        var op = pool is { Count: > 0 } ? pool.Pop() : new SingleWorldOp();
+        op._id = id;
+        return op;
     }
 
     protected override void Released()
@@ -65,14 +67,14 @@ public sealed class SingleWorldOp : PendingOp<World>
         if (pool.Count < 1024) pool.Push(this);
     }
 
+    int _id;
     World _world;
     protected override World Result => _world;
     public override void OnDataRow(ReadOnlySpan<byte> row)
     {
         var offset = 2;   // column count
-        var id = ReadInt4Column(row, ref offset);
         var number = ReadInt4Column(row, ref offset);
-        _world = new World(id, number);
+        _world = new World(_id, number);
     }
 }
 
@@ -87,6 +89,28 @@ public sealed class WorldsOp(int count) : PendingOp<World[]>
         var id = ReadInt4Column(row, ref offset);
         var number = ReadInt4Column(row, ref offset);
         if (_index < _worlds.Length) _worlds[_index++] = new World(id, number);
+    }
+}
+
+/// <summary>Result of QueryWorldsAny: deduplicated, unordered rows plus their count.</summary>
+public readonly struct WorldRows(World[] rows, int count)
+{
+    public readonly World[] Rows = rows;
+    public readonly int Count = count;
+}
+
+/// <summary>One Bind/Execute returning every requested row once (WHERE id = ANY($1)).</summary>
+public sealed class WorldsAnyOp(int max) : PendingOp<WorldRows>
+{
+    readonly World[] _rows = new World[max];
+    int _count;
+    protected override WorldRows Result => new(_rows, _count);
+    public override void OnDataRow(ReadOnlySpan<byte> row)
+    {
+        var offset = 2;
+        var id = ReadInt4Column(row, ref offset);
+        var number = ReadInt4Column(row, ref offset);
+        if (_count < _rows.Length) _rows[_count++] = new World(id, number);
     }
 }
 

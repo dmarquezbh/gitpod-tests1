@@ -44,7 +44,9 @@ public sealed class Db : IDb
         }
     }
 
-    const string SelectWorldById = "SELECT id, randomnumber FROM world WHERE id = $1 LIMIT 1";
+    const string SelectWorldById = "SELECT randomnumber FROM world WHERE id = $1 LIMIT 1";
+    const string SelectWorldsAny =
+        "SELECT w.id, w.randomnumber FROM unnest($1::int[]) WITH ORDINALITY AS u(id, ord) JOIN world w ON w.id = u.id ORDER BY u.ord";
     const string SelectAllFortunes = "SELECT id, message FROM fortune";
     const string UpdateWorldsSql =
         "UPDATE world SET randomnumber = new.rnum FROM (SELECT * FROM UNNEST($1::int[], $2::int[]) AS v(id, rnum) ORDER BY 1) AS new WHERE world.id = new.id";
@@ -58,48 +60,40 @@ public sealed class Db : IDb
 
     public async Task<World> LoadSingleWorld()
     {
+        var id = RandomId();
         await using var cmd = dataSource.CreateCommand(SelectWorldById);
-        cmd.Parameters.Add(new NpgsqlParameter<int> { TypedValue = RandomId() });
+        cmd.Parameters.Add(new NpgsqlParameter<int> { TypedValue = id });
         await using var reader = await cmd.ExecuteReaderAsync(CommandBehavior.SingleRow);
         await reader.ReadAsync();
-        return new World(reader.GetInt32(0), reader.GetInt32(1));
+        return new World(id, reader.GetInt32(0));
     }
 
-    /// <summary>N separate SELECT statements sent as one pipelined batch (one round trip).</summary>
+    /// <summary>One SELECT over the whole id array (unnest with ordinality keeps request order).</summary>
     public async Task<World[]> LoadMultipleWorlds(int count)
     {
+        if (count == 1) return [await LoadSingleWorld()];
+        var ids = new int[count];
+        for (var i = 0; i < count; i++) ids[i] = RandomId();
         var worlds = new World[count];
-        await using var batch = dataSource.CreateBatch();
-        var cmds = batch.BatchCommands;
-        for (var i = 0; i < count; i++)
-        {
-            var bc = new NpgsqlBatchCommand(SelectWorldById);
-            bc.Parameters.Add(new NpgsqlParameter<int> { TypedValue = RandomId() });
-            cmds.Add(bc);
-        }
-
-        await using var reader = await batch.ExecuteReaderAsync();
-        for (var i = 0; i < count; i++)
-        {
-            await reader.ReadAsync();
-            worlds[i] = new World(reader.GetInt32(0), reader.GetInt32(1));
-            await reader.NextResultAsync();
-        }
+        await using var cmd = dataSource.CreateCommand(SelectWorldsAny);
+        cmd.Parameters.Add(new NpgsqlParameter<int[]> { TypedValue = ids });
+        await using var reader = await cmd.ExecuteReaderAsync();
+        var index = 0;
+        while (await reader.ReadAsync() && index < count)
+            worlds[index++] = new World(reader.GetInt32(0), reader.GetInt32(1));
         return worlds;
     }
 
     public async Task<World[]> UpdateWorlds(int count)
     {
-        var worlds = await LoadMultipleWorlds(count);
-
         var ids = new int[count];
         var numbers = new int[count];
+        var worlds = new World[count];
         for (var i = 0; i < count; i++)
         {
-            var w = worlds[i] with { RandomNumber = RandomId() };
-            worlds[i] = w;
-            ids[i] = w.Id;
-            numbers[i] = w.RandomNumber;
+            ids[i] = RandomId();
+            numbers[i] = RandomId();
+            worlds[i] = new World(ids[i], numbers[i]);
         }
 
         await using var cmd = dataSource.CreateCommand(UpdateWorldsSql);

@@ -11,6 +11,7 @@ public static class PgProtocol
     public const int Int4ArrayOid = 1007;
 
     public const string WorldStatement = "w";
+    public const string WorldsAnyStatement = "wa";
     public const string FortunesStatement = "f";
     public const string UpdateStatement = "u";
 
@@ -55,7 +56,8 @@ public static class PgProtocol
     public static byte[] PrepareBatch()
     {
         var buffer = new List<byte>();
-        AppendParse(buffer, WorldStatement, "SELECT id, randomnumber FROM world WHERE id = $1", [Int4Oid]);
+        AppendParse(buffer, WorldStatement, "SELECT randomnumber FROM world WHERE id = $1", [Int4Oid]);
+        AppendParse(buffer, WorldsAnyStatement, "SELECT w.id, w.randomnumber FROM unnest($1::int[]) WITH ORDINALITY AS u(id, ord) JOIN world w ON w.id = u.id ORDER BY u.ord", [Int4ArrayOid]);
         AppendParse(buffer, FortunesStatement, "SELECT id, message FROM fortune", []);
         AppendParse(buffer, UpdateStatement,
             "UPDATE world SET randomnumber = new.rnum FROM (SELECT * FROM UNNEST($1::int[], $2::int[]) AS v(id, rnum) ORDER BY 1) AS new WHERE world.id = new.id",
@@ -203,6 +205,36 @@ public sealed class PgWriteBuffer
         BinaryPrimitives.WriteInt16BigEndian(s[22..], 1); BinaryPrimitives.WriteInt16BigEndian(s[24..], 1);
         WriteExecute(s[26..]);
         Length += 26 + 10;
+    }
+
+    public void WriteBindWorldsAny(int[] ids)
+    {
+        var arrayLen = 20 + ids.Length * 8;
+        var bindLen = 4 + 1 + 3 + 2 + 2 + 2 + (4 + arrayLen) + 2 + 2;
+        Ensure(1 + bindLen + 10);
+        var s = Buffer.AsSpan(Length);
+        s[0] = (byte)'B'; BinaryPrimitives.WriteInt32BigEndian(s[1..], bindLen);
+        s[5] = 0;
+        s[6] = (byte)'w'; s[7] = (byte)'a'; s[8] = 0;
+        BinaryPrimitives.WriteInt16BigEndian(s[9..], 1); BinaryPrimitives.WriteInt16BigEndian(s[11..], 1);
+        BinaryPrimitives.WriteInt16BigEndian(s[13..], 1);
+        BinaryPrimitives.WriteInt32BigEndian(s[15..], arrayLen);
+        var p = 19;
+        BinaryPrimitives.WriteInt32BigEndian(s[p..], 1);
+        BinaryPrimitives.WriteInt32BigEndian(s[(p + 4)..], 0);
+        BinaryPrimitives.WriteInt32BigEndian(s[(p + 8)..], PgProtocol.Int4Oid);
+        BinaryPrimitives.WriteInt32BigEndian(s[(p + 12)..], ids.Length);
+        BinaryPrimitives.WriteInt32BigEndian(s[(p + 16)..], 1);
+        p += 20;
+        foreach (var id in ids)
+        {
+            BinaryPrimitives.WriteInt32BigEndian(s[p..], 4);
+            BinaryPrimitives.WriteInt32BigEndian(s[(p + 4)..], id);
+            p += 8;
+        }
+        BinaryPrimitives.WriteInt16BigEndian(s[p..], 1); p += 2; BinaryPrimitives.WriteInt16BigEndian(s[p..], 1); p += 2;
+        WriteExecute(s[p..]);
+        Length += p + 10;
     }
 
     public void WriteBindNoParams(string statement)

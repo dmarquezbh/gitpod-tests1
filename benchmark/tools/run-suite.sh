@@ -53,7 +53,22 @@ fi
 echo "[$NAME] starting server (cpus $SERVER_CPUS): $*"
 taskset -c "$SERVER_CPUS" "$@" > "$OUT/server.log" 2>&1 &
 SERVER_PID=$!
-trap 'kill $SERVER_PID 2>/dev/null || true; wait $SERVER_PID 2>/dev/null || true' EXIT
+peak_rss_tree() { # sum of VmHWM (peak RSS) over the server and its descendants, in kB
+  local queue="$1" pids="" total=0 pid kids c
+  while [ -n "$queue" ]; do
+    set -- $queue; pid=$1; shift; queue="$*"
+    pids="$pids $pid"
+    kids=$(cat /proc/$pid/task/$pid/children 2>/dev/null)
+    for c in $kids; do queue="$queue $c"; done
+  done
+  for pid in $pids; do
+    local v
+    v=$(awk '/VmHWM/{print $2}' /proc/$pid/status 2>/dev/null)
+    total=$((total + ${v:-0}))
+  done
+  echo "$total"
+}
+trap 'peak_rss_tree $SERVER_PID > "$OUT/peak_rss_kb.txt" 2>/dev/null || true; kill $SERVER_PID 2>/dev/null || true; wait $SERVER_PID 2>/dev/null || true' EXIT
 for _ in $(seq 1 150); do
   kill -0 "$SERVER_PID" 2>/dev/null || { echo "[$NAME] ERROR: server exited during startup:" >&2; cat "$OUT/server.log" >&2; exit 1; }
   curl -sf -o /dev/null "http://$HOST/plaintext" || curl -sf -o /dev/null "http://$HOST/db" && break; sleep 0.2
