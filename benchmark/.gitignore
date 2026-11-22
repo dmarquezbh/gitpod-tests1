@@ -20,3 +20,4 @@ results-upstream/
 __pycache__/
 *.pyc
 extra/js/node_modules/
+benchmark/extra/cpp/bench
