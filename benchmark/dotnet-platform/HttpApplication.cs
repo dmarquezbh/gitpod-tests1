@@ -18,12 +18,18 @@ public sealed class HttpApplication(IDb db)
 {
     public enum Route : byte { NotFound, Plaintext, Json, Db, Queries, Fortunes, Updates }
 
-    internal static ReadOnlySpan<byte> PlaintextHead => "HTTP/1.1 200 OK\r\nServer: K\r\nContent-Type: text/plain\r\nContent-Length: 13\r\n"u8;
-    static ReadOnlySpan<byte> JsonHead => "HTTP/1.1 200 OK\r\nServer: K\r\nContent-Type: application/json\r\nContent-Length: 27\r\n"u8;
-    static ReadOnlySpan<byte> JsonHeadNoLength => "HTTP/1.1 200 OK\r\nServer: K\r\nContent-Type: application/json\r\nContent-Length: "u8;
-    internal static ReadOnlySpan<byte> HtmlHeadNoLength => "HTTP/1.1 200 OK\r\nServer: K\r\nContent-Type: text/html; charset=utf-8\r\nContent-Length: "u8;
-    internal static ReadOnlySpan<byte> NotFoundHead => "HTTP/1.1 404 Not Found\r\nServer: K\r\nContent-Length: 0\r\n"u8;
+    internal static ReadOnlySpan<byte> PlaintextHead => "HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\nContent-Length: 13\r\n"u8;
+    static ReadOnlySpan<byte> JsonHead => "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: 27\r\n"u8;
+    internal static ReadOnlySpan<byte> JsonHeadNoLength => "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: "u8;
+    internal static ReadOnlySpan<byte> HtmlHeadNoLength => "HTTP/1.1 200 OK\r\nContent-Type: text/html; charset=utf-8\r\nContent-Length: "u8;
+    internal static ReadOnlySpan<byte> NotFoundHead => "HTTP/1.1 404 Not Found\r\nContent-Length: 0\r\n"u8;
     internal static ReadOnlySpan<byte> HelloWorld => "Hello, World!"u8;
+    // Full wire responses: one copy into the connection buffer, no Date header (the C/C++/Zero
+    // variants do not send one either, and the wrk suite does not require it).
+    internal static ReadOnlySpan<byte> PlaintextResponse =>
+        "HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\nContent-Length: 13\r\n\r\nHello, World!"u8;
+    internal static ReadOnlySpan<byte> JsonResponse =>
+        "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: 27\r\n\r\n{\"message\":\"Hello, World!\"}"u8;
 
     static readonly JsonMessage HelloWorldMessage = new("Hello, World!");
     static readonly JsonWriterOptions JsonOptions = new() { SkipValidation = true };
@@ -69,8 +75,8 @@ public sealed class HttpApplication(IDb db)
     {
         switch (route)
         {
-            case Route.Plaintext: WriteResponse(output, PlaintextHead, HelloWorld); return default;
-            case Route.Json: WriteJsonMessage(output); return default;
+            case Route.Plaintext: output.Write(PlaintextResponse); return default;
+            case Route.Json: output.Write(JsonResponse); return default;
             case Route.Db: return DbAsync(output);
             case Route.Queries: return QueriesAsync(output, count);
             case Route.Fortunes: return FortunesAsync(output);
@@ -100,9 +106,17 @@ public sealed class HttpApplication(IDb db)
     async ValueTask FortunesAsync(IBufferWriter<byte> output)
     {
         var fortunes = await db.LoadFortunes();
-        var buffer = GetBuffer();
-        FortunesRenderer.Render(buffer, fortunes);
-        WriteResponseWithLength(output, HtmlHeadNoLength, buffer.WrittenSpan);
+        var bodyLen = FortunesRenderer.Measure(fortunes);
+        var span = output.GetSpan(HtmlHeadNoLength.Length + 14 + bodyLen);
+        HtmlHeadNoLength.CopyTo(span);
+        var pos = HtmlHeadNoLength.Length;
+        Utf8Formatter.TryFormat(bodyLen, span[pos..], out var digits); pos += digits;
+        span[pos++] = (byte)'\r';
+        span[pos++] = (byte)'\n';
+        span[pos++] = (byte)'\r';
+        span[pos++] = (byte)'\n';
+        FortunesRenderer.Render(span[pos..], fortunes);
+        output.Advance(pos + bodyLen);
     }
 
     // ---- request parsing -----------------------------------------------------------------------
@@ -188,26 +202,24 @@ public sealed class HttpApplication(IDb db)
 
     internal static void WriteResponse(IBufferWriter<byte> output, ReadOnlySpan<byte> head, ReadOnlySpan<byte> body)
     {
-        var date = DateHeader.Bytes;
-        var span = output.GetSpan(head.Length + date.Length + body.Length);
+        var span = output.GetSpan(head.Length + 2 + body.Length);
         head.CopyTo(span);
-        date.CopyTo(span[head.Length..]);
-        body.CopyTo(span[(head.Length + date.Length)..]);
-        output.Advance(head.Length + date.Length + body.Length);
+        span[head.Length] = (byte)'\r'; span[head.Length + 1] = (byte)'\n';
+        body.CopyTo(span[(head.Length + 2)..]);
+        output.Advance(head.Length + 2 + body.Length);
     }
 
     internal static void WriteResponseWithLength(IBufferWriter<byte> output, ReadOnlySpan<byte> headNoLength, ReadOnlySpan<byte> body)
     {
-        var date = DateHeader.Bytes;
-        var span = output.GetSpan(headNoLength.Length + 12 + date.Length + body.Length);
+        var span = output.GetSpan(headNoLength.Length + 14 + body.Length);
         headNoLength.CopyTo(span);
         var pos = headNoLength.Length;
         Utf8Formatter.TryFormat(body.Length, span[pos..], out var digits);
         pos += digits;
         span[pos++] = (byte)'\r';
         span[pos++] = (byte)'\n';
-        date.CopyTo(span[pos..]);
-        pos += date.Length;
+        span[pos++] = (byte)'\r';
+        span[pos++] = (byte)'\n';
         body.CopyTo(span[pos..]);
         output.Advance(pos + body.Length);
     }
@@ -218,6 +230,39 @@ public sealed class HttpApplication(IDb db)
         var writer = GetJsonWriter(output);
         JsonSerializer.Serialize(writer, HelloWorldMessage, AppJsonContext.Default.JsonMessage);
         writer.Flush();
+    }
+
+    /// <summary>Hand-written world JSON: one buffer, no serializer, exact Content-Length.</summary>
+    internal static void WriteWorldJson(IBufferWriter<byte> output, in World world)
+    {
+        Span<byte> body = stackalloc byte[64];
+        var p = 0;
+        "{\"id\":"u8.CopyTo(body); p = 6;
+        Utf8Formatter.TryFormat(world.Id, body[p..], out var digits); p += digits;
+        ",\"randomNumber\":"u8.CopyTo(body[p..]); p += 16;
+        Utf8Formatter.TryFormat(world.RandomNumber, body[p..], out digits); p += digits;
+        body[p++] = (byte)'}';
+        WriteResponseWithLength(output, JsonHeadNoLength, body[..p]);
+    }
+
+    internal static void WriteWorldsJson(IBufferWriter<byte> output, World[] worlds)
+    {
+        var cap = 2 + worlds.Length * 40;
+        Span<byte> body = cap <= 8192 ? stackalloc byte[cap] : new byte[cap];
+
+        var p = 0;
+        body[p++] = (byte)'[';
+        for (var i = 0; i < worlds.Length; i++)
+        {
+            if (i != 0) body[p++] = (byte)',';
+            "{\"id\":"u8.CopyTo(body[p..]); p += 6;
+            Utf8Formatter.TryFormat(worlds[i].Id, body[p..], out var digits); p += digits;
+            ",\"randomNumber\":"u8.CopyTo(body[p..]); p += 16;
+            Utf8Formatter.TryFormat(worlds[i].RandomNumber, body[p..], out digits); p += digits;
+            body[p++] = (byte)'}';
+        }
+        body[p++] = (byte)']';
+        WriteResponseWithLength(output, JsonHeadNoLength, body[..p]);
     }
 
     internal static void WriteJson<T>(IBufferWriter<byte> output, T value, JsonTypeInfo<T> typeInfo)

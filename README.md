@@ -1,7 +1,10 @@
 # gitpod-tests1 — benchmark Rust vs .NET 11 vs Go
 
-**Resultados publicados:** https://dmarquezbh.github.io/gitpod-tests1/ — 17 stacks, throughput,
+**Resultados publicados:** https://dmarquezbh.github.io/gitpod-tests1/ — 18 stacks, throughput,
 RAM de pico e tamanho de artefato, com a metodologia completa.
+
+**Manual de performance .NET 11:** [`benchmark/docs/dotnet-performance-playbook.md`](benchmark/docs/dotnet-performance-playbook.md)
+— técnicas por categoria, medições e anti-padrões.
 
 Este repositório contém uma pesquisa de desempenho no estilo TechEmpower: a aplicação web Rust (axum)
 do TechEmpower reimplementada em .NET 11 de duas formas (Kestrel e um servidor "platform" com HTTP e

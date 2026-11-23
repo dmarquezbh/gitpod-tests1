@@ -5,18 +5,24 @@ set -euo pipefail
 cd "$(dirname "$0")"
 export PATH="$HOME/.dotnet:$PATH"
 export DOTNET_CLI_TELEMETRY_OPTOUT=1 DOTNET_NOLOGO=1
-export DOTNET_SYSTEM_NET_SOCKETS_INLINE_COMPLETIONS="${DOTNET_SYSTEM_NET_SOCKETS_INLINE_COMPLETIONS:-1}"
+export DOTNET_SYSTEM_NET_SOCKETS_INLINE_COMPLETIONS="${DOTNET_SYSTEM_NET_SOCKETS_INLINE_COMPLETIONS:-0}"
 export DOTNET_ReadyToRun=0
 export DOTNET_TieredPGO=1
+export DOTNET_TC_QuickJitForLoops=0   # tiered JIT, but loops get fully optimized on first compile
 # Final configuration (see RESULTS.md, "tuning"): one epoll event loop per core (libc), HTTP and the
 # pipelined PostgreSQL client on the same thread, PostgreSQL writes flushed once per epoll batch, Nagle
 # left on for the PostgreSQL sockets, workstation non-concurrent GC with a 64 MB gen0 budget.
+export EVENT_LOOPS="${EVENT_LOOPS:-4}"
 export HTTP_TRANSPORT="${HTTP_TRANSPORT:-epoll}"                    # epoll (own event loops, libc) | raw | kestrel-sockets
 export POSTGRES_HEAVY_PER_LOOP="${POSTGRES_HEAVY_PER_LOOP:-2}"      # epoll: PostgreSQL connections per loop reserved for multi-row/updates (plus 1 primary)
 export DB_DRIVER="${DB_DRIVER:-raw}"                                # raw | npgsql
 export POSTGRES_RAW_CONNECTIONS="${POSTGRES_RAW_CONNECTIONS:-32}"    # raw driver: primary connections (one per IO thread)
 export POSTGRES_RAW_HEAVY_CONNECTIONS="${POSTGRES_RAW_HEAVY_CONNECTIONS:-4}"  # raw driver: connections reserved for multi-row queries and updates
 export PG_NODELAY="${PG_NODELAY:-1}"                                # raw driver: 0 = leave Nagle on
+# Fortunes use libpq (C parser) via P/Invoke: the managed row-by-row parser was the bottleneck.
+export PG_LIBPQ="${PG_LIBPQ:-1}"
+_pg_lib="$HOME/.local/opt/pgdev/usr/lib/x86_64-linux-gnu"
+[ -d "$_pg_lib" ] && export LD_LIBRARY_PATH="$_pg_lib${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}"
 export POSTGRES_MAX_POOL_SIZE="${POSTGRES_MAX_POOL_SIZE:-2}"        # npgsql driver: pool per data source
 export POSTGRES_DATA_SOURCES="${POSTGRES_DATA_SOURCES:-4}"          # npgsql driver: independent data sources
 export DOTNET_gcServer="${DOTNET_gcServer:-0}"

@@ -481,7 +481,8 @@ public sealed class PgConnection : IThreadPoolWorkItem
         var buffer = new List<byte>();
         AppendParse(buffer, WorldStatement, "SELECT randomnumber FROM world WHERE id = $1", [Int4Oid]);
         AppendParse(buffer, WorldsAnyStatement, "SELECT w.id, w.randomnumber FROM unnest($1::int[]) WITH ORDINALITY AS u(id, ord) JOIN world w ON w.id = u.id ORDER BY u.ord", [Int4ArrayOid]);
-        AppendParse(buffer, FortunesStatement, "SELECT id, message FROM fortune", []);
+        AppendParse(buffer, FortunesStatement,
+            "SELECT id, message FROM fortune UNION ALL SELECT 0, 'Additional fortune added at request time.' ORDER BY 2", []);
         AppendParse(buffer, UpdateStatement,
             "UPDATE world SET randomnumber = new.rnum FROM (SELECT * FROM UNNEST($1::int[], $2::int[]) AS v(id, rnum) ORDER BY 1) AS new WHERE world.id = new.id",
             [Int4ArrayOid, Int4ArrayOid]);

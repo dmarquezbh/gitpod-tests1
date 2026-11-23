@@ -248,7 +248,7 @@ public sealed class PgWriteBuffer
         p += Encoding.ASCII.GetBytes(statement, s[p..]); s[p++] = 0;
         BinaryPrimitives.WriteInt16BigEndian(s[p..], 0); p += 2;
         BinaryPrimitives.WriteInt16BigEndian(s[p..], 0); p += 2;
-        BinaryPrimitives.WriteInt16BigEndian(s[p..], 1); p += 2; BinaryPrimitives.WriteInt16BigEndian(s[p..], 1); p += 2;
+        BinaryPrimitives.WriteInt16BigEndian(s[p..], 1); p += 2; BinaryPrimitives.WriteInt16BigEndian(s[p..], 0); p += 2;   // text results
         WriteExecute(s[p..]);
         Length += p + 10;
     }

@@ -279,6 +279,8 @@ def main():
     com fallback escalar quando o lote tem 1 item;</li>
     <li><b>updates em uma ida</b>: o UPDATE com <code>UNNEST</code> deixou de ser precedido pelo
     SELECT (os valores novos são gerados no cliente);</li>
+    <li><b>driver libpq (C) via P/Invoke</b> em todos os caminhos de banco, com arrays e pipeline
+    mode: o parser linha-a-linha managed era o gargalo de fortunes e queries largas;</li>
     <li><b>runtime async do .NET 11</b> ligado no Kestrel e no platform; PGO dinâmico, workstation GC
     e <code>ReadyToRun=0</code> mantidos;</li>
     <li>Kestrel com Npgsql: mesmas consultas por array/UNNEST, <code>q=10</code> de 3,1k → 6,4k,
