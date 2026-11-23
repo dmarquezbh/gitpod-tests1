@@ -1,0 +1,191 @@
+@inject HttpClient Http
+@using System.Globalization
+
+<div class="shell">
+    <header class="hero">
+        <div>
+            <h1>18 stacks. O mesmo host, o mesmo PostgreSQL.</h1>
+            <p class="lead">Benchmark estilo TechEmpower com <code>wrk</code>, servidor fixado em 2 CPUs e
+            <code>wrk</code> em outras 2. Throughput, RAM de pico e tamanho de artefato — medidos, não estimados.</p>
+        </div>
+        <nav class="links">
+            <a href="https://github.com/dmarquezbh/gitpod-tests1">GitHub</a>
+            <a href="https://github.com/dmarquezbh/gitpod-tests1/blob/ccr-4e64bf0c-doya78/benchmark/docs/dotnet-performance-playbook.md">Playbook .NET</a>
+            <a href="static.html">Versão estática</a>
+        </nav>
+    </header>
+
+    @if (data is null)
+    {
+        <p class="loading">Carregando resultados…</p>
+    }
+    else
+    {
+        <section class="cards">
+            <div class="card"><span>Implementações</span><b>@data.Impls.Count</b></div>
+            <div class="card"><span>Melhor plaintext</span><b>@N(Best("plaintext"))</b><small>req/s · @Label(BestImpl("plaintext"))</small></div>
+            <div class="card"><span>Melhor queries</span><b>@N(Best("queries"))</b><small>req/s · @Label(BestImpl("queries"))</small></div>
+            <div class="card"><span>Menor footprint</span><b>@Size(SmallestTotal())</b><small>@Label(SmallestImpl())</small></div>
+        </section>
+
+        <nav class="tabs">
+            @foreach (var test in data.Tests)
+            {
+                <button class="tab @(tab == test.Id ? "active" : "")" @onclick="() => tab = test.Id">@test.Label</button>
+            }
+            <button class="tab @(tab == "memory" ? "active" : "")" @onclick='() => tab = "memory"'>RAM e tamanho</button>
+        </nav>
+
+        @if (tab == "memory")
+        {
+            <section class="panel">
+                <h2>RAM de pico e tamanho</h2>
+                <p class="note">RSS é a soma de <code>VmHWM</code> da árvore de processos durante a suíte.
+                “App” é o que se publica; “Runtime” é o que precisa existir na máquina.</p>
+                <div class="table-wrap">
+                    <table class="sortable">
+                        <thead>
+                            <tr>
+                                <th><button @onclick='() => SortMetric("label")'>Stack @ArrowMetric(sortMetric, "label")</button></th>
+                                <th><button @onclick='() => SortMetric("rss")'>RSS de pico @ArrowMetric(sortMetric, "rss")</button></th>
+                                <th><button @onclick='() => SortMetric("app")'>App @ArrowMetric(sortMetric, "app")</button></th>
+                                <th><button @onclick='() => SortMetric("runtime")'>Runtime/deps @ArrowMetric(sortMetric, "runtime")</button></th>
+                                <th><button @onclick='() => SortMetric("total")'>Total @ArrowMetric(sortMetric, "total")</button></th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var m in SortedMetrics())
+                            {
+                                <tr class="@(m.Impl == "dotnet-platform" ? "net" : "")">
+                                    <td class="left">@Label(m.Impl)</td>
+                                    <td>@(m.RssKb > 0 ? (m.RssKb / 1024) + " MB" : "—")</td>
+                                    <td>@Size(m.AppBytes)</td>
+                                    <td>@Size(m.RuntimeBytes)</td>
+                                    <td>@Size(m.TotalBytes)</td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+        }
+        else if (Current is { } test)
+        {
+            <section class="panel">
+                <h2>@test.Label <span class="muted">— @test.Note</span></h2>
+                <div class="chart">
+                    @foreach (var r in test.Results.OrderByDescending(x => x.Rps))
+                    {
+                        var pct = MaxRps(test) > 0 ? r.Rps / MaxRps(test) * 100 : 0;
+                        <div class="bar-row @(r.Impl == "dotnet-platform" ? "net" : "")">
+                            <span class="bar-label">@Label(r.Impl)</span>
+                            <div class="bar-track"><div class="bar-fill" style="width:@pct.ToString("0.##", CultureInfo.InvariantCulture)%"></div></div>
+                            <span class="bar-value">@N(r.Rps)</span>
+                        </div>
+                    }
+                </div>
+
+                <div class="table-wrap">
+                    <table class="sortable">
+                        <thead>
+                            <tr>
+                                <th><button @onclick='() => SortResult("label")'>Stack @ArrowResult(sortResult, "label")</button></th>
+                                <th><button @onclick='() => SortResult("rps")'>req/s @ArrowResult(sortResult, "rps")</button></th>
+                                <th><button @onclick='() => SortResult("level")'>Nível @ArrowResult(sortResult, "level")</button></th>
+                                <th><button @onclick='() => SortResult("errors")'>Erros @ArrowResult(sortResult, "errors")</button></th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var r in SortedResults(test))
+                            {
+                                <tr class="@(r.Impl == "dotnet-platform" ? "net" : "")">
+                                    <td class="left">@Label(r.Impl)</td>
+                                    <td>@N(r.Rps)</td>
+                                    <td>@r.Level</td>
+                                    <td>@r.Errors</td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+        }
+
+        <section class="panel prose">
+            <h2>Metodologia</h2>
+            <ul>
+                <li>Servidor em <code>taskset 0-1</code>; <code>wrk</code> em <code>2-3</code>; 10 s por nível, primer e warmup.</li>
+                <li>PostgreSQL 16 no Docker, mesmo schema e tuning; <code>synchronous_commit=off</code>.</li>
+                <li>Melhor nível por stack em cada teste; erros de socket indicados na tabela.</li>
+                <li>Comparações entre stacks só valem dentro da mesma sessão; o host é um i5 de 2 núcleos.</li>
+                <li>.NET platform usa libpq (C) via P/Invoke, batching de queries por chunk e leitura única de fortunes por rodada.</li>
+            </ul>
+            <p><a href="https://github.com/dmarquezbh/gitpod-tests1/tree/ccr-4e64bf0c-doya78/benchmark/results">Dados brutos</a> ·
+               <a href="https://github.com/dmarquezbh/gitpod-tests1/blob/ccr-4e64bf0c-doya78/benchmark/results/comparison.md">comparison.md</a></p>
+        </section>
+    }
+</div>
+
+@code {
+    BenchData? data;
+    string tab = "plaintext";
+    string sortResult = "rps";
+    bool ascResult;
+    string sortMetric = "rss";
+    bool ascMetric;
+
+    protected override async Task OnInitializedAsync()
+        => data = await Http.GetFromJsonAsync("data.json", AppJson.Default.BenchData);
+
+    TestData? Current => data?.Tests.FirstOrDefault(t => t.Id == tab);
+
+    string Label(string id) => data?.Impls.FirstOrDefault(i => i.Id == id)?.Label ?? id;
+
+    static double MaxRps(TestData t) => t.Results.Count == 0 ? 0 : t.Results.Max(r => r.Rps);
+
+    double Best(string test) => data?.Tests.FirstOrDefault(t => t.Id == test)?.Results.Max(r => r.Rps) ?? 0;
+    string BestImpl(string test) => data?.Tests.FirstOrDefault(t => t.Id == test)?.Results.OrderByDescending(r => r.Rps).FirstOrDefault()?.Impl ?? "";
+    long SmallestTotal() => data?.Metrics.Count > 0 ? data.Metrics.Min(m => m.TotalBytes) : 0;
+    string SmallestImpl() => data?.Metrics.OrderBy(m => m.TotalBytes).FirstOrDefault()?.Impl ?? "";
+
+    void SortResult(string key)
+    {
+        if (sortResult == key) ascResult = !ascResult; else { sortResult = key; ascResult = key == "label"; }
+    }
+    void SortMetric(string key)
+    {
+        if (sortMetric == key) ascMetric = !ascMetric; else { sortMetric = key; ascMetric = key == "label"; }
+    }
+    string ArrowResult(string current, string key) => current != key ? "↕" : (ascResult ? "↑" : "↓");
+    string ArrowMetric(string current, string key) => current != key ? "↕" : (ascMetric ? "↑" : "↓");
+
+    IEnumerable<Result> SortedResults(TestData test)
+    {
+        Func<Result, IComparable> key = sortResult switch
+        {
+            "label" => r => Label(r.Impl),
+            "level" => r => r.Level,
+            "errors" => r => r.Errors,
+            _ => r => r.Rps,
+        };
+        return ascResult ? test.Results.OrderBy(key) : test.Results.OrderByDescending(key);
+    }
+
+    IEnumerable<Metric> SortedMetrics()
+    {
+        Func<Metric, IComparable> key = sortMetric switch
+        {
+            "label" => m => Label(m.Impl),
+            "app" => m => m.AppBytes,
+            "runtime" => m => m.RuntimeBytes,
+            "total" => m => m.TotalBytes,
+            _ => m => m.RssKb,
+        };
+        return ascMetric ? data!.Metrics.OrderBy(key) : data!.Metrics.OrderByDescending(key);
+    }
+
+    static string N(double v) => Math.Round(v).ToString("N0", CultureInfo.InvariantCulture).Replace(',', '.');
+    static string Size(long b) => b >= 1024 * 1024
+        ? (b / 1048576.0).ToString("0.0", CultureInfo.InvariantCulture).Replace('.', ',') + " MB"
+        : (b / 1024.0).ToString("0", CultureInfo.InvariantCulture) + " KB";
+}

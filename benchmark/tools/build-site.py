@@ -336,9 +336,9 @@ cd benchmark
 """
     outdir = os.path.join(ROOT, "docs")
     os.makedirs(outdir, exist_ok=True)
-    with open(os.path.join(outdir, "index.html"), "w") as f:
+    with open(os.path.join(outdir, "static.html"), "w") as f:
         f.write(doc)
-    print("wrote docs/index.html")
+    print("wrote docs/static.html")
 
 
 if __name__ == "__main__":

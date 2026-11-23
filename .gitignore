@@ -1,3 +1,6 @@
 graphify-out/
 benchmark/pgsock/
 benchmark/results/uds*
+
+benchmark/site/bin/
+benchmark/site/obj/
