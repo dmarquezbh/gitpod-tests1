@@ -157,6 +157,20 @@ P/Invoke com chunks de 8, 2/4/8 event loops, 1/2/3/4/6 conexões heavy por loop,
 O PostgreSQL fica saturado (~285% de CPU) nos dois casos; a diferença restante é pequena e está
 no lado do PostgreSQL/agendamento — não no driver, que foi trocado e medido.
 
+Pesquisa adicional de 2026-11 (resultados medidos neste host):
+
+| Técnica | Efeito |
+|---|---|
+| `options='-c plan_cache_mode=force_custom_plan'` no libpq | +5% em q=5/q=20 numa rodada; ~0–3% no A/B intercalado |
+| `options='-c jit=off'` | neutro a −2% |
+| Unix domain socket (`host=/caminho/do/socket`) | +3% em q=1, ~0% em db/q=5/q=20 |
+| `PQsetChunkedRowsMode` (libpq 17+) | não disponível no libpq 16 deste host; resultados de q≤20 são pequenos, ganho esperado baixo |
+| PostgreSQL 18 AIO/io_uring | ataca varreduras sequenciais/bitmap, não os index probes aleatórios deste teste |
+
+Conclusão: não há uma alavanca nova de dois dígitos no lado do banco para este workload. As opções
+de GUC e o socket Unix foram aplicadas/medidas e ficam documentadas; o driver e o protocolo já
+estão no limite (libpq C, arrays, pipeline em chunks).
+
 ## 7. Updates
 
 - Um `UPDATE` por request com dois arrays (`ids`, `numbers`) via `UNNEST`, sem SELECT.

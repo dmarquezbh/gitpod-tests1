@@ -35,8 +35,12 @@ public sealed unsafe class LibpqDb : IDisposable
 
     public LibpqDb()
     {
-        byte* ci = stackalloc byte[128];
-        var text = "host=127.0.0.1 port=5432 user=benchmarkdbuser password=benchmarkdbpass dbname=hello_world"u8;
+        byte* ci = stackalloc byte[512];
+        var host = Environment.GetEnvironmentVariable("PG_HOST") ?? "127.0.0.1";
+        var baseText = "host=" + host + " port=5432 user=benchmarkdbuser password=benchmarkdbpass dbname=hello_world";
+        var opts = Environment.GetEnvironmentVariable("PG_OPTIONS");
+        if (!string.IsNullOrEmpty(opts)) baseText += " options='" + opts + "'";
+        var text = System.Text.Encoding.UTF8.GetBytes(baseText);
         text.CopyTo(new Span<byte>(ci, text.Length)); ci[text.Length] = 0;
         _conn = PQconnectdb(ci);
         if (PQstatus(_conn) != 0) throw new InvalidOperationException("libpq connect: " + Marshal.PtrToStringUTF8((IntPtr)PQerrorMessage(_conn)));
