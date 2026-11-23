@@ -7,7 +7,7 @@ python3 tools/build-data.py
 python3 tools/build-site.py
 rm -rf /tmp/blazor-out
 (cd site && dotnet publish -c Release -o /tmp/blazor-out)
-cp -a /tmp/blazor-out/wwwroot/. ../docs/
+rsync -a --delete --exclude 'static.html' --exclude '.nojekyll' /tmp/blazor-out/wwwroot/ ../docs/
 # GitHub Pages cannot set Content-Encoding for precompressed files; the boot uses plain assets.
 find ../docs -name '*.br' -delete
 find ../docs -name '*.gz' -delete
