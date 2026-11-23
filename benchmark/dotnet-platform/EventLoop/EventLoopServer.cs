@@ -417,6 +417,7 @@ public sealed class LoopOp : PendingOp
                     _numbers[i] = rng.Next(1, 10_001);
                     Worlds[i] = new World(_ids[i], _numbers[i]);
                 }
+                if (loop.UseLibpq && count == 1) { loop.EnqueueLibpqHeavy(this); return; }
                 _pg = loop.HeavyPg;
                 _pg.Enqueue(this);
                 _pg.Write.WriteBindUpdate(_ids, _numbers);

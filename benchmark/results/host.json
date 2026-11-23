@@ -1,0 +1,10 @@
+{
+  "id": "i5-3317u-linux-x64",
+  "cpu": "Intel Core i5-3317U @ 1.70 GHz (Ivy Bridge, 2 cores / 4 threads, no AVX2)",
+  "memory": "3.8 GB RAM",
+  "os": "Linux 7.0.0-43-generic (Ubuntu 24.04), x86-64",
+  "postgres": "PostgreSQL 16.15 (Docker, synchronous_commit=off)",
+  "storage": "SATA SSD, 281 GB",
+  "date": "2026-11-23",
+  "notes": "Servidor fixado em CPUs 0-1 e wrk em 2-3; 10 s por nível. Resultados valem para este host; para outro host, copie results/ para results/hosts/<id>/ antes de medir."
+}

@@ -43,6 +43,8 @@ a:hover { text-decoration: underline; }
     -webkit-background-clip: text; background-clip: text; color: transparent;
 }
 .lead { margin: 0; max-width: 64ch; color: var(--muted); }
+.host { margin: .55rem 0 0; color: var(--muted); font-size: .9rem; }
+.host b { color: var(--fg); font-weight: 600; }
 .links { display: flex; gap: .55rem; flex-wrap: wrap; }
 .links a {
     border: 1px solid var(--line); background: rgba(18,22,29,.7);

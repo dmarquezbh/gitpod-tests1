@@ -52,6 +52,13 @@ def metrics():
                 }
     return out
 
+def host():
+    path = os.path.join(RES, "host.json")
+    if os.path.exists(path):
+        with open(path) as f:
+            return json.load(f)
+    return {}
+
 def main():
     best = best_levels()
     met = metrics()
@@ -67,6 +74,7 @@ def main():
             for tid, label, note in TESTS
         ],
         "metrics": [{"impl": i, **met[i]} for i, _ in IMPLS if i in met],
+        "host": host(),
     }
     with open(OUT, "w") as f:
         json.dump(data, f, ensure_ascii=False, indent=1)

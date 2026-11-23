@@ -1,0 +1,2835 @@
+################ rust 2026-11-22T13:55:11-03:00 ################
+warning: struct `Fortune` is never constructed
+ --> src/common/models.rs:9:12
+  |
+9 | pub struct Fortune {
+  |            ^^^^^^^
+  |
+  = note: `#[warn(dead_code)]` (part of `#[warn(unused)]`) on by default
+
+warning: struct `FortuneInfo` is never constructed
+  --> src/common/models.rs:15:12
+   |
+15 | pub struct FortuneInfo {
+   |            ^^^^^^^^^^^
+
+warning: struct `World` is never constructed
+  --> src/common/models.rs:21:12
+   |
+21 | pub struct World {
+   |            ^^^^^
+
+warning: struct `Utf8Html` is never constructed
+  --> src/common/utils.rs:34:12
+   |
+34 | pub struct Utf8Html<T>(pub T);
+   |            ^^^^^^^^
+
+warning: struct `Message` is never constructed
+ --> src/common/models.rs:4:12
+  |
+4 | pub struct Message {
+  |            ^^^^^^^
+  |
+  = note: `#[warn(dead_code)]` (part of `#[warn(unused)]`) on by default
+
+warning: struct `Fortune` is never constructed
+ --> src/common/models.rs:9:12
+  |
+9 | pub struct Fortune {
+  |            ^^^^^^^
+
+warning: `axum-techempower` (bin "axum") generated 4 warnings
+warning: `axum-techempower` (bin "axum-pg") generated 4 warnings (2 duplicates)
+    Finished `release` profile [optimized] target(s) in 29.09s
+[rust] starting server (cpus 0-1): rust-axum/target/release/axum
+
+################ [rust] plaintext ################
+--- primer
+--- warmup
+--- concurrency=256 pipeline=16
+Running 10s test @ http://127.0.0.1:8000/plaintext
+  2 threads and 256 connections
+  Thread Stats   Avg      Stdev     Max   +/- Stdev
+    Latency     7.96ms    4.07ms  25.00ms   43.62%
+    Req/Sec   130.20k     3.57k  139.68k    71.00%
+  Latency Distribution
+     50%   13.12ms
+     75%    0.00us
+     90%    0.00us
+     99%    0.00us
+  2590128 requests in 10.03s, 355.70MB read
+Requests/sec: 258341.91
+Transfer/sec:     35.48MB
+--- concurrency=1024 pipeline=16
+Running 10s test @ http://127.0.0.1:8000/plaintext
+  2 threads and 1024 connections
+  Thread Stats   Avg      Stdev     Max   +/- Stdev
+    Latency    32.96ms   15.43ms 114.50ms   46.09%
+    Req/Sec   125.69k     6.51k  140.48k    89.50%
+  Latency Distribution
+     50%   50.87ms
+     75%   70.33ms
+     90%    0.00us
+     99%    0.00us
+  2505104 requests in 10.08s, 344.02MB read
+Requests/sec: 248630.38
+Transfer/sec:     34.14MB
+--- concurrency=4096 pipeline=16
+Running 10s test @ http://127.0.0.1:8000/plaintext
+  2 threads and 4096 connections
+  Thread Stats   Avg      Stdev     Max   +/- Stdev
+    Latency   129.04ms   62.21ms 305.39ms   40.67%
+    Req/Sec   124.58k    11.85k  148.20k    70.26%
+  Latency Distribution
+     50%  214.37ms
+     75%    0.00us
+     90%    0.00us
+     99%    0.00us
+  2435728 requests in 10.10s, 334.50MB read
+Requests/sec: 241251.17
+Transfer/sec:     33.13MB
+
+################ [rust] json ################
+--- primer
+--- warmup
+--- concurrency=16
+Running 10s test @ http://127.0.0.1:8000/json
+  2 threads and 16 connections
+  Thread Stats   Avg      Stdev     Max   +/- Stdev
+    Latency   414.32us  468.94us   8.23ms   92.77%
+    Req/Sec    23.21k     1.51k   27.32k    71.50%
+  Latency Distribution
+     50%  304.00us
+     75%  321.00us
+     90%  588.00us
+     99%    2.72ms
+  461983 requests in 10.01s, 65.65MB read
+Requests/sec:  46164.25
+Transfer/sec:      6.56MB
+--- concurrency=64
+Running 10s test @ http://127.0.0.1:8000/json
+  2 threads and 64 connections
+  Thread Stats   Avg      Stdev     Max   +/- Stdev
+    Latency     1.29ms  628.92us   8.79ms   85.10%
+    Req/Sec    24.09k     2.25k   30.13k    68.00%
+  Latency Distribution
+     50%    1.23ms
+     75%    1.30ms
+     90%    1.78ms
+     99%    4.01ms
+  479837 requests in 10.01s, 68.18MB read
+Requests/sec:  47928.63
+Transfer/sec:      6.81MB
+--- concurrency=256
+Running 10s test @ http://127.0.0.1:8000/json
+  2 threads and 256 connections
+  Thread Stats   Avg      Stdev     Max   +/- Stdev
+    Latency     5.04ms    1.37ms  18.46ms   77.12%
+    Req/Sec    24.00k     1.69k   29.71k    71.50%
+  Latency Distribution
+     50%    4.95ms
+     75%    5.57ms
+     90%    6.31ms
+     99%    9.64ms
+  478516 requests in 10.04s, 68.00MB read
+Requests/sec:  47637.96
+Transfer/sec:      6.77MB
+--- concurrency=512
+Running 10s test @ http://127.0.0.1:8000/json
+  2 threads and 512 connections
+  Thread Stats   Avg      Stdev     Max   +/- Stdev
+    Latency    10.08ms    2.23ms  23.91ms   73.34%
+    Req/Sec    24.25k     1.52k   30.10k    68.50%
+  Latency Distribution
+     50%   10.03ms
+     75%   10.96ms
+     90%   12.66ms
+     99%   16.84ms
+  484163 requests in 10.08s, 68.80MB read
+Requests/sec:  48041.85
+Transfer/sec:      6.83MB
+
+[rust] done -> results/rust-platform/summary.csv
+impl,test,level,rps,latency_avg_ms,latency_p99_ms,requests,errors,non2xx,transfer_mb_s
+rust,plaintext,256,258341.91,7.960,0.000,2590128,0,0,35.480
+rust,plaintext,1024,248630.38,32.960,0.000,2505104,0,0,34.140
+rust,plaintext,4096,241251.17,129.040,0.000,2435728,0,0,33.130
+rust,json,16,46164.25,0.414,2.720,461983,0,0,6.560
+rust,json,64,47928.63,1.290,4.010,479837,0,0,6.810
+rust,json,256,47637.96,5.040,9.640,478516,0,0,6.770
+rust,json,512,48041.85,10.080,16.840,484163,0,0,6.830
+[rust] starting server (cpus 0-1): rust-axum/target/release/axum-pg
+
+################ [rust] db ################
+--- primer
+--- warmup
+--- concurrency=16
+Running 10s test @ http://127.0.0.1:8000/db
+  2 threads and 16 connections
+  Thread Stats   Avg      Stdev     Max   +/- Stdev
+    Latency     1.29ms  604.52us  11.74ms   79.01%
+    Req/Sec     6.27k   282.95     7.25k    66.50%
+  Latency Distribution
+     50%    1.17ms
+     75%    1.48ms
+     90%    1.95ms
+     99%    3.40ms
+  124821 requests in 10.01s, 18.19MB read
+Requests/sec:  12467.66
+Transfer/sec:      1.82MB
+--- concurrency=64
+Running 10s test @ http://127.0.0.1:8000/db
+  2 threads and 64 connections
+  Thread Stats   Avg      Stdev     Max   +/- Stdev
+    Latency     4.11ms    1.39ms  14.37ms   69.92%
+    Req/Sec     7.70k   378.25     8.61k    69.00%
+  Latency Distribution
+     50%    4.05ms
+     75%    4.90ms
+     90%    5.76ms
+     99%    8.22ms
+  153369 requests in 10.01s, 22.35MB read
+Requests/sec:  15315.37
+Transfer/sec:      2.23MB
+--- concurrency=256
+Running 10s test @ http://127.0.0.1:8000/db
+  2 threads and 256 connections
+  Thread Stats   Avg      Stdev     Max   +/- Stdev
+    Latency    14.66ms    2.98ms  30.26ms   71.21%
+    Req/Sec     8.60k   355.43     9.84k    71.00%
+  Latency Distribution
+     50%   14.56ms
+     75%   16.59ms
+     90%   18.24ms
+     99%   22.69ms
+  171745 requests in 10.07s, 25.02MB read
+Requests/sec:  17061.06
+Transfer/sec:      2.49MB
+--- concurrency=512
+Running 10s test @ http://127.0.0.1:8000/db
+  2 threads and 512 connections
+  Thread Stats   Avg      Stdev     Max   +/- Stdev
+    Latency    30.45ms    4.36ms  77.60ms   80.84%
+    Req/Sec     8.37k   616.65     9.49k    85.50%
+  Latency Distribution
+     50%   30.06ms
+     75%   32.16ms
+     90%   34.85ms
+     99%   44.20ms
+  167086 requests in 10.07s, 24.34MB read
+Requests/sec:  16595.91
+Transfer/sec:      2.42MB
+
+################ [rust] queries ################
+--- primer
+--- warmup
+--- queries=1 (c=512)
+Running 10s test @ http://127.0.0.1:8000/queries?q=1
+  2 threads and 512 connections
+  Thread Stats   Avg      Stdev     Max   +/- Stdev
+    Latency    30.10ms    4.74ms  72.38ms   79.69%
+    Req/Sec     8.43k   648.08     9.52k    79.50%
+  Latency Distribution
+     50%   29.67ms
+     75%   32.03ms
+     90%   34.72ms
+     99%   47.82ms
+  168382 requests in 10.08s, 24.85MB read
+Requests/sec:  16700.12
+Transfer/sec:      2.46MB
+--- queries=5 (c=512)
+Running 10s test @ http://127.0.0.1:8000/queries?q=5
+  2 threads and 512 connections
+  Thread Stats   Avg      Stdev     Max   +/- Stdev
+    Latency   153.75ms   20.91ms 204.72ms   73.28%
+    Req/Sec     1.66k   348.14     2.49k    66.00%
+  Latency Distribution
+     50%  156.36ms
+     75%  167.97ms
+     90%  177.94ms
+     99%  193.79ms
+  33056 requests in 10.05s, 8.92MB read
+Requests/sec:   3289.10
+Transfer/sec:      0.89MB
+--- queries=10 (c=512)
+Running 10s test @ http://127.0.0.1:8000/queries?q=10
+  2 threads and 512 connections
+  Thread Stats   Avg      Stdev     Max   +/- Stdev
+    Latency   292.43ms   36.67ms 370.12ms   87.98%
+    Req/Sec     0.87k   380.58     1.66k    63.00%
+  Latency Distribution
+     50%  298.05ms
+     75%  311.33ms
+     90%  323.52ms
+     99%  355.54ms
+  17236 requests in 10.04s, 7.26MB read
+Requests/sec:   1716.29
+Transfer/sec:    740.38KB
+--- queries=20 (c=512)
+Running 10s test @ http://127.0.0.1:8000/queries?q=20
+  2 threads and 512 connections
+  Thread Stats   Avg      Stdev     Max   +/- Stdev
+    Latency   553.12ms   83.49ms 671.24ms   89.66%
+    Req/Sec   485.71    256.96     0.93k    63.54%
+  Latency Distribution
+     50%  556.86ms
+     75%  600.37ms
+     90%  627.73ms
+     99%  661.09ms
+  9010 requests in 10.06s, 6.53MB read
+Requests/sec:    895.76
+Transfer/sec:    664.40KB
+
+################ [rust] fortunes ################
+--- primer
+--- warmup
+--- concurrency=16
+Running 10s test @ http://127.0.0.1:8000/fortunes
+  2 threads and 16 connections
+  Thread Stats   Avg      Stdev     Max   +/- Stdev
+    Latency     0.97ms  548.24us  10.61ms   86.86%
+    Req/Sec     8.21k   554.10     9.80k    67.00%
+  Latency Distribution
+     50%  843.00us
+     75%    1.11ms
+     90%    1.47ms
+     99%    3.27ms
+  163423 requests in 10.00s, 212.58MB read
+Requests/sec:  16341.01
+Transfer/sec:     21.26MB
+--- concurrency=64
+Running 10s test @ http://127.0.0.1:8000/fortunes
+  2 threads and 64 connections
+  Thread Stats   Avg      Stdev     Max   +/- Stdev
+    Latency     3.24ms    1.32ms  24.74ms   76.13%
+    Req/Sec     9.54k   605.02    11.23k    71.50%
+  Latency Distribution
+     50%    3.01ms
+     75%    3.92ms
+     90%    4.88ms
+     99%    7.26ms
+  190472 requests in 10.04s, 247.77MB read
+Requests/sec:  18968.41
+Transfer/sec:     24.67MB
+--- concurrency=256
+Running 10s test @ http://127.0.0.1:8000/fortunes
+  2 threads and 256 connections
+  Thread Stats   Avg      Stdev     Max   +/- Stdev
+    Latency    11.81ms    3.67ms  28.43ms   67.88%
+    Req/Sec    10.39k   498.37    11.79k    68.50%
+  Latency Distribution
+     50%   11.48ms
+     75%   14.33ms
+     90%   16.74ms
+     99%   21.08ms
+  208053 requests in 10.08s, 270.64MB read
+Requests/sec:  20631.65
+Transfer/sec:     26.84MB
+--- concurrency=512
+Running 10s test @ http://127.0.0.1:8000/fortunes
+  2 threads and 512 connections
+  Thread Stats   Avg      Stdev     Max   +/- Stdev
+    Latency    23.25ms    6.38ms  47.90ms   67.29%
+    Req/Sec    10.56k   563.17    12.64k    74.75%
+  Latency Distribution
+     50%   22.84ms
+     75%   27.68ms
+     90%   31.92ms
+     99%   38.72ms
+  209949 requests in 10.02s, 273.10MB read
+Requests/sec:  20948.85
+Transfer/sec:     27.25MB
+
+################ [rust] updates ################
+--- primer
+--- warmup
+--- queries=1 (c=512)
+Running 10s test @ http://127.0.0.1:8000/updates?q=1
+  2 threads and 512 connections
+  Thread Stats   Avg      Stdev     Max   +/- Stdev
+    Latency   147.00ms   19.68ms 247.33ms   70.85%
+    Req/Sec     1.74k   341.15     2.59k    71.00%
+  Latency Distribution
+     50%  146.72ms
+     75%  159.26ms
+     90%  170.03ms
+     99%  193.62ms
+  34557 requests in 10.03s, 5.10MB read
+Requests/sec:   3443.99
+Transfer/sec:    520.57KB
+--- queries=5 (c=512)
+Running 10s test @ http://127.0.0.1:8000/updates?q=5
+  2 threads and 512 connections
+  Thread Stats   Avg      Stdev     Max   +/- Stdev
+    Latency   278.43ms   23.06ms 324.93ms   69.79%
+    Req/Sec     0.91k   468.25     2.36k    70.56%
+  Latency Distribution
+     50%  283.00ms
+     75%  294.91ms
+     90%  303.33ms
+     99%  319.14ms
+  18086 requests in 10.04s, 4.88MB read
+Requests/sec:   1801.51
+Transfer/sec:    497.69KB
+--- queries=10 (c=512)
+Running 10s test @ http://127.0.0.1:8000/updates?q=10
+  2 threads and 512 connections
+  Thread Stats   Avg      Stdev     Max   +/- Stdev
+    Latency   425.52ms   40.94ms 509.36ms   76.95%
+    Req/Sec   641.35    498.59     2.10k    66.86%
+  Latency Distribution
+     50%  427.97ms
+     75%  452.05ms
+     90%  467.29ms
+     99%  498.95ms
+  11773 requests in 10.05s, 4.96MB read
+Requests/sec:   1171.45
+Transfer/sec:    505.41KB
+--- queries=20 (c=512)
+Running 10s test @ http://127.0.0.1:8000/updates?q=20
+  2 threads and 512 connections
+  Thread Stats   Avg      Stdev     Max   +/- Stdev
+    Latency   716.26ms  115.49ms 889.58ms   54.02%
+    Req/Sec   440.91    470.39     1.84k    80.85%
+  Latency Distribution
+     50%  711.43ms
+     75%  825.52ms
+     90%  872.58ms
+     99%  883.67ms
+  7019 requests in 10.05s, 5.08MB read
+Requests/sec:    698.16
+Transfer/sec:    517.87KB
+
+[rust] done -> results/rust-pg/summary.csv
+impl,test,level,rps,latency_avg_ms,latency_p99_ms,requests,errors,non2xx,transfer_mb_s
+rust,db,16,12467.66,1.290,3.400,124821,0,0,1.820
+rust,db,64,15315.37,4.110,8.220,153369,0,0,2.230
+rust,db,256,17061.06,14.660,22.690,171745,0,0,2.490
+rust,db,512,16595.91,30.450,44.200,167086,0,0,2.420
+rust,queries,1,16700.12,30.100,47.820,168382,0,0,2.460
+rust,queries,5,3289.10,153.750,193.790,33056,0,0,0.890
+rust,queries,10,1716.29,292.430,355.540,17236,0,0,0.723
+rust,queries,20,895.76,553.120,661.090,9010,0,0,0.649
+rust,fortunes,16,16341.01,0.970,3.270,163423,0,0,21.260
+rust,fortunes,64,18968.41,3.240,7.260,190472,0,0,24.670
+rust,fortunes,256,20631.65,11.810,21.080,208053,0,0,26.840
+rust,fortunes,512,20948.85,23.250,38.720,209949,0,0,27.250
+rust,updates,1,3443.99,147.000,193.620,34557,0,0,0.508
+rust,updates,5,1801.51,278.430,319.140,18086,0,0,0.486
+rust,updates,10,1171.45,425.520,498.950,11773,0,0,0.494
+rust,updates,20,698.16,716.260,883.670,7019,0,0,0.506
+
+Rust summary:
+impl,test,level,rps,latency_avg_ms,latency_p99_ms,requests,errors,non2xx,transfer_mb_s
+rust,plaintext,256,258341.91,7.960,0.000,2590128,0,0,35.480
+rust,plaintext,1024,248630.38,32.960,0.000,2505104,0,0,34.140
+rust,plaintext,4096,241251.17,129.040,0.000,2435728,0,0,33.130
+rust,json,16,46164.25,0.414,2.720,461983,0,0,6.560
+rust,json,64,47928.63,1.290,4.010,479837,0,0,6.810
+rust,json,256,47637.96,5.040,9.640,478516,0,0,6.770
+rust,json,512,48041.85,10.080,16.840,484163,0,0,6.830
+rust,db,16,12467.66,1.290,3.400,124821,0,0,1.820
+rust,db,64,15315.37,4.110,8.220,153369,0,0,2.230
+rust,db,256,17061.06,14.660,22.690,171745,0,0,2.490
+rust,db,512,16595.91,30.450,44.200,167086,0,0,2.420
+rust,queries,1,16700.12,30.100,47.820,168382,0,0,2.460
+rust,queries,5,3289.10,153.750,193.790,33056,0,0,0.890
+rust,queries,10,1716.29,292.430,355.540,17236,0,0,0.723
+rust,queries,20,895.76,553.120,661.090,9010,0,0,0.649
+rust,fortunes,16,16341.01,0.970,3.270,163423,0,0,21.260
+rust,fortunes,64,18968.41,3.240,7.260,190472,0,0,24.670
+rust,fortunes,256,20631.65,11.810,21.080,208053,0,0,26.840
+rust,fortunes,512,20948.85,23.250,38.720,209949,0,0,27.250
+rust,updates,1,3443.99,147.000,193.620,34557,0,0,0.508
+rust,updates,5,1801.51,278.430,319.140,18086,0,0,0.486
+rust,updates,10,1171.45,425.520,498.950,11773,0,0,0.494
+rust,updates,20,698.16,716.260,883.670,7019,0,0,0.506
+################ rust exit=0 2026-11-22T14:02:28-03:00 ################
+################ rust-tuned 2026-11-22T14:02:28-03:00 ################
+warning: struct `Message` is never constructed
+ --> src/common/models.rs:4:12
+  |
+4 | pub struct Message {
+  |            ^^^^^^^
+  |
+  = note: `#[warn(dead_code)]` (part of `#[warn(unused)]`) on by default
+
+warning: struct `Fortune` is never constructed
+ --> src/common/models.rs:9:12
+  |
+9 | pub struct Fortune {
+  |            ^^^^^^^
+
+warning: struct `FortuneInfo` is never constructed
+  --> src/common/models.rs:15:12
+   |
+15 | pub struct FortuneInfo {
+   |            ^^^^^^^^^^^
+
+warning: struct `World` is never constructed
+  --> src/common/models.rs:21:12
+   |
+21 | pub struct World {
+   |            ^^^^^
+
+warning: field `0` is never read
+  --> src/common/simd_json.rs:18:10
+   |
+18 |     Json(JsonRejection),
+   |     ---- ^^^^^^^^^^^^^
+   |     |
+   |     field in this variant
+   |
+help: consider changing the field to be of unit type to suppress this warning while preserving the field numbering, or remove the field
+   |
+18 -     Json(JsonRejection),
+18 +     Json(()),
+   |
+
+warning: field `0` is never read
+  --> src/common/simd_json.rs:19:11
+   |
+19 |     Bytes(BytesRejection),
+   |     ----- ^^^^^^^^^^^^^^
+   |     |
+   |     field in this variant
+   |
+help: consider changing the field to be of unit type to suppress this warning while preserving the field numbering, or remove the field
+   |
+19 -     Bytes(BytesRejection),
+19 +     Bytes(()),
+   |
+
+warning: field `0` is never read
+  --> src/common/simd_json.rs:20:10
+   |
+20 |     Simd(String),
+   |     ---- ^^^^^^
+   |     |
+   |     field in this variant
+   |
+help: consider changing the field to be of unit type to suppress this warning while preserving the field numbering, or remove the field
+   |
+20 -     Simd(String),
+20 +     Simd(()),
+   |
+
+warning: struct `Fortune` is never constructed
+ --> src/common/models.rs:9:12
+  |
+9 | pub struct Fortune {
+  |            ^^^^^^^
+  |
+  = note: `#[warn(dead_code)]` (part of `#[warn(unused)]`) on by default
+
+warning: struct `Utf8Html` is never constructed
+  --> src/common/utils.rs:34:12
+   |
+34 | pub struct Utf8Html<T>(pub T);
+   |            ^^^^^^^^
+
+warning: `axum-techempower-tuned` (bin "axum-pg") generated 7 warnings
+warning: `axum-techempower-tuned` (bin "axum") generated 7 warnings (5 duplicates)
+    Finished `release` profile [optimized] target(s) in 11.68s
+[rust-tuned] starting server (cpus 0-1): rust-axum-tuned/target/release/axum
+
+################ [rust-tuned] plaintext ################
+--- primer
+--- warmup
+--- concurrency=256 pipeline=16
+Running 10s test @ http://127.0.0.1:8000/plaintext
+  2 threads and 256 connections
+  Thread Stats   Avg      Stdev     Max   +/- Stdev
+    Latency     7.06ms    3.59ms  22.70ms   40.20%
+    Req/Sec   142.61k     3.03k  149.12k    74.50%
+  Latency Distribution
+     50%   12.07ms
+     75%    0.00us
+     90%    0.00us
+     99%    0.00us
+  2838992 requests in 10.03s, 389.88MB read
+Requests/sec: 283148.80
+Transfer/sec:     38.88MB
+--- concurrency=1024 pipeline=16
+Running 10s test @ http://127.0.0.1:8000/plaintext
+  2 threads and 1024 connections
+  Thread Stats   Avg      Stdev     Max   +/- Stdev
+    Latency    29.71ms   13.76ms  74.64ms   45.38%
+    Req/Sec   139.11k     4.96k  148.69k    84.00%
+  Latency Distribution
+     50%   46.10ms
+     75%   62.34ms
+     90%    0.00us
+     99%    0.00us
+  2769968 requests in 10.08s, 380.40MB read
+Requests/sec: 274882.95
+Transfer/sec:     37.75MB
+--- concurrency=4096 pipeline=16
+Running 10s test @ http://127.0.0.1:8000/plaintext
+  2 threads and 4096 connections
+  Thread Stats   Avg      Stdev     Max   +/- Stdev
+    Latency   116.42ms   56.53ms 272.43ms   40.06%
+    Req/Sec   137.31k    12.83k  160.96k    67.69%
+  Latency Distribution
+     50%  195.93ms
+     75%    0.00us
+     90%    0.00us
+     99%    0.00us
+  2677248 requests in 10.02s, 367.66MB read
+Requests/sec: 267190.95
+Transfer/sec:     36.69MB
+
+################ [rust-tuned] json ################
+--- primer
+--- warmup
+--- concurrency=16
+Running 10s test @ http://127.0.0.1:8000/json
+  2 threads and 16 connections
+  Thread Stats   Avg      Stdev     Max   +/- Stdev
+    Latency   398.13us  458.11us   6.98ms   92.92%
+    Req/Sec    24.00k     4.31k   32.10k    53.50%
+  Latency Distribution
+     50%  334.00us
+     75%  442.00us
+     90%  579.00us
+     99%    2.64ms
+  477697 requests in 10.01s, 67.88MB read
+Requests/sec:  47725.40
+Transfer/sec:      6.78MB
+--- concurrency=64
+Running 10s test @ http://127.0.0.1:8000/json
+  2 threads and 64 connections
+  Thread Stats   Avg      Stdev     Max   +/- Stdev
+    Latency     1.24ms  610.23us   8.20ms   85.19%
+    Req/Sec    25.11k     1.77k   29.49k    63.00%
+  Latency Distribution
+     50%    1.12ms
+     75%    1.32ms
+     90%    1.68ms
+     99%    3.91ms
+  499762 requests in 10.01s, 71.01MB read
+Requests/sec:  49918.29
+Transfer/sec:      7.09MB
+--- concurrency=256
+Running 10s test @ http://127.0.0.1:8000/json
+  2 threads and 256 connections
+  Thread Stats   Avg      Stdev     Max   +/- Stdev
+    Latency     4.78ms    1.31ms  15.13ms   76.64%
+    Req/Sec    24.96k     2.37k   31.49k    64.00%
+  Latency Distribution
+     50%    4.88ms
+     75%    5.09ms
+     90%    6.00ms
+     99%    9.50ms
+  497967 requests in 10.05s, 70.76MB read
+Requests/sec:  49539.40
+Transfer/sec:      7.04MB
+--- concurrency=512
+Running 10s test @ http://127.0.0.1:8000/json
+  2 threads and 512 connections
+  Thread Stats   Avg      Stdev     Max   +/- Stdev
+    Latency     9.69ms    2.13ms  25.37ms   72.85%
+    Req/Sec    25.19k     1.60k   29.22k    63.00%
+  Latency Distribution
+     50%    9.52ms
+     75%   10.66ms
+     90%   12.12ms
+     99%   16.10ms
+  502298 requests in 10.06s, 71.38MB read
+Requests/sec:  49931.83
+Transfer/sec:      7.10MB
+
+[rust-tuned] done -> results/rust-tuned-platform/summary.csv
+impl,test,level,rps,latency_avg_ms,latency_p99_ms,requests,errors,non2xx,transfer_mb_s
+rust-tuned,plaintext,256,283148.80,7.060,0.000,2838992,0,0,38.880
+rust-tuned,plaintext,1024,274882.95,29.710,0.000,2769968,0,0,37.750
+rust-tuned,plaintext,4096,267190.95,116.420,0.000,2677248,0,0,36.690
+rust-tuned,json,16,47725.40,0.398,2.640,477697,0,0,6.780
+rust-tuned,json,64,49918.29,1.240,3.910,499762,0,0,7.090
+rust-tuned,json,256,49539.40,4.780,9.500,497967,0,0,7.040
+rust-tuned,json,512,49931.83,9.690,16.100,502298,0,0,7.100
+[rust-tuned] starting server (cpus 0-1): rust-axum-tuned/target/release/axum-pg
+
+################ [rust-tuned] db ################
+--- primer
+--- warmup
+--- concurrency=16
+Running 10s test @ http://127.0.0.1:8000/db
+  2 threads and 16 connections
+  Thread Stats   Avg      Stdev     Max   +/- Stdev
+    Latency     1.27ms  559.87us   9.61ms   78.38%
+    Req/Sec     6.33k   519.09     7.88k    68.50%
+  Latency Distribution
+     50%    1.20ms
+     75%    1.46ms
+     90%    1.87ms
+     99%    3.31ms
+  125986 requests in 10.01s, 18.36MB read
+Requests/sec:  12592.25
+Transfer/sec:      1.83MB
+--- concurrency=64
+Running 10s test @ http://127.0.0.1:8000/db
+  2 threads and 64 connections
+  Thread Stats   Avg      Stdev     Max   +/- Stdev
+    Latency     4.13ms    1.29ms  14.62ms   74.37%
+    Req/Sec     7.66k   422.78     8.65k    65.00%
+  Latency Distribution
+     50%    4.01ms
+     75%    4.70ms
+     90%    5.73ms
+     99%    8.25ms
+  152635 requests in 10.02s, 22.24MB read
+Requests/sec:  15237.03
+Transfer/sec:      2.22MB
+--- concurrency=256
+Running 10s test @ http://127.0.0.1:8000/db
+  2 threads and 256 connections
+  Thread Stats   Avg      Stdev     Max   +/- Stdev
+    Latency    14.94ms    2.44ms  34.51ms   76.48%
+    Req/Sec     8.45k   415.76     9.47k    77.50%
+  Latency Distribution
+     50%   14.79ms
+     75%   15.96ms
+     90%   17.77ms
+     99%   22.63ms
+  168954 requests in 10.06s, 24.62MB read
+Requests/sec:  16799.99
+Transfer/sec:      2.45MB
+--- concurrency=512
+Running 10s test @ http://127.0.0.1:8000/db
+  2 threads and 512 connections
+  Thread Stats   Avg      Stdev     Max   +/- Stdev
+    Latency    30.52ms    4.99ms  55.81ms   75.42%
+    Req/Sec     8.33k   548.76     9.28k    74.00%
+  Latency Distribution
+     50%   30.18ms
+     75%   33.18ms
+     90%   36.37ms
+     99%   46.38ms
+  166540 requests in 10.08s, 24.26MB read
+Requests/sec:  16514.86
+Transfer/sec:      2.41MB
+
+################ [rust-tuned] queries ################
+--- primer
+--- warmup
+--- queries=1 (c=512)
+Running 10s test @ http://127.0.0.1:8000/queries?q=1
+  2 threads and 512 connections
+  Thread Stats   Avg      Stdev     Max   +/- Stdev
+    Latency    29.85ms    3.78ms  50.73ms   78.42%
+    Req/Sec     8.51k   594.12     9.67k    82.50%
+  Latency Distribution
+     50%   29.48ms
+     75%   31.20ms
+     90%   33.94ms
+     99%   42.95ms
+  170211 requests in 10.09s, 25.12MB read
+Requests/sec:  16875.80
+Transfer/sec:      2.49MB
+--- queries=5 (c=512)
+Running 10s test @ http://127.0.0.1:8000/queries?q=5
+  2 threads and 512 connections
+  Thread Stats   Avg      Stdev     Max   +/- Stdev
+    Latency   127.09ms   75.50ms 283.70ms   56.79%
+    Req/Sec     2.01k   120.65     2.64k    75.00%
+  Latency Distribution
+     50%  129.70ms
+     75%  192.35ms
+     90%  229.52ms
+     99%  265.38ms
+  40033 requests in 10.05s, 10.80MB read
+Requests/sec:   3982.36
+Transfer/sec:      1.07MB
+--- queries=10 (c=512)
+Running 10s test @ http://127.0.0.1:8000/queries?q=10
+  2 threads and 512 connections
+  Thread Stats   Avg      Stdev     Max   +/- Stdev
+    Latency   244.01ms  152.93ms 586.99ms   63.08%
+    Req/Sec     1.06k   166.43     2.23k    90.50%
+  Latency Distribution
+     50%  242.01ms
+     75%  350.18ms
+     90%  486.08ms
+     99%  558.83ms
+  21107 requests in 10.06s, 8.89MB read
+Requests/sec:   2097.35
+Transfer/sec:      0.88MB
+--- queries=20 (c=512)
+Running 10s test @ http://127.0.0.1:8000/queries?q=20
+  2 threads and 512 connections
+  Thread Stats   Avg      Stdev     Max   +/- Stdev
+    Latency   459.48ms  311.69ms   1.02s    54.39%
+    Req/Sec   540.08    103.98     1.19k    86.43%
+  Latency Distribution
+     50%  427.11ms
+     75%  753.67ms
+     90%  927.11ms
+     99%    1.01s 
+  10724 requests in 10.05s, 7.77MB read
+Requests/sec:   1066.93
+Transfer/sec:    791.40KB
+
+################ [rust-tuned] fortunes ################
+--- primer
+--- warmup
+--- concurrency=16
+Running 10s test @ http://127.0.0.1:8000/fortunes
+  2 threads and 16 connections
+  Thread Stats   Avg      Stdev     Max   +/- Stdev
+    Latency     0.94ms  510.30us   7.78ms   85.82%
+    Req/Sec     8.42k   508.52     9.82k    70.00%
+  Latency Distribution
+     50%  826.00us
+     75%    1.08ms
+     90%    1.42ms
+     99%    3.05ms
+  167496 requests in 10.00s, 217.88MB read
+Requests/sec:  16741.78
+Transfer/sec:     21.78MB
+--- concurrency=64
+Running 10s test @ http://127.0.0.1:8000/fortunes
+  2 threads and 64 connections
+  Thread Stats   Avg      Stdev     Max   +/- Stdev
+    Latency     3.16ms    1.24ms  13.68ms   73.21%
+    Req/Sec     9.77k   528.83    11.27k    68.00%
+  Latency Distribution
+     50%    2.93ms
+     75%    3.78ms
+     90%    4.75ms
+     99%    7.03ms
+  194979 requests in 10.03s, 253.63MB read
+Requests/sec:  19441.16
+Transfer/sec:     25.29MB
+--- concurrency=256
+Running 10s test @ http://127.0.0.1:8000/fortunes
+  2 threads and 256 connections
+  Thread Stats   Avg      Stdev     Max   +/- Stdev
+    Latency    11.74ms    3.49ms  30.86ms   67.33%
+    Req/Sec    10.48k   514.47    11.78k    65.00%
+  Latency Distribution
+     50%   11.48ms
+     75%   14.04ms
+     90%   16.42ms
+     99%   20.66ms
+  209687 requests in 10.08s, 272.76MB read
+Requests/sec:  20812.14
+Transfer/sec:     27.07MB
+--- concurrency=512
+Running 10s test @ http://127.0.0.1:8000/fortunes
+  2 threads and 512 connections
+  Thread Stats   Avg      Stdev     Max   +/- Stdev
+    Latency    22.91ms    6.25ms  53.03ms   67.27%
+    Req/Sec    10.78k   566.73    12.41k    71.21%
+  Latency Distribution
+     50%   22.42ms
+     75%   27.09ms
+     90%   31.39ms
+     99%   38.36ms
+  214470 requests in 10.03s, 278.99MB read
+Requests/sec:  21381.46
+Transfer/sec:     27.81MB
+
+################ [rust-tuned] updates ################
+--- primer
+--- warmup
+--- queries=1 (c=512)
+Running 10s test @ http://127.0.0.1:8000/updates?q=1
+  2 threads and 512 connections
+  Thread Stats   Avg      Stdev     Max   +/- Stdev
+    Latency   125.85ms   74.96ms 273.52ms   57.09%
+    Req/Sec     2.03k   124.59     2.32k    73.00%
+  Latency Distribution
+     50%  123.30ms
+     75%  192.43ms
+     90%  232.87ms
+     99%  258.44ms
+  40436 requests in 10.06s, 5.97MB read
+Requests/sec:   4021.41
+Transfer/sec:    607.83KB
+--- queries=5 (c=512)
+Running 10s test @ http://127.0.0.1:8000/updates?q=5
+  2 threads and 512 connections
+  Thread Stats   Avg      Stdev     Max   +/- Stdev
+    Latency   238.95ms  147.41ms 549.12ms   58.91%
+    Req/Sec     1.07k   111.56     1.60k    75.38%
+  Latency Distribution
+     50%  230.92ms
+     75%  371.03ms
+     90%  451.99ms
+     99%  521.00ms
+  21207 requests in 10.05s, 5.72MB read
+Requests/sec:   2109.83
+Transfer/sec:    582.87KB
+--- queries=10 (c=512)
+Running 10s test @ http://127.0.0.1:8000/updates?q=10
+  2 threads and 512 connections
+  Thread Stats   Avg      Stdev     Max   +/- Stdev
+    Latency   366.17ms  166.53ms 661.33ms   65.65%
+    Req/Sec   690.15    183.62     1.81k    86.36%
+  Latency Distribution
+     50%  378.33ms
+     75%  493.88ms
+     90%  591.30ms
+     99%  643.98ms
+  13654 requests in 10.05s, 5.75MB read
+Requests/sec:   1358.78
+Transfer/sec:    586.23KB
+--- queries=20 (c=512)
+Running 10s test @ http://127.0.0.1:8000/updates?q=20
+  2 threads and 512 connections
+  Thread Stats   Avg      Stdev     Max   +/- Stdev
+    Latency   661.50ms  350.77ms   1.40s    60.65%
+    Req/Sec   375.70    125.08     1.43k    86.15%
+  Latency Distribution
+     50%  644.08ms
+     75%  969.27ms
+     90%    1.14s 
+     99%    1.34s 
+  7398 requests in 10.07s, 5.36MB read
+Requests/sec:    734.72
+Transfer/sec:    544.99KB
+
+[rust-tuned] done -> results/rust-tuned-pg/summary.csv
+impl,test,level,rps,latency_avg_ms,latency_p99_ms,requests,errors,non2xx,transfer_mb_s
+rust-tuned,db,16,12592.25,1.270,3.310,125986,0,0,1.830
+rust-tuned,db,64,15237.03,4.130,8.250,152635,0,0,2.220
+rust-tuned,db,256,16799.99,14.940,22.630,168954,0,0,2.450
+rust-tuned,db,512,16514.86,30.520,46.380,166540,0,0,2.410
+rust-tuned,queries,1,16875.80,29.850,42.950,170211,0,0,2.490
+rust-tuned,queries,5,3982.36,127.090,265.380,40033,0,0,1.070
+rust-tuned,queries,10,2097.35,244.010,558.830,21107,0,0,0.880
+rust-tuned,queries,20,1066.93,459.480,1010.000,10724,0,0,0.773
+rust-tuned,fortunes,16,16741.78,0.940,3.050,167496,0,0,21.780
+rust-tuned,fortunes,64,19441.16,3.160,7.030,194979,0,0,25.290
+rust-tuned,fortunes,256,20812.14,11.740,20.660,209687,0,0,27.070
+rust-tuned,fortunes,512,21381.46,22.910,38.360,214470,0,0,27.810
+rust-tuned,updates,1,4021.41,125.850,258.440,40436,0,0,0.594
+rust-tuned,updates,5,2109.83,238.950,521.000,21207,0,0,0.569
+rust-tuned,updates,10,1358.78,366.170,643.980,13654,0,0,0.572
+rust-tuned,updates,20,734.72,661.500,1340.000,7398,0,0,0.532
+
+impl,test,level,rps,latency_avg_ms,latency_p99_ms,requests,errors,non2xx,transfer_mb_s
+rust-tuned,plaintext,256,283148.80,7.060,0.000,2838992,0,0,38.880
+rust-tuned,plaintext,1024,274882.95,29.710,0.000,2769968,0,0,37.750
+rust-tuned,plaintext,4096,267190.95,116.420,0.000,2677248,0,0,36.690
+rust-tuned,json,16,47725.40,0.398,2.640,477697,0,0,6.780
+rust-tuned,json,64,49918.29,1.240,3.910,499762,0,0,7.090
+rust-tuned,json,256,49539.40,4.780,9.500,497967,0,0,7.040
+rust-tuned,json,512,49931.83,9.690,16.100,502298,0,0,7.100
+rust-tuned,db,16,12592.25,1.270,3.310,125986,0,0,1.830
+rust-tuned,db,64,15237.03,4.130,8.250,152635,0,0,2.220
+rust-tuned,db,256,16799.99,14.940,22.630,168954,0,0,2.450
+rust-tuned,db,512,16514.86,30.520,46.380,166540,0,0,2.410
+rust-tuned,queries,1,16875.80,29.850,42.950,170211,0,0,2.490
+rust-tuned,queries,5,3982.36,127.090,265.380,40033,0,0,1.070
+rust-tuned,queries,10,2097.35,244.010,558.830,21107,0,0,0.880
+rust-tuned,queries,20,1066.93,459.480,1010.000,10724,0,0,0.773
+rust-tuned,fortunes,16,16741.78,0.940,3.050,167496,0,0,21.780
+rust-tuned,fortunes,64,19441.16,3.160,7.030,194979,0,0,25.290
+rust-tuned,fortunes,256,20812.14,11.740,20.660,209687,0,0,27.070
+rust-tuned,fortunes,512,21381.46,22.910,38.360,214470,0,0,27.810
+rust-tuned,updates,1,4021.41,125.850,258.440,40436,0,0,0.594
+rust-tuned,updates,5,2109.83,238.950,521.000,21207,0,0,0.569
+rust-tuned,updates,10,1358.78,366.170,643.980,13654,0,0,0.572
+rust-tuned,updates,20,734.72,661.500,1340.000,7398,0,0,0.532
+################ rust-tuned exit=0 2026-11-22T14:09:28-03:00 ################
+################ rust-may 2026-11-22T14:09:28-03:00 ################
+warning: unnecessary parentheses around type
+   --> src/main.rs:182:30
+    |
+182 |         let mut params: Vec<&(dyn ToSql)> = Vec::with_capacity(num * 3);
+    |                              ^         ^
+    |
+    = note: `#[warn(unused_parens)]` (part of `#[warn(unused)]`) on by default
+help: remove these parentheses
+    |
+182 -         let mut params: Vec<&(dyn ToSql)> = Vec::with_capacity(num * 3);
+182 +         let mut params: Vec<&dyn ToSql> = Vec::with_capacity(num * 3);
+    |
+
+warning: `may-minihttp` (bin "may-minihttp") generated 1 warning (run `cargo fix --bin "may-minihttp" -p may-minihttp` to apply 1 suggestion)
+    Finished `release` profile [optimized] target(s) in 6.12s
+[rust-may-minihttp] starting server (cpus 0-1): rust-may-minihttp/target/release/may-minihttp
+
+################ [rust-may-minihttp] plaintext ################
+--- primer
+--- warmup
+--- concurrency=256 pipeline=16
+Running 10s test @ http://127.0.0.1:18084/plaintext
+  2 threads and 256 connections
+  Thread Stats   Avg      Stdev     Max   +/- Stdev
+    Latency     2.57ms    1.82ms  21.41ms   72.87%
+    Req/Sec   348.51k    19.99k  376.32k    77.27%
+  Latency Distribution
+     50%    2.48ms
+     75%    4.52ms
+     90%   11.09ms
+     99%    0.00us
+  6934272 requests in 10.02s, 833.24MB read
+Requests/sec: 692250.31
+Transfer/sec:     83.18MB
+--- concurrency=1024 pipeline=16
+Running 10s test @ http://127.0.0.1:18084/plaintext
+  2 threads and 1024 connections
+  Thread Stats   Avg      Stdev     Max   +/- Stdev
+    Latency     8.45ms    5.52ms  68.47ms   57.30%
+    Req/Sec   346.45k    17.38k  378.18k    87.50%
+  Latency Distribution
+     50%   11.52ms
+     75%   29.77ms
+     90%    0.00us
+     99%    0.00us
+  6898048 requests in 10.09s, 828.89MB read
+Requests/sec: 683527.35
+Transfer/sec:     82.13MB
+--- concurrency=4096 pipeline=16
+Running 10s test @ http://127.0.0.1:18084/plaintext
+  2 threads and 4096 connections
+  Thread Stats   Avg      Stdev     Max   +/- Stdev
+    Latency    43.79ms   28.07ms 305.26ms   65.92%
+    Req/Sec   301.31k    32.43k  352.79k    83.11%
+  Latency Distribution
+     50%   48.40ms
+     75%   88.96ms
+     90%    0.00us
+     99%    0.00us
+  5903184 requests in 10.12s, 709.34MB read
+Requests/sec: 583506.08
+Transfer/sec:     70.12MB
+
+################ [rust-may-minihttp] json ################
+--- primer
+--- warmup
+--- concurrency=16
+Running 10s test @ http://127.0.0.1:18084/json
+  2 threads and 16 connections
+  Thread Stats   Avg      Stdev     Max   +/- Stdev
+    Latency   293.03us  500.79us   9.57ms   93.17%
+    Req/Sec    32.34k     1.55k   37.29k    71.14%
+  Latency Distribution
+     50%  191.00us
+     75%  214.00us
+     90%  423.00us
+     99%    2.70ms
+  646811 requests in 10.10s, 90.06MB read
+Requests/sec:  64042.06
+Transfer/sec:      8.92MB
+--- concurrency=64
+Running 10s test @ http://127.0.0.1:18084/json
+  2 threads and 64 connections
+  Thread Stats   Avg      Stdev     Max   +/- Stdev
+    Latency   761.83us  833.64us  20.26ms   92.69%
+    Req/Sec    33.75k     2.07k   37.92k    76.00%
+  Latency Distribution
+     50%  479.00us
+     75%  815.00us
+     90%    1.23ms
+     99%    4.10ms
+  671684 requests in 10.01s, 93.52MB read
+Requests/sec:  67131.47
+Transfer/sec:      9.35MB
+--- concurrency=256
+Running 10s test @ http://127.0.0.1:18084/json
+  2 threads and 256 connections
+  Thread Stats   Avg      Stdev     Max   +/- Stdev
+    Latency     2.70ms    1.52ms  18.58ms   85.31%
+    Req/Sec    33.56k     1.56k   36.73k    64.50%
+  Latency Distribution
+     50%    2.12ms
+     75%    3.35ms
+     90%    4.51ms
+     99%    8.37ms
+  669851 requests in 10.05s, 93.27MB read
+Requests/sec:  66656.72
+Transfer/sec:      9.28MB
+--- concurrency=512
+Running 10s test @ http://127.0.0.1:18084/json
+  2 threads and 512 connections
+  Thread Stats   Avg      Stdev     Max   +/- Stdev
+    Latency     5.67ms    2.43ms  26.12ms   71.44%
+    Req/Sec    33.39k     1.32k   36.09k    67.68%
+  Latency Distribution
+     50%    5.72ms
+     75%    6.99ms
+     90%    8.66ms
+     99%   13.09ms
+  664174 requests in 10.03s, 92.48MB read
+Requests/sec:  66216.74
+Transfer/sec:      9.22MB
+
+################ [rust-may-minihttp] db ################
+--- primer
+--- warmup
+--- concurrency=16
+Running 10s test @ http://127.0.0.1:18084/db
+  2 threads and 16 connections
+  Thread Stats   Avg      Stdev     Max   +/- Stdev
+    Latency     1.38ms  828.98us  12.35ms   81.03%
+    Req/Sec     6.03k   244.00     6.84k    70.50%
+  Latency Distribution
+     50%    1.03ms
+     75%    1.75ms
+     90%    2.48ms
+     99%    3.91ms
+  119937 requests in 10.00s, 17.13MB read
+Requests/sec:  11987.94
+Transfer/sec:      1.71MB
+--- concurrency=64
+Running 10s test @ http://127.0.0.1:18084/db
+  2 threads and 64 connections
+  Thread Stats   Avg      Stdev     Max   +/- Stdev
+    Latency     4.54ms    1.54ms  20.27ms   72.56%
+    Req/Sec     6.98k   282.38     7.70k    71.00%
+  Latency Distribution
+     50%    4.13ms
+     75%    5.46ms
+     90%    6.67ms
+     99%    8.69ms
+  139045 requests in 10.02s, 19.86MB read
+Requests/sec:  13874.86
+Transfer/sec:      1.98MB
+--- concurrency=256
+Running 10s test @ http://127.0.0.1:18084/db
+  2 threads and 256 connections
+  Thread Stats   Avg      Stdev     Max   +/- Stdev
+    Latency    17.88ms    3.61ms  32.71ms   69.89%
+    Req/Sec     7.14k   251.72     7.91k    71.00%
+  Latency Distribution
+     50%   17.01ms
+     75%   20.40ms
+     90%   23.13ms
+     99%   27.05ms
+  142354 requests in 10.03s, 20.33MB read
+Requests/sec:  14195.05
+Transfer/sec:      2.03MB
+--- concurrency=512
+Running 10s test @ http://127.0.0.1:18084/db
+  2 threads and 512 connections
+  Thread Stats   Avg      Stdev     Max   +/- Stdev
+    Latency    36.11ms    6.85ms  59.35ms   68.22%
+    Req/Sec     7.08k   293.89     8.74k    72.50%
+  Latency Distribution
+     50%   34.27ms
+     75%   41.32ms
+     90%   46.50ms
+     99%   51.92ms
+  141206 requests in 10.05s, 20.17MB read
+Requests/sec:  14048.71
+Transfer/sec:      2.01MB
+
+################ [rust-may-minihttp] queries ################
+--- primer
+--- warmup
+--- queries=1 (c=512)
+Running 10s test @ http://127.0.0.1:18084/queries?q=1
+  2 threads and 512 connections
+  Thread Stats   Avg      Stdev     Max   +/- Stdev
+    Latency    36.28ms    6.59ms  65.21ms   67.61%
+    Req/Sec     7.05k   301.61     8.07k    73.50%
+  Latency Distribution
+     50%   35.07ms
+     75%   40.89ms
+     90%   45.97ms
+     99%   51.99ms
+  140610 requests in 10.05s, 20.35MB read
+Requests/sec:  13991.40
+Transfer/sec:      2.03MB
+--- queries=5 (c=512)
+Running 10s test @ http://127.0.0.1:18084/queries?q=5
+  2 threads and 512 connections
+  Thread Stats   Avg      Stdev     Max   +/- Stdev
+    Latency   149.30ms   16.79ms 209.61ms   87.06%
+    Req/Sec     1.71k   365.10     2.86k    67.00%
+  Latency Distribution
+     50%  147.26ms
+     75%  156.71ms
+     90%  167.34ms
+     99%  192.33ms
+  34044 requests in 10.04s, 9.09MB read
+Requests/sec:   3390.45
+Transfer/sec:      0.91MB
+--- queries=10 (c=512)
+Running 10s test @ http://127.0.0.1:18084/queries?q=10
+  2 threads and 512 connections
+  Thread Stats   Avg      Stdev     Max   +/- Stdev
+    Latency   279.73ms   31.60ms 344.42ms   91.91%
+    Req/Sec     0.91k   243.92     1.52k    68.00%
+  Latency Distribution
+     50%  280.61ms
+     75%  292.92ms
+     90%  302.03ms
+     99%  337.86ms
+  18039 requests in 10.04s, 7.55MB read
+Requests/sec:   1796.23
+Transfer/sec:    769.69KB
+--- queries=20 (c=512)
+Running 10s test @ http://127.0.0.1:18084/queries?q=20
+  2 threads and 512 connections
+  Thread Stats   Avg      Stdev     Max   +/- Stdev
+    Latency   527.88ms   72.37ms 587.66ms   95.32%
+    Req/Sec   549.29    386.18     0.98k    45.96%
+  Latency Distribution
+     50%  540.83ms
+     75%  548.79ms
+     90%  557.53ms
+     99%  579.47ms
+  9432 requests in 10.05s, 6.81MB read
+Requests/sec:    938.50
+Transfer/sec:    693.44KB
+
+################ [rust-may-minihttp] fortunes ################
+--- primer
+--- warmup
+--- concurrency=16
+Running 10s test @ http://127.0.0.1:18084/fortunes
+  2 threads and 16 connections
+  Thread Stats   Avg      Stdev     Max   +/- Stdev
+    Latency     0.89ms  578.09us   8.92ms   88.23%
+    Req/Sec     9.20k     0.86k   12.00k    71.00%
+  Latency Distribution
+     50%  743.00us
+     75%    1.04ms
+     90%    1.46ms
+     99%    3.30ms
+  183223 requests in 10.01s, 237.81MB read
+Requests/sec:  18311.31
+Transfer/sec:     23.77MB
+--- concurrency=64
+Running 10s test @ http://127.0.0.1:18084/fortunes
+  2 threads and 64 connections
+  Thread Stats   Avg      Stdev     Max   +/- Stdev
+    Latency     2.89ms    1.05ms  10.15ms   73.36%
+    Req/Sec    10.66k   546.73    12.02k    68.50%
+  Latency Distribution
+     50%    2.70ms
+     75%    3.49ms
+     90%    4.32ms
+     99%    6.08ms
+  212514 requests in 10.03s, 275.83MB read
+Requests/sec:  21196.65
+Transfer/sec:     27.51MB
+--- concurrency=256
+Running 10s test @ http://127.0.0.1:18084/fortunes
+  2 threads and 256 connections
+  Thread Stats   Avg      Stdev     Max   +/- Stdev
+    Latency    10.78ms    3.14ms  36.47ms   70.47%
+    Req/Sec    11.37k   588.82    12.59k    75.00%
+  Latency Distribution
+     50%   10.52ms
+     75%   12.74ms
+     90%   14.88ms
+     99%   18.97ms
+  227784 requests in 10.09s, 295.65MB read
+Requests/sec:  22584.36
+Transfer/sec:     29.31MB
+--- concurrency=512
+Running 10s test @ http://127.0.0.1:18084/fortunes
+  2 threads and 512 connections
+  Thread Stats   Avg      Stdev     Max   +/- Stdev
+    Latency    21.57ms    5.58ms  45.33ms   69.22%
+    Req/Sec    11.51k   645.57    13.69k    73.23%
+  Latency Distribution
+     50%   21.25ms
+     75%   25.26ms
+     90%   28.96ms
+     99%   35.48ms
+  228325 requests in 10.01s, 296.35MB read
+Requests/sec:  22802.79
+Transfer/sec:     29.60MB
+
+################ [rust-may-minihttp] updates ################
+--- primer
+--- warmup
+--- queries=1 (c=512)
+Running 10s test @ http://127.0.0.1:18084/updates?q=1
+  2 threads and 512 connections
+  Thread Stats   Avg      Stdev     Max   +/- Stdev
+    Latency    80.78ms   12.69ms 117.66ms   71.70%
+    Req/Sec     3.17k   261.81     3.78k    64.50%
+  Latency Distribution
+     50%   77.43ms
+     75%   89.29ms
+     90%  100.49ms
+     99%  112.50ms
+  63114 requests in 10.05s, 9.14MB read
+Requests/sec:   6279.91
+Transfer/sec:      0.91MB
+--- queries=5 (c=512)
+Running 10s test @ http://127.0.0.1:18084/updates?q=5
+  2 threads and 512 connections
+  Thread Stats   Avg      Stdev     Max   +/- Stdev
+    Latency   208.12ms   19.12ms 290.56ms   77.26%
+    Req/Sec     1.22k   633.27     2.56k    62.83%
+  Latency Distribution
+     50%  203.89ms
+     75%  219.35ms
+     90%  234.84ms
+     99%  261.39ms
+  24353 requests in 10.05s, 6.50MB read
+Requests/sec:   2423.69
+Transfer/sec:    662.48KB
+--- queries=10 (c=512)
+Running 10s test @ http://127.0.0.1:18084/updates?q=10
+  2 threads and 512 connections
+  Thread Stats   Avg      Stdev     Max   +/- Stdev
+    Latency   350.91ms   16.23ms 391.25ms   79.54%
+    Req/Sec   766.25    754.84     2.50k    79.08%
+  Latency Distribution
+     50%  351.58ms
+     75%  358.67ms
+     90%  368.31ms
+     99%  385.35ms
+  14348 requests in 10.05s, 6.00MB read
+Requests/sec:   1427.65
+Transfer/sec:    611.72KB
+--- queries=20 (c=512)
+Running 10s test @ http://127.0.0.1:18084/updates?q=20
+  2 threads and 512 connections
+  Thread Stats   Avg      Stdev     Max   +/- Stdev
+    Latency   638.24ms   29.44ms 691.27ms   81.17%
+    Req/Sec   546.92    665.48     2.33k    80.83%
+  Latency Distribution
+     50%  639.55ms
+     75%  650.77ms
+     90%  669.14ms
+     99%  685.75ms
+  7695 requests in 10.06s, 5.55MB read
+Requests/sec:    764.81
+Transfer/sec:    565.07KB
+
+[rust-may-minihttp] done -> results/rust-may-minihttp/summary.csv
+impl,test,level,rps,latency_avg_ms,latency_p99_ms,requests,errors,non2xx,transfer_mb_s
+rust-may-minihttp,plaintext,256,692250.31,2.570,0.000,6934272,0,0,83.180
+rust-may-minihttp,plaintext,1024,683527.35,8.450,0.000,6898048,0,0,82.130
+rust-may-minihttp,plaintext,4096,583506.08,43.790,0.000,5903184,0,0,70.120
+rust-may-minihttp,json,16,64042.06,0.293,2.700,646811,0,0,8.920
+rust-may-minihttp,json,64,67131.47,0.762,4.100,671684,0,0,9.350
+rust-may-minihttp,json,256,66656.72,2.700,8.370,669851,0,0,9.280
+rust-may-minihttp,json,512,66216.74,5.670,13.090,664174,0,0,9.220
+rust-may-minihttp,db,16,11987.94,1.380,3.910,119937,0,0,1.710
+rust-may-minihttp,db,64,13874.86,4.540,8.690,139045,0,0,1.980
+rust-may-minihttp,db,256,14195.05,17.880,27.050,142354,0,0,2.030
+rust-may-minihttp,db,512,14048.71,36.110,51.920,141206,0,0,2.010
+rust-may-minihttp,queries,1,13991.40,36.280,51.990,140610,0,0,2.030
+rust-may-minihttp,queries,5,3390.45,149.300,192.330,34044,0,0,0.910
+rust-may-minihttp,queries,10,1796.23,279.730,337.860,18039,0,0,0.752
+rust-may-minihttp,queries,20,938.50,527.880,579.470,9432,0,0,0.677
+rust-may-minihttp,fortunes,16,18311.31,0.890,3.300,183223,0,0,23.770
+rust-may-minihttp,fortunes,64,21196.65,2.890,6.080,212514,0,0,27.510
+rust-may-minihttp,fortunes,256,22584.36,10.780,18.970,227784,0,0,29.310
+rust-may-minihttp,fortunes,512,22802.79,21.570,35.480,228325,0,0,29.600
+rust-may-minihttp,updates,1,6279.91,80.780,112.500,63114,0,0,0.910
+rust-may-minihttp,updates,5,2423.69,208.120,261.390,24353,0,0,0.647
+rust-may-minihttp,updates,10,1427.65,350.910,385.350,14348,0,0,0.597
+rust-may-minihttp,updates,20,764.81,638.240,685.750,7695,0,0,0.552
+################ rust-may exit=0 2026-11-22T14:16:22-03:00 ################
+################ dotnet 2026-11-22T14:16:22-03:00 ################
+  Determining projects to restore...
+  All projects are up-to-date for restore.
+  DotnetBench -> /home/dmarques/apps/gitpod-tests1/benchmark/dotnet/bin/Release/net11.0/DotnetBench.dll
+  DotnetBench -> /home/dmarques/apps/gitpod-tests1/benchmark/dotnet/out/
+[dotnet] starting server (cpus 0-1): dotnet dotnet/out/DotnetBench.dll
+
+################ [dotnet] plaintext ################
+--- primer
+--- warmup
+--- concurrency=256 pipeline=16
+Running 10s test @ http://127.0.0.1:18080/plaintext
+  2 threads and 256 connections
+  Thread Stats   Avg      Stdev     Max   +/- Stdev
+    Latency     6.74ms    3.87ms  33.42ms   64.38%
+    Req/Sec   168.79k    13.17k  205.12k    74.50%
+  Latency Distribution
+     50%    6.39ms
+     75%    9.43ms
+     90%   11.86ms
+     99%   16.90ms
+  3370384 requests in 10.06s, 424.28MB read
+Requests/sec: 335190.39
+Transfer/sec:     42.20MB
+--- concurrency=1024 pipeline=16
+Running 10s test @ http://127.0.0.1:18080/plaintext
+  2 threads and 1024 connections
+  Thread Stats   Avg      Stdev     Max   +/- Stdev
+    Latency    28.12ms   13.05ms 110.83ms   50.92%
+    Req/Sec   152.62k    13.10k  188.96k    80.30%
+  Latency Distribution
+     50%   36.42ms
+     75%   49.89ms
+     90%    0.00us
+     99%    0.00us
+  3033072 requests in 10.06s, 381.82MB read
+Requests/sec: 301615.68
+Transfer/sec:     37.97MB
+--- concurrency=4096 pipeline=16
+Running 10s test @ http://127.0.0.1:18080/plaintext
+  2 threads and 4096 connections
+  Thread Stats   Avg      Stdev     Max   +/- Stdev
+    Latency    93.37ms   55.06ms 328.62ms   29.27%
+    Req/Sec   156.35k    31.76k  242.74k    74.47%
+  Latency Distribution
+     50%  190.44ms
+     75%    0.00us
+     90%    0.00us
+     99%    0.00us
+  3036848 requests in 10.10s, 382.29MB read
+Requests/sec: 300765.30
+Transfer/sec:     37.86MB
+
+################ [dotnet] json ################
+--- primer
+--- warmup
+--- concurrency=16
+Running 10s test @ http://127.0.0.1:18080/json
+  2 threads and 16 connections
+  Thread Stats   Avg      Stdev     Max   +/- Stdev
+    Latency   498.58us  483.70us  12.27ms   92.62%
+    Req/Sec    18.14k     1.68k   22.70k    70.50%
+  Latency Distribution
+     50%  372.00us
+     75%  461.00us
+     90%  781.00us
+     99%    2.79ms
+  360885 requests in 10.01s, 52.31MB read
+Requests/sec:  36066.88
+Transfer/sec:      5.23MB
+--- concurrency=64
+Running 10s test @ http://127.0.0.1:18080/json
+  2 threads and 64 connections
+  Thread Stats   Avg      Stdev     Max   +/- Stdev
+    Latency     1.57ms  727.49us   9.63ms   81.39%
+    Req/Sec    19.61k     1.60k   23.30k    70.00%
+  Latency Distribution
+     50%    1.46ms
+     75%    1.74ms
+     90%    2.30ms
+     99%    4.28ms
+  390435 requests in 10.02s, 56.60MB read
+Requests/sec:  38958.97
+Transfer/sec:      5.65MB
+--- concurrency=256
+Running 10s test @ http://127.0.0.1:18080/json
+  2 threads and 256 connections
+  Thread Stats   Avg      Stdev     Max   +/- Stdev
+    Latency     6.15ms    1.78ms  26.38ms   73.17%
+    Req/Sec    19.61k     1.37k   24.40k    68.00%
+  Latency Distribution
+     50%    6.07ms
+     75%    6.98ms
+     90%    8.37ms
+     99%   11.48ms
+  391363 requests in 10.06s, 56.73MB read
+Requests/sec:  38906.28
+Transfer/sec:      5.64MB
+--- concurrency=512
+Running 10s test @ http://127.0.0.1:18080/json
+  2 threads and 512 connections
+  Thread Stats   Avg      Stdev     Max   +/- Stdev
+    Latency    12.20ms    3.22ms  33.72ms   69.53%
+    Req/Sec    19.80k     1.27k   24.43k    69.00%
+  Latency Distribution
+     50%   12.16ms
+     75%   14.10ms
+     90%   16.30ms
+     99%   20.39ms
+  395507 requests in 10.09s, 57.33MB read
+Requests/sec:  39190.85
+Transfer/sec:      5.68MB
+
+################ [dotnet] db ################
+--- primer
+--- warmup
+--- concurrency=16
+Running 10s test @ http://127.0.0.1:18080/db
+  2 threads and 16 connections
+  Thread Stats   Avg      Stdev     Max   +/- Stdev
+    Latency     1.70ms    1.72ms  45.49ms   97.14%
+    Req/Sec     4.95k   309.55     5.55k    86.50%
+  Latency Distribution
+     50%    1.47ms
+     75%    1.94ms
+     90%    2.51ms
+     99%    4.40ms
+  98513 requests in 10.01s, 14.64MB read
+Requests/sec:   9842.71
+Transfer/sec:      1.46MB
+--- concurrency=64
+Running 10s test @ http://127.0.0.1:18080/db
+  2 threads and 64 connections
+  Thread Stats   Avg      Stdev     Max   +/- Stdev
+    Latency     4.97ms    2.02ms  34.42ms   74.27%
+    Req/Sec     6.35k   374.57     7.16k    86.00%
+  Latency Distribution
+     50%    4.69ms
+     75%    5.98ms
+     90%    7.43ms
+     99%   10.93ms
+  126795 requests in 10.03s, 18.84MB read
+Requests/sec:  12640.74
+Transfer/sec:      1.88MB
+--- concurrency=256
+Running 10s test @ http://127.0.0.1:18080/db
+  2 threads and 256 connections
+  Thread Stats   Avg      Stdev     Max   +/- Stdev
+    Latency    17.66ms    5.34ms  47.70ms   70.64%
+    Req/Sec     7.06k   430.95     8.17k    68.50%
+  Latency Distribution
+     50%   17.23ms
+     75%   20.81ms
+     90%   24.50ms
+     99%   32.67ms
+  141634 requests in 10.10s, 21.04MB read
+Requests/sec:  14018.13
+Transfer/sec:      2.08MB
+--- concurrency=512
+Running 10s test @ http://127.0.0.1:18080/db
+  2 threads and 512 connections
+  Thread Stats   Avg      Stdev     Max   +/- Stdev
+    Latency    35.26ms    9.77ms  92.99ms   71.18%
+    Req/Sec     7.03k   553.89     8.66k    70.71%
+  Latency Distribution
+     50%   34.68ms
+     75%   41.01ms
+     90%   47.49ms
+     99%   61.77ms
+  140313 requests in 10.08s, 20.85MB read
+Requests/sec:  13921.06
+Transfer/sec:      2.07MB
+
+################ [dotnet] queries ################
+--- primer
+--- warmup
+--- queries=1 (c=512)
+Running 10s test @ http://127.0.0.1:18080/queries?q=1
+  2 threads and 512 connections
+  Thread Stats   Avg      Stdev     Max   +/- Stdev
+    Latency    35.41ms    9.97ms  87.48ms   70.23%
+    Req/Sec     6.99k   574.06     8.37k    71.72%
+  Latency Distribution
+     50%   34.81ms
+     75%   41.22ms
+     90%   48.26ms
+     99%   62.95ms
+  139721 requests in 10.09s, 21.02MB read
+Requests/sec:  13843.21
+Transfer/sec:      2.08MB
+--- queries=5 (c=512)
+Running 10s test @ http://127.0.0.1:18080/queries?q=5
+  2 threads and 512 connections
+  Thread Stats   Avg      Stdev     Max   +/- Stdev
+    Latency    95.03ms   55.92ms 328.87ms   66.00%
+    Req/Sec     2.74k   195.43     3.15k    74.50%
+  Latency Distribution
+     50%   88.41ms
+     75%  128.27ms
+     90%  176.64ms
+     99%  244.30ms
+  54823 requests in 10.07s, 14.95MB read
+Requests/sec:   5442.04
+Transfer/sec:      1.48MB
+--- queries=10 (c=512)
+Running 10s test @ http://127.0.0.1:18080/queries?q=10
+  2 threads and 512 connections
+  Thread Stats   Avg      Stdev     Max   +/- Stdev
+    Latency   163.52ms   90.15ms 554.17ms   71.70%
+    Req/Sec     1.59k   148.77     2.28k    84.00%
+  Latency Distribution
+     50%  151.51ms
+     75%  209.32ms
+     90%  277.21ms
+     99%  447.39ms
+  31664 requests in 10.07s, 13.43MB read
+Requests/sec:   3144.93
+Transfer/sec:      1.33MB
+--- queries=20 (c=512)
+Running 10s test @ http://127.0.0.1:18080/queries?q=20
+  2 threads and 512 connections
+  Thread Stats   Avg      Stdev     Max   +/- Stdev
+    Latency   293.70ms  170.50ms   1.01s    70.04%
+    Req/Sec     0.88k   118.51     1.43k    91.00%
+  Latency Distribution
+     50%  270.79ms
+     75%  399.48ms
+     90%  525.72ms
+     99%  780.95ms
+  17606 requests in 10.06s, 12.80MB read
+Requests/sec:   1750.26
+Transfer/sec:      1.27MB
+
+################ [dotnet] fortunes ################
+--- primer
+--- warmup
+--- concurrency=16
+Running 10s test @ http://127.0.0.1:18080/fortunes
+  2 threads and 16 connections
+  Thread Stats   Avg      Stdev     Max   +/- Stdev
+    Latency     1.24ms  606.54us  11.12ms   83.99%
+    Req/Sec     6.44k   312.07     7.25k    68.50%
+  Latency Distribution
+     50%    1.11ms
+     75%    1.43ms
+     90%    1.86ms
+     99%    3.48ms
+  128169 requests in 10.00s, 167.09MB read
+Requests/sec:  12810.92
+Transfer/sec:     16.70MB
+--- concurrency=64
+Running 10s test @ http://127.0.0.1:18080/fortunes
+  2 threads and 64 connections
+  Thread Stats   Avg      Stdev     Max   +/- Stdev
+    Latency     3.95ms    1.51ms  15.91ms   72.36%
+    Req/Sec     7.81k   353.29     8.64k    65.00%
+  Latency Distribution
+     50%    3.72ms
+     75%    4.74ms
+     90%    5.89ms
+     99%    8.59ms
+  155928 requests in 10.04s, 203.28MB read
+Requests/sec:  15537.64
+Transfer/sec:     20.26MB
+--- concurrency=256
+Running 10s test @ http://127.0.0.1:18080/fortunes
+  2 threads and 256 connections
+  Thread Stats   Avg      Stdev     Max   +/- Stdev
+    Latency    14.69ms    3.45ms  37.13ms   72.27%
+    Req/Sec     8.45k   584.79     9.92k    75.50%
+  Latency Distribution
+     50%   14.42ms
+     75%   16.66ms
+     90%   19.10ms
+     99%   24.61ms
+  168932 requests in 10.07s, 220.23MB read
+Requests/sec:  16780.77
+Transfer/sec:     21.88MB
+--- concurrency=512
+Running 10s test @ http://127.0.0.1:18080/fortunes
+  2 threads and 512 connections
+  Thread Stats   Avg      Stdev     Max   +/- Stdev
+    Latency    29.05ms    5.91ms  55.66ms   71.02%
+    Req/Sec     8.59k   691.26    13.10k    77.39%
+  Latency Distribution
+     50%   28.85ms
+     75%   32.69ms
+     90%   36.43ms
+     99%   44.78ms
+  171429 requests in 10.09s, 223.49MB read
+Requests/sec:  16992.70
+Transfer/sec:     22.15MB
+
+################ [dotnet] updates ################
+--- primer
+--- warmup
+--- queries=1 (c=512)
+Running 10s test @ http://127.0.0.1:18080/updates?q=1
+  2 threads and 512 connections
+  Thread Stats   Avg      Stdev     Max   +/- Stdev
+    Latency   127.78ms   59.37ms 389.14ms   68.50%
+    Req/Sec     2.01k   204.13     2.59k    80.00%
+  Latency Distribution
+     50%  123.26ms
+     75%  163.84ms
+     90%  204.66ms
+     99%  295.22ms
+  40075 requests in 10.07s, 6.03MB read
+Requests/sec:   3981.55
+Transfer/sec:    613.47KB
+--- queries=5 (c=512)
+Running 10s test @ http://127.0.0.1:18080/updates?q=5
+  2 threads and 512 connections
+  Thread Stats   Avg      Stdev     Max   +/- Stdev
+    Latency   208.68ms  103.56ms 841.45ms   68.80%
+    Req/Sec     1.23k   132.32     1.65k    79.00%
+  Latency Distribution
+     50%  200.18ms
+     75%  273.50ms
+     90%  338.15ms
+     99%  502.56ms
+  24520 requests in 10.07s, 6.69MB read
+Requests/sec:   2435.39
+Transfer/sec:    679.94KB
+--- queries=10 (c=512)
+Running 10s test @ http://127.0.0.1:18080/updates?q=10
+  2 threads and 512 connections
+  Thread Stats   Avg      Stdev     Max   +/- Stdev
+    Latency   297.59ms  129.89ms 807.86ms   69.64%
+    Req/Sec     0.85k   153.40     1.72k    84.42%
+  Latency Distribution
+     50%  291.87ms
+     75%  379.10ms
+     90%  469.65ms
+     99%  641.67ms
+  16952 requests in 10.07s, 7.19MB read
+Requests/sec:   1682.91
+Transfer/sec:    731.00KB
+--- queries=20 (c=512)
+Running 10s test @ http://127.0.0.1:18080/updates?q=20
+  2 threads and 512 connections
+  Thread Stats   Avg      Stdev     Max   +/- Stdev
+    Latency   536.84ms  239.01ms   1.36s    69.07%
+    Req/Sec   467.17    116.74   843.00     69.70%
+  Latency Distribution
+     50%  521.21ms
+     75%  684.51ms
+     90%  849.44ms
+     99%    1.23s 
+  9261 requests in 10.10s, 6.74MB read
+Requests/sec:    917.36
+Transfer/sec:    683.16KB
+
+[dotnet] done -> results/dotnet/summary.csv
+impl,test,level,rps,latency_avg_ms,latency_p99_ms,requests,errors,non2xx,transfer_mb_s
+dotnet,plaintext,256,335190.39,6.740,16.900,3370384,0,0,42.200
+dotnet,plaintext,1024,301615.68,28.120,0.000,3033072,0,0,37.970
+dotnet,plaintext,4096,300765.30,93.370,0.000,3036848,0,0,37.860
+dotnet,json,16,36066.88,0.499,2.790,360885,0,0,5.230
+dotnet,json,64,38958.97,1.570,4.280,390435,0,0,5.650
+dotnet,json,256,38906.28,6.150,11.480,391363,0,0,5.640
+dotnet,json,512,39190.85,12.200,20.390,395507,0,0,5.680
+dotnet,db,16,9842.71,1.700,4.400,98513,0,0,1.460
+dotnet,db,64,12640.74,4.970,10.930,126795,0,0,1.880
+dotnet,db,256,14018.13,17.660,32.670,141634,0,0,2.080
+dotnet,db,512,13921.06,35.260,61.770,140313,0,0,2.070
+dotnet,queries,1,13843.21,35.410,62.950,139721,0,0,2.080
+dotnet,queries,5,5442.04,95.030,244.300,54823,0,0,1.480
+dotnet,queries,10,3144.93,163.520,447.390,31664,0,0,1.330
+dotnet,queries,20,1750.26,293.700,780.950,17606,0,0,1.270
+dotnet,fortunes,16,12810.92,1.240,3.480,128169,0,0,16.700
+dotnet,fortunes,64,15537.64,3.950,8.590,155928,0,0,20.260
+dotnet,fortunes,256,16780.77,14.690,24.610,168932,0,0,21.880
+dotnet,fortunes,512,16992.70,29.050,44.780,171429,0,0,22.150
+dotnet,updates,1,3981.55,127.780,295.220,40075,0,0,0.599
+dotnet,updates,5,2435.39,208.680,502.560,24520,0,0,0.664
+dotnet,updates,10,1682.91,297.590,641.670,16952,0,0,0.714
+dotnet,updates,20,917.36,536.840,1230.000,9261,0,0,0.667
+################ dotnet exit=0 2026-11-22T14:23:24-03:00 ################
+################ dotnet-platform 2026-11-22T14:23:24-03:00 ################
+  Determining projects to restore...
+  All projects are up-to-date for restore.
+  DotnetBench.Platform -> /home/dmarques/apps/gitpod-tests1/benchmark/dotnet-platform/bin/Release/net11.0/DotnetBench.Platform.dll
+  DotnetBench.Platform -> /home/dmarques/apps/gitpod-tests1/benchmark/dotnet-platform/out/
+[dotnet-platform] starting server (cpus 0-1): dotnet dotnet-platform/out/DotnetBench.Platform.dll
+
+################ [dotnet-platform] plaintext ################
+--- primer
+--- warmup
+--- concurrency=256 pipeline=16
+Running 10s test @ http://127.0.0.1:8081/plaintext
+  2 threads and 256 connections
+  Thread Stats   Avg      Stdev     Max   +/- Stdev
+    Latency     2.55ms    2.00ms  23.22ms   81.06%
+    Req/Sec   355.40k    25.44k  388.36k    87.50%
+  Latency Distribution
+     50%    2.05ms
+     75%    3.16ms
+     90%    5.07ms
+     99%   10.08ms
+  7121424 requests in 10.10s, 855.73MB read
+Requests/sec: 705223.87
+Transfer/sec:     84.74MB
+--- concurrency=1024 pipeline=16
+Running 10s test @ http://127.0.0.1:8081/plaintext
+  2 threads and 1024 connections
+  Thread Stats   Avg      Stdev     Max   +/- Stdev
+    Latency     7.51ms    4.41ms  53.63ms   70.06%
+    Req/Sec   361.05k    15.48k  389.82k    82.01%
+  Latency Distribution
+     50%    9.08ms
+     75%   14.78ms
+     90%    0.00us
+     99%    0.00us
+  7175616 requests in 10.08s, 862.24MB read
+Requests/sec: 711811.44
+Transfer/sec:     85.53MB
+--- concurrency=4096 pipeline=16
+Running 10s test @ http://127.0.0.1:8081/plaintext
+  2 threads and 4096 connections
+  Thread Stats   Avg      Stdev     Max   +/- Stdev
+    Latency    24.90ms   19.52ms 127.93ms   33.42%
+    Req/Sec   340.14k    22.02k  401.08k    86.81%
+  Latency Distribution
+     50%   76.67ms
+     75%    0.00us
+     90%    0.00us
+     99%    0.00us
+  6665680 requests in 10.07s, 800.97MB read
+Requests/sec: 661630.84
+Transfer/sec:     79.50MB
+
+################ [dotnet-platform] json ################
+--- primer
+--- warmup
+--- concurrency=16
+Running 10s test @ http://127.0.0.1:8081/json
+  2 threads and 16 connections
+  Thread Stats   Avg      Stdev     Max   +/- Stdev
+    Latency   284.20us  489.33us  10.41ms   93.16%
+    Req/Sec    32.32k     2.13k   36.16k    80.50%
+  Latency Distribution
+     50%  181.00us
+     75%  215.00us
+     90%  423.00us
+     99%    2.66ms
+  643451 requests in 10.01s, 89.59MB read
+Requests/sec:  64296.27
+Transfer/sec:      8.95MB
+--- concurrency=64
+Running 10s test @ http://127.0.0.1:8081/json
+  2 threads and 64 connections
+  Thread Stats   Avg      Stdev     Max   +/- Stdev
+    Latency   703.68us  660.52us   8.67ms   91.03%
+    Req/Sec    34.90k     1.45k   37.75k    67.50%
+  Latency Distribution
+     50%  453.00us
+     75%  779.00us
+     90%    1.25ms
+     99%    3.64ms
+  694547 requests in 10.00s, 96.71MB read
+Requests/sec:  69434.83
+Transfer/sec:      9.67MB
+--- concurrency=256
+Running 10s test @ http://127.0.0.1:8081/json
+  2 threads and 256 connections
+  Thread Stats   Avg      Stdev     Max   +/- Stdev
+    Latency     2.50ms    1.56ms  16.62ms   86.25%
+    Req/Sec    34.57k     2.09k   38.16k    73.50%
+  Latency Distribution
+     50%    1.86ms
+     75%    3.11ms
+     90%    4.42ms
+     99%    8.59ms
+  690515 requests in 10.06s, 96.14MB read
+Requests/sec:  68669.40
+Transfer/sec:      9.56MB
+--- concurrency=512
+Running 10s test @ http://127.0.0.1:8081/json
+  2 threads and 512 connections
+  Thread Stats   Avg      Stdev     Max   +/- Stdev
+    Latency     4.93ms    2.59ms  42.85ms   82.33%
+    Req/Sec    34.53k     1.53k   36.88k    79.80%
+  Latency Distribution
+     50%    3.89ms
+     75%    6.31ms
+     90%    8.20ms
+     99%   13.85ms
+  686572 requests in 10.03s, 95.60MB read
+Requests/sec:  68468.09
+Transfer/sec:      9.53MB
+
+################ [dotnet-platform] db ################
+--- primer
+--- warmup
+--- concurrency=16
+Running 10s test @ http://127.0.0.1:8081/db
+  2 threads and 16 connections
+  Thread Stats   Avg      Stdev     Max   +/- Stdev
+    Latency     1.15ms  490.60us  10.92ms   82.98%
+    Req/Sec     7.05k   472.99    11.53k    82.59%
+  Latency Distribution
+     50%    1.07ms
+     75%    1.22ms
+     90%    1.67ms
+     99%    3.06ms
+  141091 requests in 10.10s, 20.15MB read
+Requests/sec:  13970.23
+Transfer/sec:      2.00MB
+--- concurrency=64
+Running 10s test @ http://127.0.0.1:8081/db
+  2 threads and 64 connections
+  Thread Stats   Avg      Stdev     Max   +/- Stdev
+    Latency     4.51ms    1.31ms  12.54ms   73.03%
+    Req/Sec     7.04k   342.19     7.99k    68.00%
+  Latency Distribution
+     50%    4.30ms
+     75%    5.20ms
+     90%    6.35ms
+     99%    8.22ms
+  140249 requests in 10.01s, 20.03MB read
+Requests/sec:  14007.74
+Transfer/sec:      2.00MB
+--- concurrency=256
+Running 10s test @ http://127.0.0.1:8081/db
+  2 threads and 256 connections
+  Thread Stats   Avg      Stdev     Max   +/- Stdev
+    Latency    17.87ms    3.31ms  34.26ms   71.35%
+    Req/Sec     7.15k   327.67     8.01k    62.50%
+  Latency Distribution
+     50%   16.99ms
+     75%   20.00ms
+     90%   22.71ms
+     99%   26.73ms
+  142553 requests in 10.03s, 20.36MB read
+Requests/sec:  14206.53
+Transfer/sec:      2.03MB
+--- concurrency=512
+Running 10s test @ http://127.0.0.1:8081/db
+  2 threads and 512 connections
+  Thread Stats   Avg      Stdev     Max   +/- Stdev
+    Latency    35.92ms    5.67ms  57.11ms   68.80%
+    Req/Sec     7.13k   298.44     9.21k    74.50%
+  Latency Distribution
+     50%   34.45ms
+     75%   40.14ms
+     90%   44.12ms
+     99%   49.37ms
+  142032 requests in 10.05s, 20.29MB read
+Requests/sec:  14130.34
+Transfer/sec:      2.02MB
+
+################ [dotnet-platform] queries ################
+--- primer
+--- warmup
+--- queries=1 (c=512)
+Running 10s test @ http://127.0.0.1:8081/queries?q=1
+  2 threads and 512 connections
+  Thread Stats   Avg      Stdev     Max   +/- Stdev
+    Latency    35.50ms    5.94ms  60.42ms   70.17%
+    Req/Sec     7.21k   371.56     8.91k    70.50%
+  Latency Distribution
+     50%   34.54ms
+     75%   39.08ms
+     90%   43.70ms
+     99%   51.92ms
+  143790 requests in 10.06s, 20.81MB read
+Requests/sec:  14289.96
+Transfer/sec:      2.07MB
+--- queries=5 (c=512)
+Running 10s test @ http://127.0.0.1:8081/queries?q=5
+  2 threads and 512 connections
+  Thread Stats   Avg      Stdev     Max   +/- Stdev
+    Latency    84.18ms   51.47ms 201.84ms   57.24%
+    Req/Sec     3.05k   110.21     3.45k    72.00%
+  Latency Distribution
+     50%   86.84ms
+     75%  128.20ms
+     90%  152.21ms
+     99%  188.83ms
+  60912 requests in 10.05s, 16.26MB read
+Requests/sec:   6059.10
+Transfer/sec:      1.62MB
+--- queries=10 (c=512)
+Running 10s test @ http://127.0.0.1:8081/queries?q=10
+  2 threads and 512 connections
+  Thread Stats   Avg      Stdev     Max   +/- Stdev
+    Latency   138.25ms   78.08ms 289.07ms   57.86%
+    Req/Sec     1.84k   161.30     2.78k    83.00%
+  Latency Distribution
+     50%  138.70ms
+     75%  207.47ms
+     90%  242.72ms
+     99%  276.25ms
+  36654 requests in 10.05s, 15.34MB read
+Requests/sec:   3647.99
+Transfer/sec:      1.53MB
+--- queries=20 (c=512)
+Running 10s test @ http://127.0.0.1:8081/queries?q=20
+  2 threads and 512 connections
+  Thread Stats   Avg      Stdev     Max   +/- Stdev
+    Latency   244.29ms   62.44ms 414.52ms   80.74%
+    Req/Sec     1.04k   173.35     1.90k    82.91%
+  Latency Distribution
+     50%  245.08ms
+     75%  276.63ms
+     90%  302.34ms
+     99%  402.05ms
+  20665 requests in 10.05s, 14.91MB read
+Requests/sec:   2055.76
+Transfer/sec:      1.48MB
+
+################ [dotnet-platform] fortunes ################
+--- primer
+--- warmup
+--- concurrency=16
+Running 10s test @ http://127.0.0.1:8081/fortunes
+  2 threads and 16 connections
+  Thread Stats   Avg      Stdev     Max   +/- Stdev
+    Latency     0.87ms  511.31us  10.64ms   85.10%
+    Req/Sec     9.41k   515.83    10.65k    69.00%
+  Latency Distribution
+     50%  763.00us
+     75%    1.00ms
+     90%    1.38ms
+     99%    2.93ms
+  187349 requests in 10.01s, 243.17MB read
+Requests/sec:  18725.03
+Transfer/sec:     24.30MB
+--- concurrency=64
+Running 10s test @ http://127.0.0.1:8081/fortunes
+  2 threads and 64 connections
+  Thread Stats   Avg      Stdev     Max   +/- Stdev
+    Latency     2.83ms    1.07ms  12.22ms   73.65%
+    Req/Sec    11.01k   629.79    13.57k    78.50%
+  Latency Distribution
+     50%    2.66ms
+     75%    3.36ms
+     90%    4.17ms
+     99%    6.18ms
+  219401 requests in 10.02s, 284.77MB read
+Requests/sec:  21897.35
+Transfer/sec:     28.42MB
+--- concurrency=256
+Running 10s test @ http://127.0.0.1:8081/fortunes
+  2 threads and 256 connections
+  Thread Stats   Avg      Stdev     Max   +/- Stdev
+    Latency     9.95ms    2.62ms  24.97ms   70.20%
+    Req/Sec    12.44k   678.92    14.06k    66.00%
+  Latency Distribution
+     50%    9.76ms
+     75%   11.45ms
+     90%   13.39ms
+     99%   17.12ms
+  248628 requests in 10.06s, 322.71MB read
+Requests/sec:  24720.41
+Transfer/sec:     32.09MB
+--- concurrency=512
+Running 10s test @ http://127.0.0.1:8081/fortunes
+  2 threads and 512 connections
+  Thread Stats   Avg      Stdev     Max   +/- Stdev
+    Latency    19.01ms    4.28ms  42.39ms   71.17%
+    Req/Sec    13.04k     1.01k   20.44k    80.90%
+  Latency Distribution
+     50%   18.61ms
+     75%   21.48ms
+     90%   24.58ms
+     99%   30.58ms
+  260006 requests in 10.09s, 337.47MB read
+Requests/sec:  25764.36
+Transfer/sec:     33.44MB
+
+################ [dotnet-platform] updates ################
+--- primer
+--- warmup
+--- queries=1 (c=512)
+Running 10s test @ http://127.0.0.1:8081/updates?q=1
+  2 threads and 512 connections
+  Thread Stats   Avg      Stdev     Max   +/- Stdev
+    Latency   117.77ms   82.12ms 287.99ms   50.57%
+    Req/Sec     2.16k   184.02     3.08k    89.50%
+  Latency Distribution
+     50%  120.17ms
+     75%  199.64ms
+     90%  227.14ms
+     99%  244.96ms
+  43070 requests in 10.06s, 6.23MB read
+Requests/sec:   4279.87
+Transfer/sec:    634.37KB
+--- queries=5 (c=512)
+Running 10s test @ http://127.0.0.1:8081/updates?q=5
+  2 threads and 512 connections
+  Thread Stats   Avg      Stdev     Max   +/- Stdev
+    Latency   179.75ms   74.93ms 370.41ms   67.92%
+    Req/Sec     1.42k   131.49     1.98k    90.00%
+  Latency Distribution
+     50%  176.12ms
+     75%  222.05ms
+     90%  281.90ms
+     99%  357.47ms
+  28217 requests in 10.04s, 7.53MB read
+Requests/sec:   2809.69
+Transfer/sec:    767.97KB
+--- queries=10 (c=512)
+Running 10s test @ http://127.0.0.1:8081/updates?q=10
+  2 threads and 512 connections
+  Thread Stats   Avg      Stdev     Max   +/- Stdev
+    Latency   249.92ms  109.16ms 533.23ms   70.16%
+    Req/Sec     1.02k   191.14     2.17k    88.44%
+  Latency Distribution
+     50%  241.69ms
+     75%  332.44ms
+     90%  381.27ms
+     99%  510.40ms
+  20148 requests in 10.04s, 8.43MB read
+Requests/sec:   2006.97
+Transfer/sec:    860.01KB
+--- queries=20 (c=512)
+Running 10s test @ http://127.0.0.1:8081/updates?q=20
+  2 threads and 512 connections
+  Thread Stats   Avg      Stdev     Max   +/- Stdev
+    Latency   389.01ms  200.82ms 836.10ms   74.20%
+    Req/Sec   644.81    148.38     1.30k    80.81%
+  Latency Distribution
+     50%  395.74ms
+     75%  505.28ms
+     90%  683.45ms
+     99%  820.36ms
+  12754 requests in 10.05s, 9.20MB read
+Requests/sec:   1268.68
+Transfer/sec:      0.92MB
+
+[dotnet-platform] done -> results/dotnet-platform/summary.csv
+impl,test,level,rps,latency_avg_ms,latency_p99_ms,requests,errors,non2xx,transfer_mb_s
+dotnet-platform,plaintext,256,705223.87,2.550,10.080,7121424,0,0,84.740
+dotnet-platform,plaintext,1024,711811.44,7.510,0.000,7175616,0,0,85.530
+dotnet-platform,plaintext,4096,661630.84,24.900,0.000,6665680,0,0,79.500
+dotnet-platform,json,16,64296.27,0.284,2.660,643451,0,0,8.950
+dotnet-platform,json,64,69434.83,0.704,3.640,694547,0,0,9.670
+dotnet-platform,json,256,68669.40,2.500,8.590,690515,0,0,9.560
+dotnet-platform,json,512,68468.09,4.930,13.850,686572,0,0,9.530
+dotnet-platform,db,16,13970.23,1.150,3.060,141091,0,0,2.000
+dotnet-platform,db,64,14007.74,4.510,8.220,140249,0,0,2.000
+dotnet-platform,db,256,14206.53,17.870,26.730,142553,0,0,2.030
+dotnet-platform,db,512,14130.34,35.920,49.370,142032,0,0,2.020
+dotnet-platform,queries,1,14289.96,35.500,51.920,143790,0,0,2.070
+dotnet-platform,queries,5,6059.10,84.180,188.830,60912,0,0,1.620
+dotnet-platform,queries,10,3647.99,138.250,276.250,36654,0,0,1.530
+dotnet-platform,queries,20,2055.76,244.290,402.050,20665,0,0,1.480
+dotnet-platform,fortunes,16,18725.03,0.870,2.930,187349,0,0,24.300
+dotnet-platform,fortunes,64,21897.35,2.830,6.180,219401,0,0,28.420
+dotnet-platform,fortunes,256,24720.41,9.950,17.120,248628,0,0,32.090
+dotnet-platform,fortunes,512,25764.36,19.010,30.580,260006,0,0,33.440
+dotnet-platform,updates,1,4279.87,117.770,244.960,43070,0,0,0.620
+dotnet-platform,updates,5,2809.69,179.750,357.470,28217,0,0,0.750
+dotnet-platform,updates,10,2006.97,249.920,510.400,20148,0,0,0.840
+dotnet-platform,updates,20,1268.68,389.010,820.360,12754,0,0,0.920
+################ dotnet-platform exit=0 2026-11-22T14:30:14-03:00 ################
+################ go 2026-11-22T14:30:14-03:00 ################
+[go-std] starting server (cpus 0-1): go-std/app -bind :18082 -db pgx -db_connection_string host=127.0.0.1 user=benchmarkdbuser password=benchmarkdbpass dbname=hello_world sslmode=disable
+
+################ [go-std] plaintext ################
+--- primer
+--- warmup
+--- concurrency=256 pipeline=16
+Running 10s test @ http://127.0.0.1:18082/plaintext
+  2 threads and 256 connections
+  Thread Stats   Avg      Stdev     Max   +/- Stdev
+    Latency    74.88ms   47.74ms 401.65ms   67.70%
+    Req/Sec    17.39k     1.01k   20.46k    72.00%
+  Latency Distribution
+     50%   68.38ms
+     75%  104.34ms
+     90%  136.23ms
+     99%  222.54ms
+  346052 requests in 10.03s, 41.91MB read
+Requests/sec:  34497.01
+Transfer/sec:      4.18MB
+--- concurrency=1024 pipeline=16
+Running 10s test @ http://127.0.0.1:18082/plaintext
+  2 threads and 1024 connections
+  Thread Stats   Avg      Stdev     Max   +/- Stdev
+    Latency   268.02ms  146.45ms   1.48s    60.93%
+    Req/Sec    17.61k     1.62k   22.03k    69.50%
+  Latency Distribution
+     50%  263.37ms
+     75%  384.13ms
+     90%  459.04ms
+     99%  576.10ms
+  350631 requests in 10.07s, 42.47MB read
+Requests/sec:  34816.67
+Transfer/sec:      4.22MB
+--- concurrency=4096 pipeline=16
+Running 10s test @ http://127.0.0.1:18082/plaintext
+  2 threads and 4096 connections
+  Thread Stats   Avg      Stdev     Max   +/- Stdev
+    Latency     1.02s   543.07ms   4.05s    58.55%
+    Req/Sec    17.23k     3.98k   30.23k    74.74%
+  Latency Distribution
+     50%    1.00s 
+     75%    1.48s 
+     90%    1.77s 
+     99%    2.06s 
+  334623 requests in 10.03s, 40.53MB read
+Requests/sec:  33365.89
+Transfer/sec:      4.04MB
+
+################ [go-std] json ################
+--- primer
+--- warmup
+--- concurrency=16
+Running 10s test @ http://127.0.0.1:18082/json
+  2 threads and 16 connections
+  Thread Stats   Avg      Stdev     Max   +/- Stdev
+    Latency   742.57us  714.08us  11.16ms   91.26%
+    Req/Sec    12.32k     0.86k   14.55k    72.00%
+  Latency Distribution
+     50%  583.00us
+     75%    0.93ms
+     90%    1.37ms
+     99%    3.65ms
+  245294 requests in 10.00s, 34.62MB read
+Requests/sec:  24522.59
+Transfer/sec:      3.46MB
+--- concurrency=64
+Running 10s test @ http://127.0.0.1:18082/json
+  2 threads and 64 connections
+  Thread Stats   Avg      Stdev     Max   +/- Stdev
+    Latency     2.58ms    1.84ms  16.29ms   68.75%
+    Req/Sec    13.04k   614.62    14.47k    67.50%
+  Latency Distribution
+     50%    2.34ms
+     75%    3.61ms
+     90%    5.00ms
+     99%    8.29ms
+  259573 requests in 10.01s, 36.64MB read
+Requests/sec:  25937.73
+Transfer/sec:      3.66MB
+--- concurrency=256
+Running 10s test @ http://127.0.0.1:18082/json
+  2 threads and 256 connections
+  Thread Stats   Avg      Stdev     Max   +/- Stdev
+    Latency    10.22ms    5.33ms  39.10ms   68.75%
+    Req/Sec    12.64k   629.38    13.91k    68.50%
+  Latency Distribution
+     50%    9.98ms
+     75%   13.47ms
+     90%   17.14ms
+     99%   24.88ms
+  251677 requests in 10.02s, 35.52MB read
+Requests/sec:  25112.25
+Transfer/sec:      3.54MB
+--- concurrency=512
+Running 10s test @ http://127.0.0.1:18082/json
+  2 threads and 512 connections
+  Thread Stats   Avg      Stdev     Max   +/- Stdev
+    Latency    20.24ms    6.74ms  62.95ms   76.43%
+    Req/Sec    12.68k   532.54    14.19k    72.50%
+  Latency Distribution
+     50%   19.89ms
+     75%   23.58ms
+     90%   28.02ms
+     99%   41.09ms
+  252597 requests in 10.05s, 35.65MB read
+Requests/sec:  25131.72
+Transfer/sec:      3.55MB
+
+################ [go-std] db ################
+--- primer
+--- warmup
+--- concurrency=16
+Running 10s test @ http://127.0.0.1:18082/db
+  2 threads and 16 connections
+  Thread Stats   Avg      Stdev     Max   +/- Stdev
+    Latency     1.80ms    1.04ms  15.29ms   78.11%
+    Req/Sec     4.57k   211.87     5.23k    69.50%
+  Latency Distribution
+     50%    1.58ms
+     75%    2.23ms
+     90%    3.06ms
+     99%    5.49ms
+  90981 requests in 10.00s, 13.17MB read
+Requests/sec:   9094.10
+Transfer/sec:      1.32MB
+--- concurrency=64
+Running 10s test @ http://127.0.0.1:18082/db
+  2 threads and 64 connections
+  Thread Stats   Avg      Stdev     Max   +/- Stdev
+    Latency     8.66ms    8.56ms  86.63ms   86.20%
+    Req/Sec     4.54k   251.34     5.13k    67.50%
+  Latency Distribution
+     50%    6.82ms
+     75%   12.40ms
+     90%   19.72ms
+     99%   38.43ms
+  90374 requests in 10.01s, 13.08MB read
+Requests/sec:   9032.44
+Transfer/sec:      1.31MB
+--- concurrency=256
+Running 10s test @ http://127.0.0.1:18082/db
+  2 threads and 256 connections
+  Thread Stats   Avg      Stdev     Max   +/- Stdev
+    Latency    38.06ms   41.95ms 452.08ms   85.07%
+    Req/Sec     4.50k   298.89     5.25k    68.50%
+  Latency Distribution
+     50%   28.92ms
+     75%   56.19ms
+     90%   88.82ms
+     99%  183.88ms
+  89532 requests in 10.02s, 12.96MB read
+Requests/sec:   8936.75
+Transfer/sec:      1.29MB
+--- concurrency=512
+Running 10s test @ http://127.0.0.1:18082/db
+  2 threads and 512 connections
+  Thread Stats   Avg      Stdev     Max   +/- Stdev
+    Latency    76.97ms   85.87ms 886.44ms   83.84%
+    Req/Sec     4.43k   358.21     5.15k    69.50%
+  Latency Distribution
+     50%   58.40ms
+     75%  114.70ms
+     90%  176.17ms
+     99%  371.89ms
+  88263 requests in 10.05s, 12.78MB read
+Requests/sec:   8783.93
+Transfer/sec:      1.27MB
+
+################ [go-std] queries ################
+--- primer
+--- warmup
+--- queries=1 (c=512)
+Running 10s test @ http://127.0.0.1:18082/queries?queries=1
+  2 threads and 512 connections
+  Thread Stats   Avg      Stdev     Max   +/- Stdev
+    Latency    78.62ms   88.81ms   1.04s    84.74%
+    Req/Sec     4.40k   332.80     5.12k    71.00%
+  Latency Distribution
+     50%   58.90ms
+     75%  116.28ms
+     90%  180.76ms
+     99%  391.98ms
+  87561 requests in 10.05s, 12.84MB read
+Requests/sec:   8715.54
+Transfer/sec:      1.28MB
+--- queries=5 (c=512)
+Running 10s test @ http://127.0.0.1:18082/queries?queries=5
+  2 threads and 512 connections
+  Thread Stats   Avg      Stdev     Max   +/- Stdev
+    Latency   224.78ms  206.94ms   2.26s    77.21%
+    Req/Sec     1.31k   102.61     1.68k    69.50%
+  Latency Distribution
+     50%  168.18ms
+     75%  313.75ms
+     90%  494.82ms
+     99%  933.94ms
+  26144 requests in 10.04s, 7.03MB read
+Requests/sec:   2603.54
+Transfer/sec:    716.73KB
+--- queries=10 (c=512)
+Running 10s test @ http://127.0.0.1:18082/queries?queries=10
+  2 threads and 512 connections
+  Thread Stats   Avg      Stdev     Max   +/- Stdev
+    Latency   399.83ms  362.22ms   3.14s    79.92%
+    Req/Sec   720.70     73.14     0.90k    68.50%
+  Latency Distribution
+     50%  315.66ms
+     75%  565.42ms
+     90%  882.78ms
+     99%    1.64s 
+  14368 requests in 10.05s, 6.04MB read
+Requests/sec:   1429.49
+Transfer/sec:    615.38KB
+--- queries=20 (c=512)
+Running 10s test @ http://127.0.0.1:18082/queries?queries=20
+  2 threads and 512 connections
+  Thread Stats   Avg      Stdev     Max   +/- Stdev
+    Latency   721.25ms  648.73ms   5.05s    78.75%
+    Req/Sec   378.92     50.83   525.00     67.50%
+  Latency Distribution
+     50%  545.41ms
+     75%    1.03s 
+     90%    1.57s 
+     99%    2.96s 
+  7556 requests in 10.05s, 5.47MB read
+Requests/sec:    751.52
+Transfer/sec:    556.77KB
+
+################ [go-std] fortunes ################
+--- primer
+--- warmup
+--- concurrency=16
+Running 10s test @ http://127.0.0.1:18082/fortunes
+  2 threads and 16 connections
+  Thread Stats   Avg      Stdev     Max   +/- Stdev
+    Latency     2.55ms    1.43ms  20.12ms   78.17%
+    Req/Sec     3.25k   216.28     3.58k    85.00%
+  Latency Distribution
+     50%    2.28ms
+     75%    3.13ms
+     90%    4.24ms
+     99%    7.66ms
+  64638 requests in 10.01s, 88.58MB read
+Requests/sec:   6459.88
+Transfer/sec:      8.85MB
+--- concurrency=64
+Running 10s test @ http://127.0.0.1:18082/fortunes
+  2 threads and 64 connections
+  Thread Stats   Avg      Stdev     Max   +/- Stdev
+    Latency    12.36ms   12.50ms 147.21ms   86.11%
+    Req/Sec     3.26k   205.84     3.90k    70.50%
+  Latency Distribution
+     50%    9.47ms
+     75%   17.83ms
+     90%   28.64ms
+     99%   55.74ms
+  64915 requests in 10.00s, 88.96MB read
+Requests/sec:   6488.36
+Transfer/sec:      8.89MB
+--- concurrency=256
+Running 10s test @ http://127.0.0.1:18082/fortunes
+  2 threads and 256 connections
+  Thread Stats   Avg      Stdev     Max   +/- Stdev
+    Latency    54.65ms   61.89ms 647.28ms   87.16%
+    Req/Sec     3.22k   255.87     3.85k    69.50%
+  Latency Distribution
+     50%   40.24ms
+     75%   79.03ms
+     90%  141.95ms
+     99%  264.24ms
+  64066 requests in 10.02s, 87.80MB read
+Requests/sec:   6394.51
+Transfer/sec:      8.76MB
+--- concurrency=512
+Running 10s test @ http://127.0.0.1:18082/fortunes
+  2 threads and 512 connections
+  Thread Stats   Avg      Stdev     Max   +/- Stdev
+    Latency   124.60ms  149.79ms   1.48s    86.63%
+    Req/Sec     2.97k   775.52     4.31k    82.50%
+  Latency Distribution
+     50%   82.01ms
+     75%  169.87ms
+     90%  309.93ms
+     99%  678.30ms
+  59072 requests in 10.05s, 80.95MB read
+Requests/sec:   5877.53
+Transfer/sec:      8.05MB
+
+################ [go-std] updates ################
+--- primer
+--- warmup
+--- queries=1 (c=512)
+Running 10s test @ http://127.0.0.1:18082/update?queries=1
+  2 threads and 512 connections
+  Thread Stats   Avg      Stdev     Max   +/- Stdev
+    Latency   199.08ms  196.60ms   1.93s    78.71%
+    Req/Sec     1.53k   499.29     2.12k    78.50%
+  Latency Distribution
+     50%  146.07ms
+     75%  282.45ms
+     90%  448.03ms
+     99%  906.30ms
+  30543 requests in 10.06s, 4.48MB read
+Requests/sec:   3037.47
+Transfer/sec:    456.16KB
+--- queries=5 (c=512)
+Running 10s test @ http://127.0.0.1:18082/update?queries=5
+  2 threads and 512 connections
+  Thread Stats   Avg      Stdev     Max   +/- Stdev
+    Latency   570.26ms  549.69ms   4.99s    80.70%
+    Req/Sec   486.62    205.06   790.00     66.50%
+  Latency Distribution
+     50%  409.91ms
+     75%  827.87ms
+     90%    1.28s 
+     99%    2.52s 
+  9708 requests in 10.07s, 2.61MB read
+Requests/sec:    963.79
+Transfer/sec:    265.33KB
+--- queries=10 (c=512)
+Running 10s test @ http://127.0.0.1:18082/update?queries=10
+  2 threads and 512 connections
+  Thread Stats   Avg      Stdev     Max   +/- Stdev
+    Latency     1.02s   971.22ms   7.60s    82.26%
+    Req/Sec   257.96    117.07   464.00     60.50%
+  Latency Distribution
+     50%  750.19ms
+     75%    1.43s 
+     90%    2.30s 
+     99%    4.51s 
+  5146 requests in 10.06s, 2.16MB read
+Requests/sec:    511.32
+Transfer/sec:    220.10KB
+--- queries=20 (c=512)
+Running 10s test @ http://127.0.0.1:18082/update?queries=20
+  2 threads and 512 connections
+  Thread Stats   Avg      Stdev     Max   +/- Stdev
+    Latency     1.63s     1.47s    8.00s    76.09%
+    Req/Sec   132.26     65.84   250.00     54.00%
+  Latency Distribution
+     50%    1.21s 
+     75%    2.37s 
+     90%    3.76s 
+     99%    6.38s 
+  2642 requests in 10.07s, 1.91MB read
+  Socket errors: connect 0, read 0, write 0, timeout 11
+Requests/sec:    262.28
+Transfer/sec:    194.31KB
+
+[go-std] done -> results/go-std/summary.csv
+impl,test,level,rps,latency_avg_ms,latency_p99_ms,requests,errors,non2xx,transfer_mb_s
+go-std,plaintext,256,34497.01,74.880,222.540,346052,0,0,4.180
+go-std,plaintext,1024,34816.67,268.020,576.100,350631,0,0,4.220
+go-std,plaintext,4096,33365.89,1020.000,2060.000,334623,0,0,4.040
+go-std,json,16,24522.59,0.743,3.650,245294,0,0,3.460
+go-std,json,64,25937.73,2.580,8.290,259573,0,0,3.660
+go-std,json,256,25112.25,10.220,24.880,251677,0,0,3.540
+go-std,json,512,25131.72,20.240,41.090,252597,0,0,3.550
+go-std,db,16,9094.10,1.800,5.490,90981,0,0,1.320
+go-std,db,64,9032.44,8.660,38.430,90374,0,0,1.310
+go-std,db,256,8936.75,38.060,183.880,89532,0,0,1.290
+go-std,db,512,8783.93,76.970,371.890,88263,0,0,1.270
+go-std,queries,1,8715.54,78.620,391.980,87561,0,0,1.280
+go-std,queries,5,2603.54,224.780,933.940,26144,0,0,0.700
+go-std,queries,10,1429.49,399.830,1640.000,14368,0,0,0.601
+go-std,queries,20,751.52,721.250,2960.000,7556,0,0,0.544
+go-std,fortunes,16,6459.88,2.550,7.660,64638,0,0,8.850
+go-std,fortunes,64,6488.36,12.360,55.740,64915,0,0,8.890
+go-std,fortunes,256,6394.51,54.650,264.240,64066,0,0,8.760
+go-std,fortunes,512,5877.53,124.600,678.300,59072,0,0,8.050
+go-std,updates,1,3037.47,199.080,906.300,30543,0,0,0.445
+go-std,updates,5,963.79,570.260,2520.000,9708,0,0,0.259
+go-std,updates,10,511.32,1020.000,4510.000,5146,0,0,0.215
+go-std,updates,20,262.28,1630.000,6380.000,2642,11,0,0.190
+[go-fasthttp] starting server (cpus 0-1): go-fasthttp/app -bind :18083
+
+################ [go-fasthttp] plaintext ################
+--- primer
+--- warmup
+--- concurrency=256 pipeline=16
+Running 10s test @ http://127.0.0.1:18083/plaintext
+  2 threads and 256 connections
+  Thread Stats   Avg      Stdev     Max   +/- Stdev
+    Latency    12.82ms   11.68ms 144.99ms   86.53%
+    Req/Sec   126.18k    46.05k  167.76k    77.00%
+  Latency Distribution
+     50%    9.46ms
+     75%   15.97ms
+     90%   28.46ms
+     99%   53.38ms
+  2514736 requests in 10.05s, 340.55MB read
+Requests/sec: 250234.79
+Transfer/sec:     33.89MB
+--- concurrency=1024 pipeline=16
+Running 10s test @ http://127.0.0.1:18083/plaintext
+  2 threads and 1024 connections
+  Thread Stats   Avg      Stdev     Max   +/- Stdev
+    Latency    53.93ms   44.78ms 240.44ms   77.28%
+    Req/Sec   110.62k    49.53k  159.35k    66.16%
+  Latency Distribution
+     50%   40.32ms
+     75%   64.93ms
+     90%  128.98ms
+     99%  187.38ms
+  2191872 requests in 10.09s, 296.83MB read
+Requests/sec: 217207.12
+Transfer/sec:     29.41MB
+--- concurrency=4096 pipeline=16
+Running 10s test @ http://127.0.0.1:18083/plaintext
+  2 threads and 4096 connections
+  Thread Stats   Avg      Stdev     Max   +/- Stdev
+    Latency   193.38ms  141.68ms 854.93ms   72.76%
+    Req/Sec   110.46k    48.34k  170.08k    61.98%
+  Latency Distribution
+     50%  160.99ms
+     75%  236.40ms
+     90%  414.00ms
+     99%  626.08ms
+  2141776 requests in 10.05s, 290.04MB read
+Requests/sec: 213145.00
+Transfer/sec:     28.86MB
+
+################ [go-fasthttp] json ################
+--- primer
+--- warmup
+--- concurrency=16
+Running 10s test @ http://127.0.0.1:18083/json
+  2 threads and 16 connections
+  Thread Stats   Avg      Stdev     Max   +/- Stdev
+    Latency   585.01us  709.86us   9.55ms   90.09%
+    Req/Sec    17.96k     5.06k   24.33k    82.00%
+  Latency Distribution
+     50%  368.00us
+     75%  639.00us
+     90%    1.28ms
+     99%    3.62ms
+  357542 requests in 10.01s, 50.12MB read
+Requests/sec:  35729.71
+Transfer/sec:      5.01MB
+--- concurrency=64
+Running 10s test @ http://127.0.0.1:18083/json
+  2 threads and 64 connections
+  Thread Stats   Avg      Stdev     Max   +/- Stdev
+    Latency     2.14ms    2.11ms  26.73ms   88.45%
+    Req/Sec    16.76k     7.24k   25.66k    62.00%
+  Latency Distribution
+     50%    1.55ms
+     75%    2.79ms
+     90%    4.59ms
+     99%   10.32ms
+  333880 requests in 10.03s, 46.81MB read
+Requests/sec:  33283.33
+Transfer/sec:      4.67MB
+--- concurrency=256
+Running 10s test @ http://127.0.0.1:18083/json
+  2 threads and 256 connections
+  Thread Stats   Avg      Stdev     Max   +/- Stdev
+    Latency     8.24ms    6.29ms  54.10ms   79.35%
+    Req/Sec    15.76k     7.14k   27.15k    57.58%
+  Latency Distribution
+     50%    6.72ms
+     75%   10.23ms
+     90%   16.52ms
+     99%   30.97ms
+  311830 requests in 10.01s, 43.72MB read
+Requests/sec:  31165.79
+Transfer/sec:      4.37MB
+--- concurrency=512
+Running 10s test @ http://127.0.0.1:18083/json
+  2 threads and 512 connections
+  Thread Stats   Avg      Stdev     Max   +/- Stdev
+    Latency    18.90ms   13.85ms 119.14ms   83.42%
+    Req/Sec    13.59k     6.91k   24.74k    54.08%
+  Latency Distribution
+     50%   14.13ms
+     75%   21.27ms
+     90%   39.37ms
+     99%   69.06ms
+  268959 requests in 10.09s, 37.71MB read
+Requests/sec:  26661.25
+Transfer/sec:      3.74MB
+
+################ [go-fasthttp] db ################
+--- primer
+--- warmup
+--- concurrency=16
+Running 10s test @ http://127.0.0.1:18083/db
+  2 threads and 16 connections
+  Thread Stats   Avg      Stdev     Max   +/- Stdev
+    Latency     2.18ms    1.81ms  20.89ms   87.32%
+    Req/Sec     4.16k     1.67k    5.84k    72.00%
+  Latency Distribution
+     50%    1.57ms
+     75%    2.51ms
+     90%    4.47ms
+     99%    9.37ms
+  82818 requests in 10.01s, 11.91MB read
+Requests/sec:   8270.56
+Transfer/sec:      1.19MB
+--- concurrency=64
+Running 10s test @ http://127.0.0.1:18083/db
+  2 threads and 64 connections
+  Thread Stats   Avg      Stdev     Max   +/- Stdev
+    Latency     9.30ms    7.79ms  99.94ms   77.86%
+    Req/Sec     3.95k     1.77k    5.88k    67.00%
+  Latency Distribution
+     50%    6.43ms
+     75%   11.02ms
+     90%   19.68ms
+     99%   39.26ms
+  78582 requests in 10.02s, 11.30MB read
+Requests/sec:   7838.71
+Transfer/sec:      1.13MB
+--- concurrency=256
+Running 10s test @ http://127.0.0.1:18083/db
+  2 threads and 256 connections
+  Thread Stats   Avg      Stdev     Max   +/- Stdev
+    Latency    39.99ms   37.70ms 451.94ms   75.53%
+    Req/Sec     3.83k     1.74k    5.83k    65.00%
+  Latency Distribution
+     50%   26.04ms
+     75%   49.86ms
+     90%   87.70ms
+     99%  182.19ms
+  76244 requests in 10.04s, 10.96MB read
+Requests/sec:   7592.70
+Transfer/sec:      1.09MB
+--- concurrency=512
+Running 10s test @ http://127.0.0.1:18083/db
+  2 threads and 512 connections
+  Thread Stats   Avg      Stdev     Max   +/- Stdev
+    Latency    81.24ms   71.53ms 729.62ms   71.85%
+    Req/Sec     3.63k     1.66k    5.65k    60.00%
+  Latency Distribution
+     50%   53.71ms
+     75%  103.80ms
+     90%  173.59ms
+     99%  359.98ms
+  72371 requests in 10.07s, 10.41MB read
+Requests/sec:   7186.49
+Transfer/sec:      1.03MB
+
+################ [go-fasthttp] queries ################
+--- primer
+--- warmup
+--- queries=1 (c=512)
+Running 10s test @ http://127.0.0.1:18083/queries?queries=1
+  2 threads and 512 connections
+  Thread Stats   Avg      Stdev     Max   +/- Stdev
+    Latency    77.64ms   70.57ms 843.17ms   70.02%
+    Req/Sec     3.83k     1.63k    5.61k    68.00%
+  Latency Distribution
+     50%   53.13ms
+     75%  102.40ms
+     90%  171.23ms
+     99%  353.42ms
+  76391 requests in 10.08s, 11.13MB read
+Requests/sec:   7577.08
+Transfer/sec:      1.10MB
+--- queries=5 (c=512)
+Running 10s test @ http://127.0.0.1:18083/queries?queries=5
+  2 threads and 512 connections
+  Thread Stats   Avg      Stdev     Max   +/- Stdev
+    Latency   301.51ms  289.59ms   2.84s    83.64%
+    Req/Sec     1.02k   480.37     1.70k    60.50%
+  Latency Distribution
+     50%  214.58ms
+     75%  418.47ms
+     90%  704.11ms
+     99%    1.27s 
+  20289 requests in 10.05s, 5.43MB read
+Requests/sec:   2018.13
+Transfer/sec:    553.58KB
+--- queries=10 (c=512)
+Running 10s test @ http://127.0.0.1:18083/queries?queries=10
+  2 threads and 512 connections
+  Thread Stats   Avg      Stdev     Max   +/- Stdev
+    Latency   532.85ms  505.00ms   4.97s    84.19%
+    Req/Sec   530.09    272.83     0.99k    46.50%
+  Latency Distribution
+     50%  379.61ms
+     75%  777.96ms
+     90%    1.20s 
+     99%    2.31s 
+  10571 requests in 10.07s, 4.43MB read
+Requests/sec:   1050.16
+Transfer/sec:    451.02KB
+--- queries=20 (c=512)
+Running 10s test @ http://127.0.0.1:18083/queries?queries=20
+  2 threads and 512 connections
+  Thread Stats   Avg      Stdev     Max   +/- Stdev
+    Latency   984.79ms  923.95ms   7.06s    81.29%
+    Req/Sec   266.96    144.03   505.00     50.50%
+  Latency Distribution
+     50%  740.38ms
+     75%    1.40s 
+     90%    2.23s 
+     99%    4.12s 
+  5331 requests in 10.08s, 3.85MB read
+Requests/sec:    529.01
+Transfer/sec:    391.38KB
+
+################ [go-fasthttp] fortunes ################
+--- primer
+--- warmup
+--- concurrency=16
+Running 10s test @ http://127.0.0.1:18083/fortunes
+  2 threads and 16 connections
+  Thread Stats   Avg      Stdev     Max   +/- Stdev
+    Latency     1.86ms    1.61ms  21.71ms   87.55%
+    Req/Sec     4.87k     2.04k    7.39k    68.50%
+  Latency Distribution
+     50%    1.31ms
+     75%    2.19ms
+     90%    3.87ms
+     99%    8.15ms
+  96944 requests in 10.02s, 128.88MB read
+Requests/sec:   9675.14
+Transfer/sec:     12.86MB
+--- concurrency=64
+Running 10s test @ http://127.0.0.1:18083/fortunes
+  2 threads and 64 connections
+  Thread Stats   Avg      Stdev     Max   +/- Stdev
+    Latency     7.80ms    6.73ms 111.61ms   79.68%
+    Req/Sec     4.64k     2.13k    7.71k    60.00%
+  Latency Distribution
+     50%    5.46ms
+     75%    9.55ms
+     90%   16.43ms
+     99%   32.79ms
+  92609 requests in 10.04s, 123.12MB read
+Requests/sec:   9219.45
+Transfer/sec:     12.26MB
+--- concurrency=256
+Running 10s test @ http://127.0.0.1:18083/fortunes
+  2 threads and 256 connections
+  Thread Stats   Avg      Stdev     Max   +/- Stdev
+    Latency    35.49ms   35.01ms 460.99ms   86.59%
+    Req/Sec     4.36k     2.16k    6.95k    52.00%
+  Latency Distribution
+     50%   22.21ms
+     75%   44.50ms
+     90%   76.01ms
+     99%  167.97ms
+  87013 requests in 10.07s, 115.68MB read
+Requests/sec:   8644.21
+Transfer/sec:     11.49MB
+--- concurrency=512
+Running 10s test @ http://127.0.0.1:18083/fortunes
+  2 threads and 512 connections
+  Thread Stats   Avg      Stdev     Max   +/- Stdev
+    Latency    66.45ms   61.38ms 804.99ms   69.59%
+    Req/Sec     4.52k     2.04k    7.11k    55.28%
+  Latency Distribution
+     50%   44.09ms
+     75%   85.51ms
+     90%  140.44ms
+     99%  287.01ms
+  89739 requests in 10.10s, 119.30MB read
+Requests/sec:   8887.09
+Transfer/sec:     11.81MB
+
+################ [go-fasthttp] updates ################
+--- primer
+--- warmup
+--- queries=1 (c=512)
+Running 10s test @ http://127.0.0.1:18083/updates?queries=1
+  2 threads and 512 connections
+  Thread Stats   Avg      Stdev     Max   +/- Stdev
+    Latency   161.64ms  160.37ms   1.46s    86.00%
+    Req/Sec     1.93k     0.90k    3.01k    65.00%
+  Latency Distribution
+     50%  100.25ms
+     75%  200.39ms
+     90%  365.43ms
+     99%  772.08ms
+  38357 requests in 10.06s, 5.59MB read
+Requests/sec:   3811.70
+Transfer/sec:    568.70KB
+--- queries=5 (c=512)
+Running 10s test @ http://127.0.0.1:18083/updates?queries=5
+  2 threads and 512 connections
+  Thread Stats   Avg      Stdev     Max   +/- Stdev
+    Latency   507.32ms  485.57ms   4.13s    83.16%
+    Req/Sec   556.47    298.58     1.02k    47.50%
+  Latency Distribution
+     50%  362.74ms
+     75%  723.81ms
+     90%    1.13s 
+     99%    2.26s 
+  11102 requests in 10.06s, 2.97MB read
+Requests/sec:   1103.64
+Transfer/sec:    302.73KB
+--- queries=10 (c=512)
+Running 10s test @ http://127.0.0.1:18083/updates?queries=10
+  2 threads and 512 connections
+  Thread Stats   Avg      Stdev     Max   +/- Stdev
+    Latency   880.41ms  823.08ms   6.67s    83.31%
+    Req/Sec   299.27    164.01   560.00     53.50%
+  Latency Distribution
+     50%  635.33ms
+     75%    1.29s 
+     90%    1.94s 
+     99%    3.71s 
+  5976 requests in 10.08s, 2.51MB read
+Requests/sec:    593.05
+Transfer/sec:    254.69KB
+--- queries=20 (c=512)
+Running 10s test @ http://127.0.0.1:18083/updates?queries=20
+  2 threads and 512 connections
+  Thread Stats   Avg      Stdev     Max   +/- Stdev
+    Latency     1.56s     1.41s    7.84s    76.28%
+    Req/Sec   148.97     88.49   300.00     52.50%
+  Latency Distribution
+     50%    1.16s 
+     75%    2.36s 
+     90%    3.53s 
+     99%    6.13s 
+  2979 requests in 10.07s, 2.15MB read
+  Socket errors: connect 0, read 0, write 0, timeout 3
+Requests/sec:    295.71
+Transfer/sec:    218.77KB
+
+[go-fasthttp] done -> results/go-fasthttp/summary.csv
+impl,test,level,rps,latency_avg_ms,latency_p99_ms,requests,errors,non2xx,transfer_mb_s
+go-fasthttp,plaintext,256,250234.79,12.820,53.380,2514736,0,0,33.890
+go-fasthttp,plaintext,1024,217207.12,53.930,187.380,2191872,0,0,29.410
+go-fasthttp,plaintext,4096,213145.00,193.380,626.080,2141776,0,0,28.860
+go-fasthttp,json,16,35729.71,0.585,3.620,357542,0,0,5.010
+go-fasthttp,json,64,33283.33,2.140,10.320,333880,0,0,4.670
+go-fasthttp,json,256,31165.79,8.240,30.970,311830,0,0,4.370
+go-fasthttp,json,512,26661.25,18.900,69.060,268959,0,0,3.740
+go-fasthttp,db,16,8270.56,2.180,9.370,82818,0,0,1.190
+go-fasthttp,db,64,7838.71,9.300,39.260,78582,0,0,1.130
+go-fasthttp,db,256,7592.70,39.990,182.190,76244,0,0,1.090
+go-fasthttp,db,512,7186.49,81.240,359.980,72371,0,0,1.030
+go-fasthttp,queries,1,7577.08,77.640,353.420,76391,0,0,1.100
+go-fasthttp,queries,5,2018.13,301.510,1270.000,20289,0,0,0.541
+go-fasthttp,queries,10,1050.16,532.850,2310.000,10571,0,0,0.440
+go-fasthttp,queries,20,529.01,984.790,4120.000,5331,0,0,0.382
+go-fasthttp,fortunes,16,9675.14,1.860,8.150,96944,0,0,12.860
+go-fasthttp,fortunes,64,9219.45,7.800,32.790,92609,0,0,12.260
+go-fasthttp,fortunes,256,8644.21,35.490,167.970,87013,0,0,11.490
+go-fasthttp,fortunes,512,8887.09,66.450,287.010,89739,0,0,11.810
+go-fasthttp,updates,1,3811.70,161.640,772.080,38357,0,0,0.555
+go-fasthttp,updates,5,1103.64,507.320,2260.000,11102,0,0,0.296
+go-fasthttp,updates,10,593.05,880.410,3710.000,5976,0,0,0.249
+go-fasthttp,updates,20,295.71,1560.000,6130.000,2979,3,0,0.214
+################ go exit=0 2026-11-22T14:44:07-03:00 ################

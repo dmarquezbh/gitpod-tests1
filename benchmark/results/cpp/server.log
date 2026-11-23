@@ -1,4 +1,4 @@
-worker 0 ready
 worker 1 ready
-worker 2 ready
+worker 0 ready
 worker 3 ready
+worker 2 ready

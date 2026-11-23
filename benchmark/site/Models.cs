@@ -7,6 +7,19 @@ public sealed class BenchData
     public List<Impl> Impls { get; set; } = new();
     public List<TestData> Tests { get; set; } = new();
     public List<Metric> Metrics { get; set; } = new();
+    public HostInfo? Host { get; set; }
+}
+
+public sealed class HostInfo
+{
+    public string Id { get; set; } = "";
+    public string Cpu { get; set; } = "";
+    public string Memory { get; set; } = "";
+    public string Os { get; set; } = "";
+    public string Postgres { get; set; } = "";
+    public string Storage { get; set; } = "";
+    public string Date { get; set; } = "";
+    public string Notes { get; set; } = "";
 }
 
 public sealed class Impl

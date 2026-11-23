@@ -3,6 +3,9 @@
 **Resultados publicados:** https://dmarquezbh.github.io/gitpod-tests1/ — 18 stacks, throughput,
 RAM de pico e tamanho de artefato, com a metodologia completa.
 
+**Relatório interativo (Blazor WASM):** https://dmarquezbh.github.io/gitpod-tests1/ — gráficos por
+categoria, tabelas ordenáveis e RAM/tamanho; fallback sem JS em `static.html`.
+
 **Manual de performance .NET 11:** [`benchmark/docs/dotnet-performance-playbook.md`](benchmark/docs/dotnet-performance-playbook.md)
 — técnicas por categoria, medições e anti-padrões.
 

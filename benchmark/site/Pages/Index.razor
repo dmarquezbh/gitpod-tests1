@@ -7,6 +7,10 @@
             <h1>18 stacks. O mesmo host, o mesmo PostgreSQL.</h1>
             <p class="lead">Benchmark estilo TechEmpower com <code>wrk</code>, servidor fixado em 2 CPUs e
             <code>wrk</code> em outras 2. Throughput, RAM de pico e tamanho de artefato — medidos, não estimados.</p>
+            @if (data?.Host is { } host)
+            {
+                <p class="host">Host: <b>@host.Cpu</b> · @host.Memory · @host.Os · @host.Postgres</p>
+            }
         </div>
         <nav class="links">
             <a href="https://github.com/dmarquezbh/gitpod-tests1">GitHub</a>
@@ -117,6 +121,9 @@
                 <li>Servidor em <code>taskset 0-1</code>; <code>wrk</code> em <code>2-3</code>; 10 s por nível, primer e warmup.</li>
                 <li>PostgreSQL 16 no Docker, mesmo schema e tuning; <code>synchronous_commit=off</code>.</li>
                 <li>Melhor nível por stack em cada teste; erros de socket indicados na tabela.</li>
+                <li>C++ e .NET platform: mediana de 3 rodadas intercaladas na mesma sessão; demais stacks: uma rodada.</li>
+                <li>Os resultados ficam versionados em <code>benchmark/results/</code>. Para medir outro host,
+                copie essa pasta para <code>results/hosts/&lt;id&gt;/</code> antes de rodar — nada é apagado pelo publish.</li>
                 <li>Comparações entre stacks só valem dentro da mesma sessão; o host é um i5 de 2 núcleos.</li>
                 <li>.NET platform usa libpq (C) via P/Invoke, batching de queries por chunk e leitura única de fortunes por rodada.</li>
             </ul>
