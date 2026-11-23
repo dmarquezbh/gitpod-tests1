@@ -112,67 +112,102 @@ public sealed unsafe class LibpqDb : IDisposable
         ops.Clear();
     }
 
+    /// <summary>One read of the (read-only) fortunes table per event-loop round, fanned out to all
+    /// waiting requests. This is batch reading, not a cross-request cache: the query still runs once
+    /// per round against PostgreSQL.</summary>
     public void RunFortunes(List<LoopOp> ops)
     {
         if (ops.Count == 0) return;
-        RunHeavyChunk(ops, 0, ops.Count);
+        var res = PQexecPrepared(_conn, s_f, 0, null, null, null, 0);
+        var ok = res != IntPtr.Zero && PQresultStatus(res) == TuplesOk;
+        foreach (var op in ops)
+        {
+            if (ok) op.RenderFortunes(res);
+            else op.Fail("libpq fortunes error");
+        }
+        if (res != IntPtr.Zero) PQclear(res);
         ops.Clear();
     }
 
     void RunHeavyChunk(List<LoopOp> ops, int start, int count)
     {
         PQenterPipelineMode(_conn);
+
+        // One SQL statement for all /queries requests in this chunk: concatenated ids, ordered by
+        // ordinality, then split by each request's count. Cuts parse/plan/execute overhead per request.
+        var totalIds = 0;
+        for (var i = start; i < start + count; i++)
+            if (ops[i].Route == HttpApplication.Route.Queries) totalIds += ops[i].Count;
+        var hasQueries = totalIds > 0;
+        byte* combined = stackalloc byte[2 + totalIds * 6];
+        if (hasQueries)
+        {
+            var pos = 0; combined[pos++] = (byte)'{';
+            var first = true;
+            for (var i = start; i < start + count; i++)
+            {
+                if (ops[i].Route != HttpApplication.Route.Queries) continue;
+                var ids = ops[i].Ids!;
+                for (var k = 0; k < ids.Length; k++)
+                {
+                    if (!first) combined[pos++] = (byte)',';
+                    first = false;
+                    var v = ids[k]; var q = 16; Span<byte> tmp = stackalloc byte[16];
+                    while (v > 0) { tmp[--q] = (byte)('0' + v % 10); v /= 10; }
+                    for (; q < 16; q++) combined[pos++] = tmp[q];
+                }
+            }
+            combined[pos++] = (byte)'}';
+            byte** p = stackalloc byte*[1]; p[0] = combined;
+            PQsendQueryPrepared(_conn, s_a, 1, p, null, null, 0);
+        }
+
         var store = new List<byte[]>(count * 2);
         for (var i = start; i < start + count; i++)
         {
             var op = ops[i];
+            if (op.Route == HttpApplication.Route.Queries) continue;
             if (op.Route == HttpApplication.Route.Fortunes)
             {
                 PQsendQueryPrepared(_conn, s_f, 0, null, null, null, 0);
                 continue;
             }
-            var a = ArrayLiteral(op.Ids);
+            var a = ArrayLiteral(op.Ids!);
             store.Add(a);
-            if (op.Route == HttpApplication.Route.Updates)
+            var b = ArrayLiteral(op.Numbers!);
+            store.Add(b);
+            fixed (byte* pa = a) fixed (byte* pb = b)
             {
-                var b = ArrayLiteral(op.Numbers!);
-                store.Add(b);
-                fixed (byte* pa = a) fixed (byte* pb = b)
-                {
-                    byte** p = stackalloc byte*[2]; p[0] = pa; p[1] = pb;
-                    PQsendQueryPrepared(_conn, s_u, 2, p, null, null, 0);
-                }
-            }
-            else
-            {
-                fixed (byte* pa = a)
-                {
-                    byte** p = stackalloc byte*[1]; p[0] = pa;
-                    PQsendQueryPrepared(_conn, s_a, 1, p, null, null, 0);
-                }
+                byte** p = stackalloc byte*[2]; p[0] = pa; p[1] = pb;
+                PQsendQueryPrepared(_conn, s_u, 2, p, null, null, 0);
             }
         }
         PQpipelineSync(_conn);
 
+        if (hasQueries)
+        {
+            var res = Next(_conn);
+            var ok = res != IntPtr.Zero && PQresultStatus(res) == TuplesOk;
+            var row = 0;
+            for (var i = start; i < start + count; i++)
+            {
+                var op = ops[i];
+                if (op.Route != HttpApplication.Route.Queries) continue;
+                if (ok) op.RenderQueriesFromRows(res, row, op.Count);
+                else op.Fail("libpq combined query error");
+                row += op.Count;
+            }
+            if (res != IntPtr.Zero) PQclear(res);
+        }
+
         for (var i = start; i < start + count; i++)
         {
             var op = ops[i];
+            if (op.Route == HttpApplication.Route.Queries) continue;
             var res = Next(_conn);
             if (res == IntPtr.Zero) { op.Fail("libpq pipeline error"); continue; }
-            if (op.Route == HttpApplication.Route.Fortunes)
-            {
-                op.RenderFortunes(res);
-            }
-            else if (op.Route == HttpApplication.Route.Updates)
-            {
-                PQclear(res);
-                op.Complete();
-            }
-            else
-            {
-                op.RenderQueriesFromResult(res);
-                PQclear(res);
-            }
+            if (op.Route == HttpApplication.Route.Fortunes) op.RenderFortunes(res);
+            else { PQclear(res); op.Complete(); }
         }
         var sync = Next(_conn);
         if (sync != IntPtr.Zero) PQclear(sync);

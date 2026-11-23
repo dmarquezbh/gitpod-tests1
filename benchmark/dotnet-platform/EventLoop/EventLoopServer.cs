@@ -392,6 +392,7 @@ public sealed class LoopOp : PendingOp
                 else loop.EnqueueSingle(this);
                 return;                                  // flushed once per epoll batch
             case HttpApplication.Route.Fortunes:
+                if (loop.UseLibpq) { loop.EnqueueLibpqFortune(this); return; }
                 _pg = loop.PrimaryPg;
                 _pg.Enqueue(this);
                 _pg.Write.WriteBindNoParams(PgProtocol.FortunesStatement);
@@ -655,9 +656,13 @@ public sealed class LoopOp : PendingOp
     public void FailLibpq() => Conn.OnLibpqComplete();
 
     /// <summary>Renders /queries straight from a libpq result: no World[] and no serializer.</summary>
-    public unsafe void RenderQueriesFromResult(IntPtr result)
+    public void RenderQueriesFromResult(IntPtr result) => RenderQueriesFromRows(result, 0, LibpqDb.Rows(result));
+
+    public unsafe void RenderQueriesFromRows(IntPtr result, int startRow, int count)
     {
-        var n = LibpqDb.Rows(result);
+        var available = LibpqDb.Rows(result);
+        var n = count;
+        if (startRow + n > available) n = Math.Max(0, available - startRow);
         Span<byte> body = stackalloc byte[2 + n * 40];
         var p = 0;
         body[p++] = (byte)'[';
@@ -665,9 +670,9 @@ public sealed class LoopOp : PendingOp
         {
             if (i != 0) body[p++] = (byte)',';
             "{\"id\":"u8.CopyTo(body[p..]); p += 6;
-            System.Buffers.Text.Utf8Formatter.TryFormat(LibpqDb.Atoi(LibpqDb.Value(result, i, 0)), body[p..], out var digits); p += digits;
+            System.Buffers.Text.Utf8Formatter.TryFormat(LibpqDb.Atoi(LibpqDb.Value(result, startRow + i, 0)), body[p..], out var digits); p += digits;
             ",\"randomNumber\":"u8.CopyTo(body[p..]); p += 16;
-            System.Buffers.Text.Utf8Formatter.TryFormat(LibpqDb.Atoi(LibpqDb.Value(result, i, 1)), body[p..], out digits); p += digits;
+            System.Buffers.Text.Utf8Formatter.TryFormat(LibpqDb.Atoi(LibpqDb.Value(result, startRow + i, 1)), body[p..], out digits); p += digits;
             body[p++] = (byte)'}';
         }
         body[p++] = (byte)']';

@@ -281,6 +281,9 @@ def main():
     SELECT (os valores novos são gerados no cliente);</li>
     <li><b>driver libpq (C) via P/Invoke</b> em todos os caminhos de banco, com arrays e pipeline
     mode: o parser linha-a-linha managed era o gargalo de fortunes e queries largas;</li>
+    <li><b>batching entre requests</b>: todos os <code>/queries</code> de um chunk viram uma única
+    consulta com os ids concatenados, e a tabela de fortunes é lida uma vez por rodada de
+    <code>epoll</code> e distribuída aos requests pendentes;</li>
     <li><b>runtime async do .NET 11</b> ligado no Kestrel e no platform; PGO dinâmico, workstation GC
     e <code>ReadyToRun=0</code> mantidos;</li>
     <li>Kestrel com Npgsql: mesmas consultas por array/UNNEST, <code>q=10</code> de 3,1k → 6,4k,

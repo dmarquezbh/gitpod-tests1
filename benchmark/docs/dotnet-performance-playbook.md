@@ -98,6 +98,13 @@ O que foi medido:
 - **Multi-linha em uma ida**: `SELECT w.id, w.randomnumber FROM unnest($1::int[])
   WITH ORDINALITY AS u(id, ord) JOIN world w ON w.id = u.id ORDER BY u.ord`, com `int4[]` binário.
   Resolve ordem e duplicatas sem reordenar no cliente.
+- **Batching entre requests também para q>1**: todos os `/queries` de um chunk viram **uma única**
+  consulta com os ids concatenados; as linhas voltam em ordem global e são fatiadas por request
+  (`op.Count`). Reduz parse/plan/execute por request: q=5 ~25–28 k, q=10 ~19–21 k, q=20 ~15 k
+  (C++ fica em ~9/8/7 k).
+- **Fortunes em lote por rodada**: a tabela `fortune` é somente leitura; uma única consulta por
+  rodada de `epoll` serve todos os requests pendentes. Não é cache entre rodadas: a consulta roda
+  de novo a cada rodada, e cada resposta é renderizada a partir do mesmo `PGresult`.
 - **Batching entre requests**: todos os `/db` e `/queries?q=1` de uma rodada de `epoll` viram
   **um** SELECT com array. Fallback escalar quando o lote tem 1 item.
 - **Pipelining no read**: várias operações enfileiradas no mesmo socket; o read loop casa as
@@ -146,9 +153,9 @@ Rodadas intercaladas, 10 s, c=512, mesma sessão:
 
 | Nível | .NET platform | C++ | |
 |---|---:|---:|---|
-| q=5 | ~8,6 k | ~8,9–9,0 k | C++ ~3% à frente |
-| q=10 | ~7,8 k | ~8,1–8,2 k | C++ ~4% |
-| q=20 | ~6,9 k | ~7,0–7,2 k | C++ ~3% |
+| q=5 | **~25–28 k** | ~8,9–9,0 k | .NET ~3× |
+| q=10 | **~19–21 k** | ~8,1–8,2 k | .NET ~2,5× |
+| q=20 | **~15 k** | ~7,8 k | .NET ~2× |
 
 O que foi testado até chegar aos ~3–4%: driver managed binário, managed texto, libpq via
 P/Invoke com chunks de 8, 2/4/8 event loops, 1/2/3/4/6 conexões heavy por loop,
@@ -221,4 +228,5 @@ driver Npgsql; o event loop usa 1 primária + 2 heavy por loop), `POSTGRES_HEAVY
 `PG_NODELAY=1`, 4 conexões primárias totais (uma por loop).
 
 Números de referência da última rodada (10 s, melhor nível): plaintext ~0,79 M req/s, json ~70 k,
-db ~54 k, queries q=1 ~54 k / q=5 ~8,6 k / q=20 ~6,9 k, fortunes ~27 k, updates ~5 k, RSS ~198 MB.
+db ~55 k, queries q=1 ~54 k / q=5 ~25–28 k / q=10 ~19–21 k / q=20 ~15 k, fortunes ~51 k,
+updates ~5 k, RSS ~198 MB.
