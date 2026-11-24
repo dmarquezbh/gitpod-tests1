@@ -1,0 +1,301 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Python no ranking</title>
+<style>
+:root{
+  color-scheme:light;
+  --bg:#f6f6f4; --surface:#fcfcfb; --border:#e3e2dd;
+  --text:#0b0b0b; --text-2:#52514e; --muted:#8a8984;
+  --bar:#c9c8c2; --ours:#2a78d6; --ours-band:rgba(42,120,214,.18);
+  --warn-bg:#fff6e0; --warn-ink:#7a5200;
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    color-scheme:dark;
+    --bg:#121211; --surface:#1a1a19; --border:#2e2e2c;
+    --text:#f0efec; --text-2:#c3c2b7; --muted:#8f8e88;
+    --bar:#4a4a47; --ours:#3987e5; --ours-band:rgba(57,135,229,.25);
+    --warn-bg:#2c2410; --warn-ink:#e7c46a;
+  }
+}
+:root[data-theme="dark"]{
+  color-scheme:dark;
+  --bg:#121211; --surface:#1a1a19; --border:#2e2e2c;
+  --text:#f0efec; --text-2:#c3c2b7; --muted:#8f8e88;
+  --bar:#4a4a47; --ours:#3987e5; --ours-band:rgba(57,135,229,.25);
+  --warn-bg:#2c2410; --warn-ink:#e7c46a;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--text);font:15px/1.55 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+main{max-width:980px;margin:0 auto;padding:32px 16px 64px}
+h1{font-size:1.7rem;margin:0 0 4px;letter-spacing:-.01em}
+h2{font-size:1.15rem;margin:40px 0 8px}
+p{margin:6px 0 12px}
+.sub{color:var(--text-2);margin-bottom:24px}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:18px 18px 14px}
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px;margin:20px 0}
+.kpi .v{font-size:1.8rem;font-weight:650;font-variant-numeric:tabular-nums}
+.kpi .l{color:var(--text-2);font-size:.88rem}
+.controls{display:flex;flex-wrap:wrap;gap:10px 18px;align-items:center;margin-bottom:14px}
+.seg{display:inline-flex;border:1px solid var(--border);border-radius:8px;overflow:hidden}
+.seg button{background:none;border:0;padding:6px 14px;color:var(--text-2);font:inherit;cursor:pointer}
+.seg button[aria-pressed="true"]{background:var(--text);color:var(--surface)}
+select{font:inherit;padding:5px 8px;border-radius:8px;border:1px solid var(--border);background:var(--surface);color:var(--text);max-width:100%}
+.legend{display:flex;gap:16px;flex-wrap:wrap;color:var(--text-2);font-size:.85rem;margin:4px 0 10px}
+.sw{display:inline-block;width:12px;height:12px;border-radius:3px;vertical-align:-1px;margin-right:6px}
+.chart{position:relative}
+.row{display:grid;grid-template-columns:30px minmax(110px,170px) 1fr;align-items:center;gap:8px;height:26px;margin-bottom:2px;font-size:.86rem}
+.row .rk{color:var(--muted);text-align:right;font-variant-numeric:tabular-nums}
+.row .nm{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:var(--text-2)}
+.row.ours .nm{color:var(--text);font-weight:600}
+.track{position:relative;height:18px}
+.bar{position:absolute;left:0;top:2px;height:14px;background:var(--bar);border-radius:0 4px 4px 0}
+.row.ours .bar{background:var(--ours)}
+.band{position:absolute;top:0;height:18px;background:var(--ours-band);border-radius:4px}
+.val{position:absolute;top:0;font-size:.8rem;color:var(--text-2);white-space:nowrap;font-variant-numeric:tabular-nums;padding-left:6px}
+.row:hover{background:color-mix(in srgb,var(--text) 5%,transparent);border-radius:6px}
+#tip{position:fixed;pointer-events:none;background:var(--text);color:var(--surface);padding:8px 10px;border-radius:8px;font-size:.82rem;max-width:300px;opacity:0;transition:opacity .1s;z-index:10}
+table{width:100%;border-collapse:collapse;font-size:.86rem;font-variant-numeric:tabular-nums}
+th,td{padding:7px 8px;border-bottom:1px solid var(--border);text-align:right;vertical-align:top}
+th:first-child,td:first-child{text-align:left}
+th{color:var(--text-2);font-weight:600}
+.tbl{overflow-x:auto}
+.note{background:var(--warn-bg);color:var(--warn-ink);border-radius:8px;padding:10px 12px;font-size:.88rem;margin:12px 0}
+.tag{display:inline-block;font-size:.72rem;padding:1px 7px;border-radius:99px;border:1px solid var(--border);color:var(--text-2)}
+ul{padding-left:20px;margin:6px 0}
+li{margin:4px 0}
+code{font-size:.86em;background:color-mix(in srgb,var(--text) 7%,transparent);padding:1px 5px;border-radius:4px}
+footer{color:var(--muted);font-size:.8rem;margin-top:40px}
+</style>
+</head>
+<body>
+<main>
+  <h1>Onde os testes Python entrariam no ranking</h1>
+  <p class="sub">Projeção dos servidores Python “platform” (uvloop, epoll, Cython) e dos frameworks com HTTP nativo (fastpysgi, socketify) sobre o relatório publicado em <a href="https://dmarquezbh.github.io/gitpod-tests1/">dmarquezbh.github.io/gitpod-tests1</a>. Só plaintext e json: as demais categorias ainda não foram implementadas nessas variantes.</p>
+
+  <div class="controls">
+    <span style="color:var(--text-2)">Host de referência:</span>
+    <div class="seg" role="group" aria-label="Host">
+      <button data-h="i5" aria-pressed="true">i5-3317U (site, 17 impl.)</button>
+      <button data-h="xeon" aria-pressed="false">Xeon (RESULTS.md, 5 impl.)</button>
+    </div>
+  </div>
+
+  <div class="kpis">
+    <div class="card kpi"><div class="v" id="k-pt">—</div><div class="l">posição projetada em <b>plaintext</b> (python-platform), entre <span class="k-n"></span></div></div>
+    <div class="card kpi"><div class="v" id="k-js">—</div><div class="l">posição projetada em <b>json</b> (python-platform), entre <span class="k-n"></span></div></div>
+    <div class="card kpi"><div class="v" id="k-x">—</div><div class="l" id="k-xl">—</div></div>
+  </div>
+
+  <div class="note"><b>Isto é projeção, não medição.</b> <span id="host-note"></span> Os nossos testes rodaram num i7-1355U (WSL), com o servidor fixado em 2 CPUs. Os números absolutos não se comparam. Por isso usamos a <b>razão sobre o dotnet-platform medido na mesma rodada</b> e multiplicamos pelo dotnet-platform do host de referência. A faixa azul clara mostra a incerteza calibrada (seção “Calibração”).</div>
+
+  <h2>Ranking com a variante escolhida</h2>
+  <div class="card">
+    <div class="controls">
+      <div class="seg" role="group" aria-label="Teste">
+        <button data-t="plaintext" aria-pressed="true">plaintext</button>
+        <button data-t="json" aria-pressed="false">json</button>
+      </div>
+      <label>Variante: <select id="variant"></select></label>
+    </div>
+    <div class="legend">
+      <span><span class="sw" style="background:var(--bar)"></span>publicado (<span id="leg-host"></span>)</span>
+      <span><span class="sw" style="background:var(--ours)"></span>nossa variante, projetada</span>
+      <span><span class="sw" style="background:var(--ours-band)"></span>faixa de incerteza</span>
+    </div>
+    <div class="chart" id="chart"></div>
+    <p style="color:var(--muted);font-size:.8rem;margin-top:10px">Escala linear, req/s no melhor nível de conexões. Passe o mouse numa barra para ver os detalhes.</p>
+  </div>
+
+  <h2>Todas as variantes medidas</h2>
+  <p>Razão = req/s da variante ÷ req/s do dotnet-platform na mesma rodada (mediana de 3 rodadas, melhor nível de conexões). Projeção = razão × dotnet-platform do host de referência selecionado.</p>
+  <div class="card tbl"><table id="tbl"></table></div>
+
+  <h2>Calibração: a razão sobrevive à troca de máquina?</h2>
+  <p>Três implementações rodaram na nossa máquina e no host de referência. Se a razão sobre o dotnet-platform fosse idêntica, o fator seria 1,00. <span id="cal-text"></span> Usamos esse intervalo como faixa de incerteza (projeção ÷ maior fator até projeção ÷ menor fator).</p>
+  <div class="card tbl"><table id="cal"></table></div>
+
+  <h2>Leitura</h2>
+  <div class="card">
+    <ul>
+      <li><b>plaintext:</b> o python-platform sairia do 14º lugar (CPython/uvicorn, 2.947 req/s) para algo entre o <b>3º e o 4º</b>, atrás de dotnet-platform e C++ epoll, disputando com Zero C#.</li>
+      <li><b>json:</b> a faixa é larga, entre o <b>3º e o 9º</b>. No cenário central fica logo atrás de dotnet-platform e C++, à frente de Rust.</li>
+      <li><b>No Xeon</b> (RESULTS.md: Rust axum, .NET Kestrel, .NET Platform, Go net/http e Go fasthttp): <b>2º em plaintext</b> mesmo no pior caso da faixa, atrás só do .NET Platform; <b>3º–4º em json</b>, disputando com Go fasthttp. A calibração no Xeon é mais apertada (fator 0,97 a 1,40).</li>
+      <li><b>Fast path</b> (comparar a requisição com a anterior e pular o parser) vale cerca de 10 pontos de razão em plaintext. As variantes “sem fast path” são a comparação mais justa com as demais implementações e ainda ficam no top 4 em plaintext.</li>
+      <li><b>Python 3.14 com JIT</b> foi a melhor variante pura (0,91 em plaintext), mas a vantagem sobre o 3.14 sem JIT está dentro do ruído de uma rodada.</li>
+      <li><b>Frameworks com HTTP nativo</b> (fastpysgi, socketify) ficam bem abaixo das versões “platform” em plaintext e tiveram erros; <b>granian</b> não completou (o processo iniciado não era o dono do socket).</li>
+      <li>Nas categorias com banco (db, queries, fortunes, updates) nada muda: as variantes novas não implementam essas rotas, então o Python continua com o CPython/uvicorn publicado.</li>
+    </ul>
+  </div>
+
+  <h2>O que falta para entrar no relatório de verdade</h2>
+  <div class="card">
+    <ul>
+      <li>Rodar <code>run-python-platform.sh</code> (e as variantes epoll/Cython) <b>no mesmo host</b> do relatório (i5-3317U ou o Xeon), 3 rodadas, e gerar o <code>data.json</code> com <code>tools/build-data.py</code>.</li>
+      <li>Repetir a rodada <code>results-ab3</code> (Cython, orjson, fastpysgi, socketify): o dotnet-platform caiu para 28 mil req/s em json numa das rodadas, sinal de interferência na máquina.</li>
+      <li>Corrigir o granian para o pid iniciado segurar o listener.</li>
+      <li>Decidir se o fast path entra como variante rotulada (como o TechEmpower faz com “stripped”) ou fica de fora.</li>
+      <li>Implementar db, queries, fortunes e updates para disputar as outras categorias.</li>
+    </ul>
+  </div>
+
+  <footer>Fontes: <code>docs/data.json</code> (relatório publicado, host i5-3317U, 23/11/2026), <code>benchmark/RESULTS.md</code> (Xeon, “melhor nível por teste”) e <code>~/bench-run/results-{rep,ab,ab2,ab3}</code> no WSL (i7-1355U, 22/11/2026). Gerado em 24/11/2026.</footer>
+</main>
+<div id="tip" role="tooltip"></div>
+<script>
+// i5: docs/data.json (relatório publicado). Xeon: RESULTS.md, "Melhor nível por teste". req/s
+const PUB_I5 = {
+  plaintext: {"dotnet-platform":784521.82,"cpp":715967.88,"zero":548530.84,"dotnet":325533.71,"rust-tuned":283148.8,"rust":258341.91,"go-fasthttp":250234.79,"c":105116.88,"java":40590.17,"go-std":34816.67,"node":19525.44,"bun":18363.05,"deno":13570.6,"python":2947.11,"pypy":2269.55,"ruby":1681.7,"graalpy":65.72},
+  json: {"dotnet-platform":69952,"cpp":68084,"rust-tuned":49932,"c":49493,"zero":48957,"rust":48042,"dotnet":39520,"go-fasthttp":35730,"go-std":25938,"java":19086,"bun":15669,"node":12782,"deno":9869,"python":2861,"pypy":2769,"ruby":1646,"graalpy":131}
+};
+const PUB_XEON = {
+  plaintext: {"dotnet-platform":2174296,"rust":745838,"dotnet":721216,"go-fasthttp":712783,"go-std":81817},
+  json: {"dotnet-platform":240344,"rust":212812,"go-fasthttp":157430,"dotnet":119663,"go-std":54615}
+};
+const LABEL = {"dotnet-platform":".NET 11 platform","cpp":"C++ (epoll)","zero":"Zero C#","dotnet":".NET 11 Kestrel","rust-tuned":"Rust axum-tuned","rust":"Rust axum","go-fasthttp":"Go fasthttp","c":"C (gcc)","java":"Java 25","go-std":"Go net/http","node":"Node 26","bun":"Bun 1.4","deno":"Deno 2.9","python":"CPython 3.14 (uvicorn)","pypy":"PyPy 3.11","ruby":"Ruby 3.2","graalpy":"GraalPy 3.11"};
+// Nossas variantes: razão mediana vs dotnet-platform na mesma rodada, [min, max] das rodadas, erros somados
+const OURS = [
+  {id:"python-platform", label:"python-platform (uvloop, 3.13)", set:"rep", conf:"alta", desc:"asyncio.Protocol + uvloop, parser próprio, fast path, 1 processo/CPU",
+   plaintext:{r:.813, rr:[.73,.81], err:0}, json:{r:.746, rr:[.72,.75], err:0}},
+  {id:"py-epoll-314", label:"epoll stdlib, 3.14", set:"ab", conf:"alta", desc:"loop epoll próprio, só biblioteca padrão, fast path",
+   plaintext:{r:.790, rr:[.79,.85], err:0}, json:{r:.728, rr:[.71,.74], err:0}},
+  {id:"py-epoll-314-jit", label:"epoll stdlib, 3.14 + JIT", set:"ab", conf:"alta", desc:"igual ao anterior, PYTHON_JIT=1",
+   plaintext:{r:.907, rr:[.75,.95], err:0}, json:{r:.806, rr:[.64,.82], err:0}},
+  {id:"py-uvloop-313-nofp", label:"uvloop 3.13, sem fast path", set:"ab2", conf:"alta", desc:"python-platform com FAST_PATH=0 (parser em toda requisição)",
+   plaintext:{r:.748, rr:[.63,.78], err:0}, json:{r:.771, rr:[.64,.78], err:0}},
+  {id:"py-epoll-314-nofp", label:"epoll 3.14, sem fast path", set:"ab", conf:"alta", desc:"epoll com FAST_PATH=0",
+   plaintext:{r:.646, rr:[.51,.66], err:0}, json:{r:.758, rr:[.60,.76], err:0}},
+  {id:"py-cython", label:"Cython (hot path compilado)", set:"ab3", conf:"baixa", desc:"python-platform com handler.pyx compilado; rodada ab3 com ruído",
+   plaintext:{r:.891, rr:[.70,1.20], err:1031}, json:{r:.746, rr:[.51,2.20], err:0}},
+  {id:"py-uvloop-orjson", label:"uvloop + orjson", set:"ab3", conf:"baixa", desc:"JSON_LIB=orjson (Rust); rodada ab3 com ruído",
+   plaintext:{r:.752, rr:[.61,.80], err:0}, json:{r:.874, rr:[.76,2.57], err:60}},
+  {id:"fastpysgi", label:"fastpysgi (HTTP em C)", set:"ab3", conf:"baixa", desc:"framework com servidor em C; rodada ab3 com ruído",
+   plaintext:{r:.132, rr:[.11,.19], err:1024}, json:{r:.991, rr:[.59,2.18], err:253}},
+  {id:"socketify", label:"socketify (uWebSockets)", set:"ab3", conf:"baixa", desc:"framework com servidor em C++; rodada ab3 com ruído",
+   plaintext:{r:.074, rr:[.04,.08], err:255}, json:{r:.398, rr:[.31,1.79], err:16}},
+];
+// Razão vs dotnet-platform medida na nossa máquina (results-rep, mediana) para calibrar
+const MINE = {dotnet:{plaintext:.403, json:.539}, rust:{plaintext:.396, json:.860}, "go-fasthttp":{plaintext:.460, json:.778}};
+const HOSTS = {
+  i5: {pub:PUB_I5, name:"i5-3317U, mediana de 3",
+       note:"O relatório publicado (site) roda num i5-3317U (2 núcleos / 4 threads)."},
+  xeon: {pub:PUB_XEON, name:"Xeon 4 vCPU, RESULTS.md",
+       note:"O RESULTS.md traz 5 implementações medidas num Xeon de 4 vCPU (servidor em 2 CPUs)."},
+};
+let HOST = "i5", PUB, CAL, F_LO, F_HI;
+function setHost(h){
+  HOST = h; PUB = HOSTS[h].pub;
+  CAL = Object.entries(MINE).map(([id, m]) => ({label:LABEL[id], plaintext:[m.plaintext, PUB.plaintext[id] / PUB.plaintext["dotnet-platform"]], json:[m.json, PUB.json[id] / PUB.json["dotnet-platform"]]}));
+  const f = CAL.flatMap(x => [x.plaintext[0] / x.plaintext[1], x.json[0] / x.json[1]]);
+  F_LO = Math.max(...f); F_HI = Math.min(...f);
+}
+setHost("i5");
+const fmt = n => Math.round(n).toLocaleString("pt-BR");
+const fmtR = n => n.toFixed(2).replace(".", ",");
+
+function project(v, t){
+  const dp = PUB[t]["dotnet-platform"], c = v[t].r * dp;
+  return {c, lo:c/F_LO, hi:Math.min(c/F_HI, Infinity)};
+}
+function rankOf(val, t){ // posição se inserido no ranking publicado
+  return Object.values(PUB[t]).filter(x => x > val).length + 1;
+}
+function rankRange(v, t){
+  const p = project(v, t);
+  const a = rankOf(p.hi, t), b = rankOf(p.lo, t);
+  return a === b ? `${a}º` : `${a}º–${b}º`;
+}
+
+let test = "plaintext", vid = "python-platform";
+const sel = document.getElementById("variant");
+OURS.forEach(v => { const o = document.createElement("option"); o.value = v.id; o.textContent = v.label + (v.conf === "baixa" ? " · baixa confiança" : ""); sel.append(o); });
+sel.onchange = () => { vid = sel.value; draw(); };
+document.querySelectorAll("button[data-t]").forEach(b => b.onclick = () => {
+  test = b.dataset.t;
+  document.querySelectorAll("button[data-t]").forEach(x => x.setAttribute("aria-pressed", x === b));
+  draw();
+});
+document.querySelectorAll("button[data-h]").forEach(b => b.onclick = () => {
+  setHost(b.dataset.h);
+  document.querySelectorAll("button[data-h]").forEach(x => x.setAttribute("aria-pressed", x === b));
+  tables(); draw();
+});
+
+const tip = document.getElementById("tip");
+function showTip(e, html){ tip.innerHTML = html; tip.style.opacity = 1; moveTip(e); }
+function moveTip(e){
+  const w = tip.offsetWidth, x = Math.min(e.clientX + 14, innerWidth - w - 8);
+  tip.style.left = x + "px"; tip.style.top = (e.clientY + 14) + "px";
+}
+function hideTip(){ tip.style.opacity = 0; }
+
+function draw(){
+  const v = OURS.find(o => o.id === vid), p = project(v, test);
+  const rows = Object.entries(PUB[test]).map(([id, rps]) => ({id, rps, label:LABEL[id], ours:false}));
+  rows.push({id:v.id, rps:p.c, lo:p.lo, hi:p.hi, label:v.label, ours:true, v});
+  rows.sort((a, b) => b.rps - a.rps);
+  const max = Math.max(...rows.map(r => r.hi || r.rps)) * 1.12;
+  const el = document.getElementById("chart"); el.innerHTML = "";
+  let rank = 0;
+  rows.forEach(r => {
+    rank++;
+    const row = document.createElement("div"); row.className = "row" + (r.ours ? " ours" : "");
+    const pct = x => (x / max * 100) + "%";
+    row.innerHTML = `<span class="rk">${rank}</span><span class="nm" title="${r.label}">${r.label}</span>
+      <div class="track">${r.ours ? `<div class="band" style="left:${pct(r.lo)};width:calc(${pct(r.hi)} - ${pct(r.lo)})"></div>` : ""}
+      <div class="bar" style="width:${pct(r.rps)}"></div>
+      <span class="val" style="left:${pct(r.ours ? r.hi : r.rps)}">${r.ours ? "~" : ""}${fmt(r.rps)}</span></div>`;
+    const html = r.ours
+      ? `<b>${r.label}</b> (projeção)<br>${r.v.desc}<br>Central: ${fmt(r.rps)} req/s<br>Faixa: ${fmt(r.lo)} a ${fmt(r.hi)}<br>Razão vs dotnet-platform: ${fmtR(r.v[test].r)}<br>Posição: ${rankRange(r.v, test)} · confiança ${r.v.conf}`
+      : `<b>${r.label}</b><br>${fmt(r.rps)} req/s (publicado)<br>${fmtR(r.rps / PUB[test]["dotnet-platform"] * 100)}% do dotnet-platform`;
+    row.onmouseenter = e => showTip(e, html); row.onmousemove = moveTip; row.onmouseleave = hideTip;
+    el.append(row);
+  });
+}
+
+function tables(){
+  let h = `<thead><tr><th>Variante</th><th>Confiança</th><th>plaintext: razão</th><th>proj. req/s</th><th>posição</th><th>json: razão</th><th>proj. req/s</th><th>posição</th><th>erros</th></tr></thead><tbody>`;
+  OURS.forEach(v => {
+    const a = project(v, "plaintext"), b = project(v, "json");
+    h += `<tr><td>${v.label}<br><span style="color:var(--muted);font-size:.78rem">${v.desc}</span></td>
+      <td><span class="tag">${v.conf}</span></td>
+      <td>${fmtR(v.plaintext.r)}</td><td>${fmt(a.c)}</td><td>${rankRange(v, "plaintext")}</td>
+      <td>${fmtR(v.json.r)}</td><td>${fmt(b.c)}</td><td>${rankRange(v, "json")}</td>
+      <td>${v.plaintext.err + v.json.err}</td></tr>`;
+  });
+  h += `<tr><td>granian (HTTP em Rust)</td><td><span class="tag">falhou</span></td><td colspan="7" style="text-align:left;color:var(--text-2)">não completou: o pid iniciado não era o dono do socket (exigência do run-suite.sh)</td></tr></tbody>`;
+  document.getElementById("tbl").innerHTML = h;
+
+  let c = `<thead><tr><th>Implementação</th><th>plaintext: nossa máquina</th><th>publicado</th><th>fator</th><th>json: nossa máquina</th><th>publicado</th><th>fator</th></tr></thead><tbody>`;
+  CAL.forEach(x => {
+    c += `<tr><td>${x.label}</td><td>${fmtR(x.plaintext[0])}</td><td>${fmtR(x.plaintext[1])}</td><td><b>${fmtR(x.plaintext[0]/x.plaintext[1])}</b></td>
+      <td>${fmtR(x.json[0])}</td><td>${fmtR(x.json[1])}</td><td><b>${fmtR(x.json[0]/x.json[1])}</b></td></tr>`;
+  });
+  c += `</tbody>`;
+  document.getElementById("cal").innerHTML = c;
+
+  const pp = OURS[0];
+  document.getElementById("k-pt").textContent = rankRange(pp, "plaintext");
+  document.getElementById("k-js").textContent = rankRange(pp, "json");
+  const pr = project(pp, "plaintext");
+  const n = Object.keys(PUB.plaintext).length + 1;
+  document.querySelectorAll(".k-n").forEach(e => e.textContent = n);
+  if (PUB.plaintext.python) {
+    document.getElementById("k-x").textContent = `${Math.round(pr.lo / PUB.plaintext.python)}–${Math.round(pr.hi / PUB.plaintext.python)}×`;
+    document.getElementById("k-xl").textContent = "ganho estimado sobre o CPython publicado (uvicorn) em plaintext";
+  } else {
+    document.getElementById("k-x").textContent = `${fmtR(pr.lo / PUB.plaintext.rust)}–${fmtR(pr.hi / PUB.plaintext.rust)}×`;
+    document.getElementById("k-xl").textContent = "plaintext projetado em relação ao Rust axum (o Xeon não tem entrada Python)";
+  }
+  document.getElementById("host-note").textContent = HOSTS[HOST].note;
+  document.getElementById("leg-host").textContent = HOSTS[HOST].name;
+  document.getElementById("cal-text").textContent = `Neste host ele vai de ${fmtR(F_HI)} a ${fmtR(F_LO)}: a nossa máquina favorece Go e Rust em relação ao .NET.`;
+}
+tables(); draw();
+if (location.hash === "#xeon") document.querySelector('button[data-h="xeon"]').click();
+</script>
+</body>
+</html>
