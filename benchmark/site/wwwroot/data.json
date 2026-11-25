@@ -403,9 +403,9 @@
       },
       {
        "impl": "pascal",
-       "rps": 2034.35,
+       "rps": 2088.1,
        "level": 256,
-       "errors": 10190
+       "errors": 10415
       }
      ]
     },
@@ -540,9 +540,9 @@
       },
       {
        "impl": "pascal",
-       "rps": 2041.5,
+       "rps": 2052.37,
        "level": 16,
-       "errors": 10217
+       "errors": 10477
       }
      ]
     },
@@ -677,9 +677,9 @@
       },
       {
        "impl": "pascal",
-       "rps": 35.76,
+       "rps": 37.65,
        "level": 64,
-       "errors": 181
+       "errors": 192
       }
      ]
     },
@@ -816,7 +816,7 @@
        "impl": "pascal",
        "rps": 0.0,
        "level": 1,
-       "errors": 459
+       "errors": 1422
       }
      ]
     },
@@ -953,7 +953,7 @@
        "impl": "pascal",
        "rps": 0.0,
        "level": 16,
-       "errors": 1072
+       "errors": 0
       }
      ]
     },

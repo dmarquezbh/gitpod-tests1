@@ -8,6 +8,6 @@ Running 5s test @ http://127.0.0.1:18096/fortunes
      75%    0.00us
      90%    0.00us
      99%    0.00us
-  0 requests in 12.62s, 0.00B read
+  0 requests in 5.05s, 0.00B read
 Requests/sec:      0.00
 Transfer/sec:       0.00B
