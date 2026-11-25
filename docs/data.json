@@ -295,8 +295,8 @@
       },
       {
        "impl": "dotnet-platform",
-       "rps": 784521.82,
-       "level": 256,
+       "rps": 776916.12,
+       "level": 1024,
        "errors": 0
       },
       {
@@ -456,7 +456,7 @@
       },
       {
        "impl": "dotnet-platform",
-       "rps": 69951.73,
+       "rps": 71131.49,
        "level": 256,
        "errors": 0
       },
@@ -617,7 +617,7 @@
       },
       {
        "impl": "dotnet-platform",
-       "rps": 54665.68,
+       "rps": 52026.44,
        "level": 512,
        "errors": 0
       },
@@ -772,7 +772,7 @@
       },
       {
        "impl": "dotnet-platform",
-       "rps": 54127.93,
+       "rps": 49820.05,
        "level": 1,
        "errors": 0
       },
@@ -927,7 +927,7 @@
       },
       {
        "impl": "dotnet-platform",
-       "rps": 42350.67,
+       "rps": 49334.27,
        "level": 512,
        "errors": 0
       },
@@ -1088,7 +1088,7 @@
       },
       {
        "impl": "dotnet-platform",
-       "rps": 6768.93,
+       "rps": 6268.18,
        "level": 1,
        "errors": 0
       },
