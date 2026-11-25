@@ -5,7 +5,7 @@
 PROCEDURE Main()
    LOCAL nPorta := Val( hb_GetEnv( "PORT", "8095" ) )
    LOCAL srv, cli, cReq, cResp, cPedido
-   srv := hb_socketOpen( HB_SOCKET_AF_INET, HB_SOCKET_ST_STREAM )
+   srv := hb_socketOpen( 2, 1 )
    hb_socketSetReuseAddr( srv, .T. )
    hb_socketBind( srv, { HB_SOCKET_AF_INET, "0.0.0.0", nPorta } )
    hb_socketListen( srv, 4096 )
@@ -16,7 +16,7 @@ PROCEDURE Main()
          LOOP
       ENDIF
       cReq := Space( 4096 )
-      hb_socketRecv( cli, @cReq, , 1000 )
+      hb_socketRecv( cli, @cReq, Len( cReq ), 0, 1000 )
       cPedido := SubStr( cReq, 5, 16 )
       IF Left( cPedido, 10 ) == "/plaintext"
          cResp := "HTTP/1.1 200 OK" + CRLF + ;
