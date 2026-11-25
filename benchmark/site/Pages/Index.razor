@@ -14,7 +14,7 @@
                     <select @bind="hostId">
                         @foreach (var medicao in Medicoes())
                         {
-                            <option value="@medicao.Host?.Id">@(medicao.Host?.Id) — @(medicao.Host?.Cpu)</option>
+                            <option value="@medicao.Host?.Id">@(medicao.Host?.Id)</option>
                         }
                     </select>
                 </label>

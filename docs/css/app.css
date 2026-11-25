@@ -19,6 +19,8 @@
     --mono: ui-monospace, "SFMono-Regular", "JetBrains Mono", "Cascadia Mono", Menlo, Consolas, monospace;
 }
 * { box-sizing: border-box; }
+html, body { overflow-x: clip; max-width: 100%; }
+code { overflow-wrap: anywhere; }
 html { scroll-behavior: smooth; }
 body {
     margin: 0;
@@ -36,12 +38,12 @@ code {
 a { color: var(--accent); text-decoration: none; }
 a:hover { text-decoration: underline; text-underline-offset: 2px; }
 .boot { max-width: 900px; margin: 4rem auto; padding: 0 1.25rem; color: var(--muted); font-family: var(--mono); }
-.shell { max-width: 1140px; margin: 0 auto; padding: 2.4rem 1.25rem 5rem; }
+.shell { width: 100%; max-width: 1140px; min-width: 0; margin: 0 auto; padding: 2.4rem 1.25rem 5rem; }
 .hero {
     display: flex; flex-wrap: wrap; gap: 1.5rem; align-items: flex-start; justify-content: space-between;
     margin-bottom: 1.8rem; padding-bottom: 1.35rem; border-bottom: 1px solid var(--line);
 }
-.hero h1 {
+.hero h1 { overflow-wrap: anywhere; min-width: 0;
     margin: 0 0 .45rem; font-family: var(--mono); font-weight: 600;
     font-size: clamp(1.55rem, 3vw, 2.35rem); line-height: 1.12; letter-spacing: -.02em;
     color: var(--accent-2);
@@ -51,10 +53,11 @@ a:hover { text-decoration: underline; text-underline-offset: 2px; }
 .host { margin: .6rem 0 0; color: var(--muted); font-size: .88rem; font-family: var(--mono); }
 .host b { color: var(--fg); font-weight: 600; }
 .host-pick {
-    display: inline-flex; gap: .45rem; align-items: center; margin-top: .75rem;
+    display: flex; flex-wrap: wrap; max-width: 100%; min-width: 0; gap: .45rem; align-items: center; margin-top: .75rem;
     color: var(--muted); font-size: .88rem; font-family: var(--mono);
 }
 .host-pick select {
+    max-width: 100%; min-width: 0;
     background: var(--card); color: var(--fg); border: 1px solid var(--line);
     border-radius: 6px; padding: .3rem .55rem; font: inherit;
 }
@@ -76,7 +79,7 @@ a:hover { text-decoration: underline; text-underline-offset: 2px; }
 .card span { display: block; color: var(--muted); font-size: .72rem; text-transform: uppercase; letter-spacing: .1em; }
 .card b { display: block; font-family: var(--mono); font-size: 1.55rem; margin-top: .25rem; font-variant-numeric: tabular-nums; color: var(--accent-2); }
 .card small { color: var(--muted); font-size: .82rem; }
-.tabs {
+.tabs { max-width: 100%; min-width: 0;
     display: flex; gap: .4rem; flex-wrap: wrap; position: sticky; top: 0; z-index: 10;
     padding: .65rem 0; margin-bottom: 1.2rem;
     background: rgba(4, 7, 10, .88); backdrop-filter: blur(10px);
@@ -90,6 +93,7 @@ a:hover { text-decoration: underline; text-underline-offset: 2px; }
 .tab:hover { color: var(--fg); border-color: #24503d; }
 .tab.active { background: var(--accent-soft); border-color: #2c6a4f; color: var(--accent); }
 .panel {
+    max-width: 100%; min-width: 0;
     background: var(--card);
     border: 1px solid var(--line); border-radius: 10px; padding: 1.15rem 1.25rem 1.45rem;
     margin-bottom: 1.2rem;
@@ -97,8 +101,8 @@ a:hover { text-decoration: underline; text-underline-offset: 2px; }
 .panel h2 { margin: .1rem 0 .95rem; font-family: var(--mono); font-size: 1.1rem; font-weight: 600; letter-spacing: -.01em; color: var(--accent-2); }
 .muted { color: var(--muted); font-weight: 400; font-size: .92rem; }
 .note { color: var(--muted); font-size: .88rem; margin-top: -.4rem; }
-.chart { display: grid; gap: .38rem; margin: .7rem 0 1.4rem; }
-.bar-row { display: grid; grid-template-columns: 200px 1fr 96px; gap: .65rem; align-items: center; font-size: .84rem; }
+.chart { max-width: 100%; min-width: 0; display: grid; gap: .38rem; margin: .7rem 0 1.4rem; }
+.bar-row { max-width: 100%; min-width: 0; display: grid; grid-template-columns: 200px 1fr 96px; gap: .65rem; align-items: center; font-size: .84rem; }
 .bar-row.net .bar-label { color: var(--net); font-weight: 700; }
 .bar-label { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: #b9cdc2; }
 .bar-track { background: var(--track); border-radius: 3px; height: 10px; overflow: hidden; }
@@ -109,7 +113,7 @@ a:hover { text-decoration: underline; text-underline-offset: 2px; }
 }
 .bar-row.net .bar-fill { background: linear-gradient(90deg, #2c6a4f, var(--accent-2)); }
 .bar-value { text-align: right; font-family: var(--mono); font-variant-numeric: tabular-nums; color: #cfe6da; }
-.table-wrap { overflow-x: auto; border: 1px solid var(--line); border-radius: 8px; background: #050a08; }
+.table-wrap { max-width: 100%; overflow-x: auto; border: 1px solid var(--line); border-radius: 8px; background: #050a08; }
 table { width: 100%; border-collapse: collapse; font-size: .87rem; white-space: nowrap; }
 th, td { padding: .55rem .75rem; border-bottom: 1px solid var(--line); text-align: right; }
 td { font-family: var(--mono); font-variant-numeric: tabular-nums; color: #c6dccf; }
@@ -139,9 +143,24 @@ th button:hover { color: var(--accent); }
     .bar-fill { transition: none; }
 }
 @media (max-width: 640px) {
-    .bar-row { grid-template-columns: 120px 1fr 70px; }
-    .bar-row .bar-label { font-size: .78rem; }
-    .shell { padding-top: 1.5rem; }
+    .shell { padding: 1.2rem .85rem 3rem; }
+    .hero { gap: 1rem; }
+    .hero h1 { overflow-wrap: anywhere; min-width: 0; font-size: clamp(1.25rem, 6.2vw, 1.6rem); }
+    .cards { grid-template-columns: 1fr 1fr; gap: .6rem; }
+    .card { padding: .75rem .8rem; }
+    .card b { font-size: 1.25rem; }
+    .bar-row { grid-template-columns: 92px 1fr 64px; gap: .45rem; font-size: .78rem; }
+    .bar-row .bar-label { font-size: .74rem; }
+    .bar-value { font-size: .74rem; }
+    .tabs { max-width: 100%; min-width: 0; flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; -webkit-overflow-scrolling: touch; }
+    .tabs::-webkit-scrollbar { display: none; }
+    .tab { flex: 0 0 auto; }
+    .panel { padding: .9rem .8rem 1.1rem; }
+    table { font-size: .78rem; }
+    th, td { padding: .45rem .5rem; }
+    td.left, th:first-child { white-space: normal; min-width: 0; }
+    .links { gap: .4rem; }
+    .links a { padding: .35rem .65rem; font-size: .78rem; }
 }
 .proj { margin: .5rem 0 0; padding: .45rem .7rem; border: 1px solid #4a3a12; border-radius: 6px;
     background: #1a1406; color: #f0d9a0; font-size: .82rem; font-family: var(--mono); }
