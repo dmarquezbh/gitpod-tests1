@@ -77,794 +77,818 @@
   {
    "id": "plaintext",
    "label": "plaintext",
-   "note": "Hello, World! com pipelining 16",
-   "results": [
-    {
-     "impl": "rust",
-     "rps": 258341.91,
-     "level": 256,
-     "errors": 0
-    },
-    {
-     "impl": "rust-tuned",
-     "rps": 283148.8,
-     "level": 256,
-     "errors": 0
-    },
-    {
-     "impl": "dotnet",
-     "rps": 325533.71,
-     "level": 256,
-     "errors": 0
-    },
-    {
-     "impl": "dotnet-platform",
-     "rps": 784521.82,
-     "level": 256,
-     "errors": 0
-    },
-    {
-     "impl": "go-std",
-     "rps": 34816.67,
-     "level": 1024,
-     "errors": 0
-    },
-    {
-     "impl": "go-fasthttp",
-     "rps": 250234.79,
-     "level": 256,
-     "errors": 0
-    },
-    {
-     "impl": "java",
-     "rps": 40590.17,
-     "level": 256,
-     "errors": 0
-    },
-    {
-     "impl": "python",
-     "rps": 2947.11,
-     "level": 256,
-     "errors": 0
-    },
-    {
-     "impl": "pypy",
-     "rps": 2269.55,
-     "level": 1024,
-     "errors": 0
-    },
-    {
-     "impl": "graalpy",
-     "rps": 65.72,
-     "level": 256,
-     "errors": 0
-    },
-    {
-     "impl": "node",
-     "rps": 19525.44,
-     "level": 1024,
-     "errors": 3
-    },
-    {
-     "impl": "bun",
-     "rps": 18363.05,
-     "level": 256,
-     "errors": 0
-    },
-    {
-     "impl": "deno",
-     "rps": 13570.6,
-     "level": 256,
-     "errors": 0
-    },
-    {
-     "impl": "ruby",
-     "rps": 1681.7,
-     "level": 256,
-     "errors": 0
-    },
-    {
-     "impl": "c",
-     "rps": 105116.88,
-     "level": 256,
-     "errors": 0
-    },
-    {
-     "impl": "cpp",
-     "rps": 715967.88,
-     "level": 1024,
-     "errors": 0
-    },
-    {
-     "impl": "zero",
-     "rps": 548530.84,
-     "level": 256,
-     "errors": 0
-    }
-   ]
+   "note": "Hello, World! com pipelining 16"
   },
   {
    "id": "json",
    "label": "json",
-   "note": "JSON serializado por requisição",
-   "results": [
-    {
-     "impl": "rust",
-     "rps": 48041.85,
-     "level": 512,
-     "errors": 0
-    },
-    {
-     "impl": "rust-tuned",
-     "rps": 49931.83,
-     "level": 512,
-     "errors": 0
-    },
-    {
-     "impl": "dotnet",
-     "rps": 39519.85,
-     "level": 512,
-     "errors": 0
-    },
-    {
-     "impl": "dotnet-platform",
-     "rps": 69951.73,
-     "level": 256,
-     "errors": 0
-    },
-    {
-     "impl": "go-std",
-     "rps": 25937.73,
-     "level": 64,
-     "errors": 0
-    },
-    {
-     "impl": "go-fasthttp",
-     "rps": 35729.71,
-     "level": 16,
-     "errors": 0
-    },
-    {
-     "impl": "java",
-     "rps": 19086.24,
-     "level": 64,
-     "errors": 0
-    },
-    {
-     "impl": "python",
-     "rps": 2861.31,
-     "level": 256,
-     "errors": 0
-    },
-    {
-     "impl": "pypy",
-     "rps": 2769.35,
-     "level": 256,
-     "errors": 0
-    },
-    {
-     "impl": "graalpy",
-     "rps": 130.87,
-     "level": 256,
-     "errors": 0
-    },
-    {
-     "impl": "node",
-     "rps": 12782.17,
-     "level": 16,
-     "errors": 0
-    },
-    {
-     "impl": "bun",
-     "rps": 15669.27,
-     "level": 256,
-     "errors": 0
-    },
-    {
-     "impl": "deno",
-     "rps": 9869.37,
-     "level": 16,
-     "errors": 0
-    },
-    {
-     "impl": "ruby",
-     "rps": 1646.1,
-     "level": 256,
-     "errors": 0
-    },
-    {
-     "impl": "c",
-     "rps": 49493.37,
-     "level": 16,
-     "errors": 0
-    },
-    {
-     "impl": "cpp",
-     "rps": 68084.38,
-     "level": 256,
-     "errors": 0
-    },
-    {
-     "impl": "zero",
-     "rps": 48956.92,
-     "level": 16,
-     "errors": 0
-    }
-   ]
+   "note": "JSON serializado por requisição"
   },
   {
    "id": "db",
    "label": "db",
-   "note": "1 SELECT aleatório",
-   "results": [
-    {
-     "impl": "rust",
-     "rps": 17061.06,
-     "level": 256,
-     "errors": 0
-    },
-    {
-     "impl": "rust-tuned",
-     "rps": 16799.99,
-     "level": 256,
-     "errors": 0
-    },
-    {
-     "impl": "dotnet",
-     "rps": 13945.75,
-     "level": 256,
-     "errors": 0
-    },
-    {
-     "impl": "dotnet-platform",
-     "rps": 54665.68,
-     "level": 512,
-     "errors": 0
-    },
-    {
-     "impl": "go-std",
-     "rps": 9094.1,
-     "level": 16,
-     "errors": 0
-    },
-    {
-     "impl": "go-fasthttp",
-     "rps": 8270.56,
-     "level": 16,
-     "errors": 0
-    },
-    {
-     "impl": "java",
-     "rps": 6777.63,
-     "level": 16,
-     "errors": 0
-    },
-    {
-     "impl": "python",
-     "rps": 1264.01,
-     "level": 256,
-     "errors": 0
-    },
-    {
-     "impl": "pypy",
-     "rps": 1171.04,
-     "level": 512,
-     "errors": 0
-    },
-    {
-     "impl": "graalpy",
-     "rps": 159.54,
-     "level": 256,
-     "errors": 0
-    },
-    {
-     "impl": "node",
-     "rps": 4230.56,
-     "level": 16,
-     "errors": 0
-    },
-    {
-     "impl": "bun",
-     "rps": 3891.38,
-     "level": 16,
-     "errors": 0
-    },
-    {
-     "impl": "deno",
-     "rps": 3545.24,
-     "level": 16,
-     "errors": 0
-    },
-    {
-     "impl": "ruby",
-     "rps": 1169.96,
-     "level": 64,
-     "errors": 0
-    },
-    {
-     "impl": "c",
-     "rps": 6467.21,
-     "level": 16,
-     "errors": 0
-    },
-    {
-     "impl": "cpp",
-     "rps": 53879.79,
-     "level": 512,
-     "errors": 0
-    },
-    {
-     "impl": "zero",
-     "rps": 5393.35,
-     "level": 16,
-     "errors": 0
-    }
-   ]
+   "note": "1 SELECT aleatório"
   },
   {
    "id": "queries",
    "label": "queries",
-   "note": "N SELECTs aleatórios",
-   "results": [
-    {
-     "impl": "rust",
-     "rps": 16700.12,
-     "level": 1,
-     "errors": 0
-    },
-    {
-     "impl": "rust-tuned",
-     "rps": 16875.8,
-     "level": 1,
-     "errors": 0
-    },
-    {
-     "impl": "dotnet",
-     "rps": 13905.25,
-     "level": 1,
-     "errors": 0
-    },
-    {
-     "impl": "dotnet-platform",
-     "rps": 54127.93,
-     "level": 1,
-     "errors": 0
-    },
-    {
-     "impl": "go-std",
-     "rps": 8715.54,
-     "level": 1,
-     "errors": 0
-    },
-    {
-     "impl": "go-fasthttp",
-     "rps": 7577.08,
-     "level": 1,
-     "errors": 0
-    },
-    {
-     "impl": "java",
-     "rps": 6684.99,
-     "level": 1,
-     "errors": 162
-    },
-    {
-     "impl": "python",
-     "rps": 1008.98,
-     "level": 1,
-     "errors": 0
-    },
-    {
-     "impl": "pypy",
-     "rps": 1109.37,
-     "level": 1,
-     "errors": 0
-    },
-    {
-     "impl": "graalpy",
-     "rps": 165.33,
-     "level": 1,
-     "errors": 0
-    },
-    {
-     "impl": "node",
-     "rps": 3437.45,
-     "level": 1,
-     "errors": 0
-    },
-    {
-     "impl": "bun",
-     "rps": 3737.95,
-     "level": 1,
-     "errors": 0
-    },
-    {
-     "impl": "deno",
-     "rps": 2989.39,
-     "level": 1,
-     "errors": 0
-    },
-    {
-     "impl": "ruby",
-     "rps": 961.68,
-     "level": 1,
-     "errors": 0
-    },
-    {
-     "impl": "c",
-     "rps": 5583.42,
-     "level": 1,
-     "errors": 0
-    },
-    {
-     "impl": "cpp",
-     "rps": 52415.2,
-     "level": 1,
-     "errors": 0
-    },
-    {
-     "impl": "zero",
-     "rps": 5111.82,
-     "level": 1,
-     "errors": 0
-    }
-   ]
+   "note": "N SELECTs aleatórios"
   },
   {
    "id": "fortunes",
    "label": "fortunes",
-   "note": "SELECT + ordenação + HTML escapado",
-   "results": [
-    {
-     "impl": "rust",
-     "rps": 20948.85,
-     "level": 512,
-     "errors": 0
-    },
-    {
-     "impl": "rust-tuned",
-     "rps": 21381.46,
-     "level": 512,
-     "errors": 0
-    },
-    {
-     "impl": "dotnet",
-     "rps": 17169.18,
-     "level": 512,
-     "errors": 0
-    },
-    {
-     "impl": "dotnet-platform",
-     "rps": 42350.67,
-     "level": 512,
-     "errors": 0
-    },
-    {
-     "impl": "go-std",
-     "rps": 6488.36,
-     "level": 64,
-     "errors": 0
-    },
-    {
-     "impl": "go-fasthttp",
-     "rps": 9675.14,
-     "level": 16,
-     "errors": 0
-    },
-    {
-     "impl": "java",
-     "rps": 7228.8,
-     "level": 16,
-     "errors": 0
-    },
-    {
-     "impl": "python",
-     "rps": 1816.67,
-     "level": 256,
-     "errors": 0
-    },
-    {
-     "impl": "pypy",
-     "rps": 1462.6,
-     "level": 512,
-     "errors": 0
-    },
-    {
-     "impl": "graalpy",
-     "rps": 302.16,
-     "level": 256,
-     "errors": 0
-    },
-    {
-     "impl": "node",
-     "rps": 3890.01,
-     "level": 16,
-     "errors": 0
-    },
-    {
-     "impl": "bun",
-     "rps": 4339.45,
-     "level": 16,
-     "errors": 0
-    },
-    {
-     "impl": "deno",
-     "rps": 3290.15,
-     "level": 16,
-     "errors": 0
-    },
-    {
-     "impl": "ruby",
-     "rps": 1096.84,
-     "level": 64,
-     "errors": 0
-    },
-    {
-     "impl": "c",
-     "rps": 9827.71,
-     "level": 16,
-     "errors": 0
-    },
-    {
-     "impl": "cpp",
-     "rps": 28698.05,
-     "level": 512,
-     "errors": 0
-    },
-    {
-     "impl": "zero",
-     "rps": 6905.82,
-     "level": 16,
-     "errors": 0
-    }
-   ]
+   "note": "SELECT + ordenação + HTML escapado"
   },
   {
    "id": "updates",
    "label": "updates",
-   "note": "N SELECTs + UPDATE em lote",
-   "results": [
+   "note": "N SELECTs + UPDATE em lote"
+  }
+ ],
+ "hosts": [
+  {
+   "host": {
+    "id": "i5-3317u-linux-x64",
+    "cpu": "Intel Core i5-3317U @ 1.70 GHz (Ivy Bridge, 2 cores / 4 threads, no AVX2)",
+    "memory": "3.8 GB RAM",
+    "os": "Linux 7.0.0-43-generic (Ubuntu 24.04), x86-64",
+    "postgres": "PostgreSQL 16.15 (Docker, synchronous_commit=off)",
+    "storage": "SATA SSD, 281 GB",
+    "date": "2026-11-23",
+    "notes": "Servidor fixado em CPUs 0-1 e wrk em 2-3; 10 s por nível. Resultados valem para este host; para outro host, copie results/ para results/hosts/<id>/ antes de medir."
+   },
+   "tests": [
+    {
+     "id": "plaintext",
+     "results": [
+      {
+       "impl": "rust",
+       "rps": 258341.91,
+       "level": 256,
+       "errors": 0
+      },
+      {
+       "impl": "rust-tuned",
+       "rps": 283148.8,
+       "level": 256,
+       "errors": 0
+      },
+      {
+       "impl": "dotnet",
+       "rps": 325533.71,
+       "level": 256,
+       "errors": 0
+      },
+      {
+       "impl": "dotnet-platform",
+       "rps": 784521.82,
+       "level": 256,
+       "errors": 0
+      },
+      {
+       "impl": "go-std",
+       "rps": 34816.67,
+       "level": 1024,
+       "errors": 0
+      },
+      {
+       "impl": "go-fasthttp",
+       "rps": 250234.79,
+       "level": 256,
+       "errors": 0
+      },
+      {
+       "impl": "java",
+       "rps": 40590.17,
+       "level": 256,
+       "errors": 0
+      },
+      {
+       "impl": "python",
+       "rps": 2947.11,
+       "level": 256,
+       "errors": 0
+      },
+      {
+       "impl": "pypy",
+       "rps": 2269.55,
+       "level": 1024,
+       "errors": 0
+      },
+      {
+       "impl": "graalpy",
+       "rps": 65.72,
+       "level": 256,
+       "errors": 0
+      },
+      {
+       "impl": "node",
+       "rps": 19525.44,
+       "level": 1024,
+       "errors": 3
+      },
+      {
+       "impl": "bun",
+       "rps": 18363.05,
+       "level": 256,
+       "errors": 0
+      },
+      {
+       "impl": "deno",
+       "rps": 13570.6,
+       "level": 256,
+       "errors": 0
+      },
+      {
+       "impl": "ruby",
+       "rps": 1681.7,
+       "level": 256,
+       "errors": 0
+      },
+      {
+       "impl": "c",
+       "rps": 105116.88,
+       "level": 256,
+       "errors": 0
+      },
+      {
+       "impl": "cpp",
+       "rps": 715967.88,
+       "level": 1024,
+       "errors": 0
+      },
+      {
+       "impl": "zero",
+       "rps": 548530.84,
+       "level": 256,
+       "errors": 0
+      }
+     ]
+    },
+    {
+     "id": "json",
+     "results": [
+      {
+       "impl": "rust",
+       "rps": 48041.85,
+       "level": 512,
+       "errors": 0
+      },
+      {
+       "impl": "rust-tuned",
+       "rps": 49931.83,
+       "level": 512,
+       "errors": 0
+      },
+      {
+       "impl": "dotnet",
+       "rps": 39519.85,
+       "level": 512,
+       "errors": 0
+      },
+      {
+       "impl": "dotnet-platform",
+       "rps": 69951.73,
+       "level": 256,
+       "errors": 0
+      },
+      {
+       "impl": "go-std",
+       "rps": 25937.73,
+       "level": 64,
+       "errors": 0
+      },
+      {
+       "impl": "go-fasthttp",
+       "rps": 35729.71,
+       "level": 16,
+       "errors": 0
+      },
+      {
+       "impl": "java",
+       "rps": 19086.24,
+       "level": 64,
+       "errors": 0
+      },
+      {
+       "impl": "python",
+       "rps": 2861.31,
+       "level": 256,
+       "errors": 0
+      },
+      {
+       "impl": "pypy",
+       "rps": 2769.35,
+       "level": 256,
+       "errors": 0
+      },
+      {
+       "impl": "graalpy",
+       "rps": 130.87,
+       "level": 256,
+       "errors": 0
+      },
+      {
+       "impl": "node",
+       "rps": 12782.17,
+       "level": 16,
+       "errors": 0
+      },
+      {
+       "impl": "bun",
+       "rps": 15669.27,
+       "level": 256,
+       "errors": 0
+      },
+      {
+       "impl": "deno",
+       "rps": 9869.37,
+       "level": 16,
+       "errors": 0
+      },
+      {
+       "impl": "ruby",
+       "rps": 1646.1,
+       "level": 256,
+       "errors": 0
+      },
+      {
+       "impl": "c",
+       "rps": 49493.37,
+       "level": 16,
+       "errors": 0
+      },
+      {
+       "impl": "cpp",
+       "rps": 68084.38,
+       "level": 256,
+       "errors": 0
+      },
+      {
+       "impl": "zero",
+       "rps": 48956.92,
+       "level": 16,
+       "errors": 0
+      }
+     ]
+    },
+    {
+     "id": "db",
+     "results": [
+      {
+       "impl": "rust",
+       "rps": 17061.06,
+       "level": 256,
+       "errors": 0
+      },
+      {
+       "impl": "rust-tuned",
+       "rps": 16799.99,
+       "level": 256,
+       "errors": 0
+      },
+      {
+       "impl": "dotnet",
+       "rps": 13945.75,
+       "level": 256,
+       "errors": 0
+      },
+      {
+       "impl": "dotnet-platform",
+       "rps": 54665.68,
+       "level": 512,
+       "errors": 0
+      },
+      {
+       "impl": "go-std",
+       "rps": 9094.1,
+       "level": 16,
+       "errors": 0
+      },
+      {
+       "impl": "go-fasthttp",
+       "rps": 8270.56,
+       "level": 16,
+       "errors": 0
+      },
+      {
+       "impl": "java",
+       "rps": 6777.63,
+       "level": 16,
+       "errors": 0
+      },
+      {
+       "impl": "python",
+       "rps": 1264.01,
+       "level": 256,
+       "errors": 0
+      },
+      {
+       "impl": "pypy",
+       "rps": 1171.04,
+       "level": 512,
+       "errors": 0
+      },
+      {
+       "impl": "graalpy",
+       "rps": 159.54,
+       "level": 256,
+       "errors": 0
+      },
+      {
+       "impl": "node",
+       "rps": 4230.56,
+       "level": 16,
+       "errors": 0
+      },
+      {
+       "impl": "bun",
+       "rps": 3891.38,
+       "level": 16,
+       "errors": 0
+      },
+      {
+       "impl": "deno",
+       "rps": 3545.24,
+       "level": 16,
+       "errors": 0
+      },
+      {
+       "impl": "ruby",
+       "rps": 1169.96,
+       "level": 64,
+       "errors": 0
+      },
+      {
+       "impl": "c",
+       "rps": 6467.21,
+       "level": 16,
+       "errors": 0
+      },
+      {
+       "impl": "cpp",
+       "rps": 53879.79,
+       "level": 512,
+       "errors": 0
+      },
+      {
+       "impl": "zero",
+       "rps": 5393.35,
+       "level": 16,
+       "errors": 0
+      }
+     ]
+    },
+    {
+     "id": "queries",
+     "results": [
+      {
+       "impl": "rust",
+       "rps": 16700.12,
+       "level": 1,
+       "errors": 0
+      },
+      {
+       "impl": "rust-tuned",
+       "rps": 16875.8,
+       "level": 1,
+       "errors": 0
+      },
+      {
+       "impl": "dotnet",
+       "rps": 13905.25,
+       "level": 1,
+       "errors": 0
+      },
+      {
+       "impl": "dotnet-platform",
+       "rps": 54127.93,
+       "level": 1,
+       "errors": 0
+      },
+      {
+       "impl": "go-std",
+       "rps": 8715.54,
+       "level": 1,
+       "errors": 0
+      },
+      {
+       "impl": "go-fasthttp",
+       "rps": 7577.08,
+       "level": 1,
+       "errors": 0
+      },
+      {
+       "impl": "java",
+       "rps": 6684.99,
+       "level": 1,
+       "errors": 162
+      },
+      {
+       "impl": "python",
+       "rps": 1008.98,
+       "level": 1,
+       "errors": 0
+      },
+      {
+       "impl": "pypy",
+       "rps": 1109.37,
+       "level": 1,
+       "errors": 0
+      },
+      {
+       "impl": "graalpy",
+       "rps": 165.33,
+       "level": 1,
+       "errors": 0
+      },
+      {
+       "impl": "node",
+       "rps": 3437.45,
+       "level": 1,
+       "errors": 0
+      },
+      {
+       "impl": "bun",
+       "rps": 3737.95,
+       "level": 1,
+       "errors": 0
+      },
+      {
+       "impl": "deno",
+       "rps": 2989.39,
+       "level": 1,
+       "errors": 0
+      },
+      {
+       "impl": "ruby",
+       "rps": 961.68,
+       "level": 1,
+       "errors": 0
+      },
+      {
+       "impl": "c",
+       "rps": 5583.42,
+       "level": 1,
+       "errors": 0
+      },
+      {
+       "impl": "cpp",
+       "rps": 52415.2,
+       "level": 1,
+       "errors": 0
+      },
+      {
+       "impl": "zero",
+       "rps": 5111.82,
+       "level": 1,
+       "errors": 0
+      }
+     ]
+    },
+    {
+     "id": "fortunes",
+     "results": [
+      {
+       "impl": "rust",
+       "rps": 20948.85,
+       "level": 512,
+       "errors": 0
+      },
+      {
+       "impl": "rust-tuned",
+       "rps": 21381.46,
+       "level": 512,
+       "errors": 0
+      },
+      {
+       "impl": "dotnet",
+       "rps": 17169.18,
+       "level": 512,
+       "errors": 0
+      },
+      {
+       "impl": "dotnet-platform",
+       "rps": 42350.67,
+       "level": 512,
+       "errors": 0
+      },
+      {
+       "impl": "go-std",
+       "rps": 6488.36,
+       "level": 64,
+       "errors": 0
+      },
+      {
+       "impl": "go-fasthttp",
+       "rps": 9675.14,
+       "level": 16,
+       "errors": 0
+      },
+      {
+       "impl": "java",
+       "rps": 7228.8,
+       "level": 16,
+       "errors": 0
+      },
+      {
+       "impl": "python",
+       "rps": 1816.67,
+       "level": 256,
+       "errors": 0
+      },
+      {
+       "impl": "pypy",
+       "rps": 1462.6,
+       "level": 512,
+       "errors": 0
+      },
+      {
+       "impl": "graalpy",
+       "rps": 302.16,
+       "level": 256,
+       "errors": 0
+      },
+      {
+       "impl": "node",
+       "rps": 3890.01,
+       "level": 16,
+       "errors": 0
+      },
+      {
+       "impl": "bun",
+       "rps": 4339.45,
+       "level": 16,
+       "errors": 0
+      },
+      {
+       "impl": "deno",
+       "rps": 3290.15,
+       "level": 16,
+       "errors": 0
+      },
+      {
+       "impl": "ruby",
+       "rps": 1096.84,
+       "level": 64,
+       "errors": 0
+      },
+      {
+       "impl": "c",
+       "rps": 9827.71,
+       "level": 16,
+       "errors": 0
+      },
+      {
+       "impl": "cpp",
+       "rps": 28698.05,
+       "level": 512,
+       "errors": 0
+      },
+      {
+       "impl": "zero",
+       "rps": 6905.82,
+       "level": 16,
+       "errors": 0
+      }
+     ]
+    },
+    {
+     "id": "updates",
+     "results": [
+      {
+       "impl": "rust",
+       "rps": 3443.99,
+       "level": 1,
+       "errors": 0
+      },
+      {
+       "impl": "rust-tuned",
+       "rps": 4021.41,
+       "level": 1,
+       "errors": 0
+      },
+      {
+       "impl": "rust-may-minihttp",
+       "rps": 6291.84,
+       "level": 1,
+       "errors": 0
+      },
+      {
+       "impl": "dotnet",
+       "rps": 5150.03,
+       "level": 1,
+       "errors": 0
+      },
+      {
+       "impl": "dotnet-platform",
+       "rps": 6768.93,
+       "level": 1,
+       "errors": 0
+      },
+      {
+       "impl": "go-std",
+       "rps": 3037.47,
+       "level": 1,
+       "errors": 0
+      },
+      {
+       "impl": "go-fasthttp",
+       "rps": 3811.7,
+       "level": 1,
+       "errors": 0
+      },
+      {
+       "impl": "java",
+       "rps": 3547.45,
+       "level": 1,
+       "errors": 0
+      },
+      {
+       "impl": "python",
+       "rps": 562.62,
+       "level": 1,
+       "errors": 0
+      },
+      {
+       "impl": "pypy",
+       "rps": 790.22,
+       "level": 1,
+       "errors": 0
+      },
+      {
+       "impl": "graalpy",
+       "rps": 272.8,
+       "level": 1,
+       "errors": 0
+      },
+      {
+       "impl": "node",
+       "rps": 1980.72,
+       "level": 1,
+       "errors": 0
+      },
+      {
+       "impl": "bun",
+       "rps": 2293.08,
+       "level": 1,
+       "errors": 0
+      },
+      {
+       "impl": "deno",
+       "rps": 1828.91,
+       "level": 1,
+       "errors": 0
+      },
+      {
+       "impl": "ruby",
+       "rps": 813.9,
+       "level": 1,
+       "errors": 0
+      },
+      {
+       "impl": "c",
+       "rps": 3011.07,
+       "level": 1,
+       "errors": 0
+      },
+      {
+       "impl": "zero",
+       "rps": 4761.93,
+       "level": 1,
+       "errors": 0
+      }
+     ]
+    }
+   ],
+   "metrics": [
     {
      "impl": "rust",
-     "rps": 3443.99,
-     "level": 1,
-     "errors": 0
+     "rssKb": 40244,
+     "appBytes": 4675328,
+     "runtimeBytes": 0,
+     "totalBytes": 4675328
     },
     {
      "impl": "rust-tuned",
-     "rps": 4021.41,
-     "level": 1,
-     "errors": 0
+     "rssKb": 38648,
+     "appBytes": 4010984,
+     "runtimeBytes": 0,
+     "totalBytes": 4010984
     },
     {
      "impl": "rust-may-minihttp",
-     "rps": 6291.84,
-     "level": 1,
-     "errors": 0
+     "rssKb": 747956,
+     "appBytes": 1460984,
+     "runtimeBytes": 0,
+     "totalBytes": 1460984
     },
     {
      "impl": "dotnet",
-     "rps": 5150.03,
-     "level": 1,
-     "errors": 0
+     "rssKb": 345576,
+     "appBytes": 1627744,
+     "runtimeBytes": 110979285,
+     "totalBytes": 112607029
     },
     {
      "impl": "dotnet-platform",
-     "rps": 6768.93,
-     "level": 1,
-     "errors": 0
+     "rssKb": 242940,
+     "appBytes": 1659828,
+     "runtimeBytes": 110979285,
+     "totalBytes": 112639113
     },
     {
      "impl": "go-std",
-     "rps": 3037.47,
-     "level": 1,
-     "errors": 0
+     "rssKb": 150812,
+     "appBytes": 12431623,
+     "runtimeBytes": 0,
+     "totalBytes": 12431623
     },
     {
      "impl": "go-fasthttp",
-     "rps": 3811.7,
-     "level": 1,
-     "errors": 0
+     "rssKb": 111304,
+     "appBytes": 9576711,
+     "runtimeBytes": 0,
+     "totalBytes": 9576711
     },
     {
      "impl": "java",
-     "rps": 3547.45,
-     "level": 1,
-     "errors": 0
+     "rssKb": 566992,
+     "appBytes": 1099068,
+     "runtimeBytes": 345114582,
+     "totalBytes": 346213650
     },
     {
      "impl": "python",
-     "rps": 562.62,
-     "level": 1,
-     "errors": 0
+     "rssKb": 220628,
+     "appBytes": 6587724,
+     "runtimeBytes": 57669011,
+     "totalBytes": 64256735
     },
     {
      "impl": "pypy",
-     "rps": 790.22,
-     "level": 1,
-     "errors": 0
+     "rssKb": 649344,
+     "appBytes": 6493781,
+     "runtimeBytes": 151018720,
+     "totalBytes": 157512501
     },
     {
      "impl": "graalpy",
-     "rps": 272.8,
-     "level": 1,
-     "errors": 0
+     "rssKb": 4225860,
+     "appBytes": 6998027,
+     "runtimeBytes": 947293804,
+     "totalBytes": 954291831
     },
     {
      "impl": "node",
-     "rps": 1980.72,
-     "level": 1,
-     "errors": 0
+     "rssKb": 267328,
+     "appBytes": 857240,
+     "runtimeBytes": 150348872,
+     "totalBytes": 151206112
     },
     {
      "impl": "bun",
-     "rps": 2293.08,
-     "level": 1,
-     "errors": 0
+     "rssKb": 300592,
+     "appBytes": 857240,
+     "runtimeBytes": 107394952,
+     "totalBytes": 108252192
     },
     {
      "impl": "deno",
-     "rps": 1828.91,
-     "level": 1,
-     "errors": 0
+     "rssKb": 338448,
+     "appBytes": 857240,
+     "runtimeBytes": 96056011,
+     "totalBytes": 96913251
     },
     {
      "impl": "ruby",
-     "rps": 813.9,
-     "level": 1,
-     "errors": 0
+     "rssKb": 1145816,
+     "appBytes": 13617607,
+     "runtimeBytes": 19519793,
+     "totalBytes": 33137400
     },
     {
      "impl": "c",
-     "rps": 3011.07,
-     "level": 1,
-     "errors": 0
+     "rssKb": 89088,
+     "appBytes": 30912,
+     "runtimeBytes": 354488,
+     "totalBytes": 385400
+    },
+    {
+     "impl": "cpp",
+     "rssKb": 66988,
+     "appBytes": 70472,
+     "runtimeBytes": 354488,
+     "totalBytes": 424960
     },
     {
      "impl": "zero",
-     "rps": 4761.93,
-     "level": 1,
-     "errors": 0
+     "rssKb": 58384,
+     "appBytes": 78352,
+     "runtimeBytes": 354488,
+     "totalBytes": 432840
     }
    ]
   }
- ],
- "metrics": [
-  {
-   "impl": "rust",
-   "rssKb": 40244,
-   "appBytes": 4675328,
-   "runtimeBytes": 0,
-   "totalBytes": 4675328
-  },
-  {
-   "impl": "rust-tuned",
-   "rssKb": 38648,
-   "appBytes": 4010984,
-   "runtimeBytes": 0,
-   "totalBytes": 4010984
-  },
-  {
-   "impl": "rust-may-minihttp",
-   "rssKb": 747956,
-   "appBytes": 1460984,
-   "runtimeBytes": 0,
-   "totalBytes": 1460984
-  },
-  {
-   "impl": "dotnet",
-   "rssKb": 345576,
-   "appBytes": 1627744,
-   "runtimeBytes": 110979285,
-   "totalBytes": 112607029
-  },
-  {
-   "impl": "dotnet-platform",
-   "rssKb": 242940,
-   "appBytes": 1659828,
-   "runtimeBytes": 110979285,
-   "totalBytes": 112639113
-  },
-  {
-   "impl": "go-std",
-   "rssKb": 150812,
-   "appBytes": 12431623,
-   "runtimeBytes": 0,
-   "totalBytes": 12431623
-  },
-  {
-   "impl": "go-fasthttp",
-   "rssKb": 111304,
-   "appBytes": 9576711,
-   "runtimeBytes": 0,
-   "totalBytes": 9576711
-  },
-  {
-   "impl": "java",
-   "rssKb": 566992,
-   "appBytes": 1099068,
-   "runtimeBytes": 345114582,
-   "totalBytes": 346213650
-  },
-  {
-   "impl": "python",
-   "rssKb": 220628,
-   "appBytes": 6587724,
-   "runtimeBytes": 57669011,
-   "totalBytes": 64256735
-  },
-  {
-   "impl": "pypy",
-   "rssKb": 649344,
-   "appBytes": 6493781,
-   "runtimeBytes": 151018720,
-   "totalBytes": 157512501
-  },
-  {
-   "impl": "graalpy",
-   "rssKb": 4225860,
-   "appBytes": 6998027,
-   "runtimeBytes": 947293804,
-   "totalBytes": 954291831
-  },
-  {
-   "impl": "node",
-   "rssKb": 267328,
-   "appBytes": 857240,
-   "runtimeBytes": 150348872,
-   "totalBytes": 151206112
-  },
-  {
-   "impl": "bun",
-   "rssKb": 300592,
-   "appBytes": 857240,
-   "runtimeBytes": 107394952,
-   "totalBytes": 108252192
-  },
-  {
-   "impl": "deno",
-   "rssKb": 338448,
-   "appBytes": 857240,
-   "runtimeBytes": 96056011,
-   "totalBytes": 96913251
-  },
-  {
-   "impl": "ruby",
-   "rssKb": 1145816,
-   "appBytes": 13617607,
-   "runtimeBytes": 19519793,
-   "totalBytes": 33137400
-  },
-  {
-   "impl": "c",
-   "rssKb": 89088,
-   "appBytes": 30912,
-   "runtimeBytes": 354488,
-   "totalBytes": 385400
-  },
-  {
-   "impl": "cpp",
-   "rssKb": 66988,
-   "appBytes": 70472,
-   "runtimeBytes": 354488,
-   "totalBytes": 424960
-  },
-  {
-   "impl": "zero",
-   "rssKb": 58384,
-   "appBytes": 78352,
-   "runtimeBytes": 354488,
-   "totalBytes": 432840
-  }
- ],
- "host": {
-  "id": "i5-3317u-linux-x64",
-  "cpu": "Intel Core i5-3317U @ 1.70 GHz (Ivy Bridge, 2 cores / 4 threads, no AVX2)",
-  "memory": "3.8 GB RAM",
-  "os": "Linux 7.0.0-43-generic (Ubuntu 24.04), x86-64",
-  "postgres": "PostgreSQL 16.15 (Docker, synchronous_commit=off)",
-  "storage": "SATA SSD, 281 GB",
-  "date": "2026-11-23",
-  "notes": "Servidor fixado em CPUs 0-1 e wrk em 2-3; 10 s por nível. Resultados valem para este host; para outro host, copie results/ para results/hosts/<id>/ antes de medir."
- }
+ ]
 }

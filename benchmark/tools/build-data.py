@@ -1,6 +1,14 @@
 #!/usr/bin/env python3
-"""Builds site/wwwroot/data.json for the Blazor report from results/*/summary.csv + metrics.csv."""
-import csv, json, os
+"""Builds site/wwwroot/data.json (multi-host) from results/*/summary.csv + metrics.csv.
+
+Um host é a medição de uma máquina. A medição viva mora em ``benchmark/results/``; as
+medições anteriores ficam em ``benchmark/results/hosts/<id>/`` (mesma estrutura). O publish
+nunca apaga host: cada execução acrescenta/substitui apenas o host que acabou de rodar,
+casado pelo ``host.id`` do ``host.json``.
+"""
+import csv
+import json
+import os
 
 BENCH = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 RES = os.path.join(BENCH, "results")
@@ -24,10 +32,11 @@ TESTS = [
     ("updates", "updates", "N SELECTs + UPDATE em lote"),
 ]
 
-def best_levels():
+
+def best_levels(res_dir):
     best = {}
     for impl, _ in IMPLS:
-        path = os.path.join(RES, impl, "summary.csv")
+        path = os.path.join(res_dir, impl, "summary.csv")
         if not os.path.exists(path):
             continue
         with open(path, newline="") as f:
@@ -39,9 +48,10 @@ def best_levels():
                                  "errors": int(row["errors"]) + int(row["non2xx"])}
     return best
 
-def metrics():
+
+def metrics(res_dir):
     out = {}
-    path = os.path.join(RES, "metrics.csv")
+    path = os.path.join(res_dir, "metrics.csv")
     if os.path.exists(path):
         with open(path, newline="") as f:
             for row in csv.DictReader(f):
@@ -52,33 +62,97 @@ def metrics():
                 }
     return out
 
-def host():
-    path = os.path.join(RES, "host.json")
+
+def host_info(res_dir):
+    path = os.path.join(res_dir, "host.json")
     if os.path.exists(path):
         with open(path) as f:
             return json.load(f)
     return {}
 
-def main():
-    best = best_levels()
-    met = metrics()
-    data = {
-        "impls": [{"id": i, "label": l} for i, l in IMPLS],
+
+def host_entry(res_dir):
+    best = best_levels(res_dir)
+    met = metrics(res_dir)
+    return {
+        "host": host_info(res_dir),
         "tests": [
-            {"id": tid, "label": label, "note": note,
+            {"id": tid,
              "results": [
                  {"impl": impl, "rps": round(best[(impl, tid)]["rps"], 2),
                   "level": best[(impl, tid)]["level"], "errors": best[(impl, tid)]["errors"]}
                  for impl, _ in IMPLS if (impl, tid) in best
              ]}
-            for tid, label, note in TESTS
+            for tid, _, _ in TESTS
         ],
         "metrics": [{"impl": i, **met[i]} for i, _ in IMPLS if i in met],
-        "host": host(),
+    }
+
+
+def score(entry):
+    """Quanto mais resultados, mais completa a medição do host."""
+    return sum(len(t["results"]) for t in entry["tests"])
+
+
+def tem_medicao(path):
+    return any(
+        os.path.exists(os.path.join(path, impl, "summary.csv")) for impl, _ in IMPLS
+    )
+
+
+def hosts_arquivados():
+    """Diretórios de hosts anteriores; aceita o layout correto e o aninhado por engano."""
+    base = os.path.join(RES, "hosts")
+    if not os.path.isdir(base):
+        return []
+    achados = []
+    for nome in sorted(os.listdir(base)):
+        caminho = os.path.join(base, nome)
+        if not os.path.isdir(caminho):
+            continue
+        if os.path.exists(os.path.join(caminho, "host.json")) or tem_medicao(caminho):
+            achados.append(caminho)
+            continue
+        # `cp -a . hosts/x/` dentro do próprio results criou hosts/x/x/
+        for sub in sorted(os.listdir(caminho)):
+            subcaminho = os.path.join(caminho, sub)
+            if os.path.isdir(subcaminho) and (
+                os.path.exists(os.path.join(subcaminho, "host.json")) or tem_medicao(subcaminho)
+            ):
+                achados.append(subcaminho)
+    return achados
+
+
+def main():
+    candidatos = [host_entry(RES)] + [host_entry(p) for p in hosts_arquivados()]
+
+    # Casa por host.id: a medição mais completa vence (medição arquivada contra a viva).
+    escolhidos = {}
+    for entrada in candidatos:
+        host = entrada["host"]
+        hid = host.get("id") or "sem-id"
+        host["id"] = hid
+        atual = escolhidos.get(hid)
+        if atual is None or score(entrada) > score(atual):
+            escolhidos[hid] = entrada
+
+    hosts = sorted(
+        escolhidos.values(),
+        key=lambda e: (e["host"].get("date") or "", e["host"].get("id") or ""),
+        reverse=True,
+    )
+
+    data = {
+        "impls": [{"id": i, "label": l} for i, l in IMPLS],
+        "tests": [{"id": tid, "label": label, "note": note} for tid, label, note in TESTS],
+        "hosts": hosts,
     }
     with open(OUT, "w") as f:
         json.dump(data, f, ensure_ascii=False, indent=1)
-    print(f"wrote {OUT}: {len(data['tests'])} tests, {len(data['metrics'])} metrics")
+
+    resumo = ", ".join(f"{h['host']['id']} ({score(h)} resultados)" for h in hosts)
+    print(f"wrote {OUT}: {len(hosts)} host(s): {resumo}")
+
 
 if __name__ == "__main__":
     main()

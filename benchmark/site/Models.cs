@@ -2,12 +2,37 @@ using System.Text.Json.Serialization;
 
 namespace site;
 
+/// <summary>
+/// Catálogo (implementações e testes) + uma medição por host. O schema atual é
+/// <c>{ impls, tests, hosts[] }</c>; o formato antigo (<c>host</c>, <c>tests[].results</c> e
+/// <c>metrics</c> no topo) continua sendo lido para não quebrar data.json publicado antes.
+/// </summary>
 public sealed class BenchData
 {
     public List<Impl> Impls { get; set; } = new();
     public List<TestData> Tests { get; set; } = new();
-    public List<Metric> Metrics { get; set; } = new();
+    public List<HostData> Hosts { get; set; } = new();
+
+    // Formato antigo (host único) — usado só como fallback.
     public HostInfo? Host { get; set; }
+    public List<Metric> Metrics { get; set; } = new();
+
+    /// <summary>Medições efetivas: a lista nova ou o host único do formato antigo.</summary>
+    public IReadOnlyList<HostData> Medicoes()
+    {
+        if (Hosts.Count > 0)
+            return Hosts;
+        if (Host is null)
+            return Array.Empty<HostData>();
+        return [new HostData { Host = Host, Tests = Tests, Metrics = Metrics }];
+    }
+}
+
+public sealed class HostData
+{
+    public HostInfo? Host { get; set; }
+    public List<TestData> Tests { get; set; } = new();
+    public List<Metric> Metrics { get; set; } = new();
 }
 
 public sealed class HostInfo
