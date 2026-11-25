@@ -15,7 +15,7 @@ working-storage section.
 procedure division.
     move all x"00" to addr
     move x"0200" to addr(1:2)
-    move x"46B3" to addr(3:2)
+    move x"4717" to addr(3:2)
     call "socket" using by value 2 by value 1 by value 0
         returning sock-fd
     if sock-fd < 0
@@ -32,7 +32,7 @@ procedure division.
         stop run
     end-if
     call "listen" using by value sock-fd by value 4096 returning rc
-    display "cobol-platform on :18099" end-display
+    display "cobol-platform on :18199" end-display
     perform forever
         call "accept" using by value sock-fd by value 0 by value 0
             returning client-fd

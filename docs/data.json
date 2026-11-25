@@ -424,6 +424,12 @@
        "rps": 820816.71,
        "level": 256,
        "errors": 0
+      },
+      {
+       "impl": "cobol",
+       "rps": 13415.18,
+       "level": 256,
+       "errors": 68079
       }
      ]
     },
@@ -579,6 +585,12 @@
        "rps": 68701.0,
        "level": 64,
        "errors": 0
+      },
+      {
+       "impl": "cobol",
+       "rps": 13359.13,
+       "level": 256,
+       "errors": 67577
       }
      ]
     },

@@ -1,1 +1,4 @@
-bind falhou
+cobol-platform on :18199
+
+caught signal (signal SIGTERM)
+
