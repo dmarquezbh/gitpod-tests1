@@ -11,17 +11,25 @@ libc, HTTP e PostgreSQL na mesma thread), o desenho do tokio *current-thread* re
 Duas implementações Zig na mesma suíte, 10 s por nível, servidor nas CPUs 0-1 e `wrk` nas 2-3,
 PostgreSQL 16.16 em container (`synchronous_commit=off`). `fast6` mantém o plaintext (loop HTTP com
 burst); `fast7` faz o banco com o desenho do "platform" do .NET: **HTTP e PostgreSQL no mesmo loop
-epoll, batching por rodada**. O .NET platform é a configuração revalidada nesta mesma máquina
-(`09fe7c2`); o placar abaixo é o melhor nível de cada teste.
+epoll, batching por rodada**. O .NET platform foi medido de novo nesta sessão (mesma máquina,
+mesmo PostgreSQL); o placar abaixo é o melhor de rodadas intercaladas, melhor nível por teste.
 
-| Teste | **Zig** | .NET 11 platform | líder |
+| Teste | **Zig** | .NET 11 platform | margem |
 |---|---:|---:|---|
-| plaintext (x16) | **811.894** (fast6, c=256) | 776.916 | Zig |
-| json | **73.578** (fast7, c=256) | 71.131 | Zig |
-| db | **54.740** (c=512) | 52.026 | Zig |
-| queries q=1 | **55.984** | 49.820 | Zig |
-| fortunes | **67.020** (c=512) | 49.334 | Zig |
-| updates q=1 | **45.292** | 6.268 | Zig |
+| plaintext (x16) | **811.894** (fast6, c=256) | 796.464 | +2,0% |
+| json | **72.740** (fast7, c=256) | 72.123 | +0,9% |
+| db | **57.632** (c=512) | 57.056 | +1,0% |
+| queries q=1 | **55.984** | 39.894 | +40% |
+| fortunes | **67.020** (c=512) | 53.040 | +26% |
+| updates q=1 | **45.292** | 10.487 | 4,3x |
+
+Confirmação de `/db` e `/json`: 3 rodadas intercaladas Zig/.NET (10 s por nível, mesma sessão).
+O Zig é estável em `/db` (55,7 k–57,6 k em 5 rodadas) e em `/json` (72,4 k–72,7 k em 3 rodadas);
+o .NET oscila muito em `/db` (40,5 k–57,1 k em 6 rodadas) e fica em 69,8 k–72,1 k em `/json`.
+Por melhor rodada, as margens de `/db` (+1,0%) e `/json` (+0,9%) estão dentro do ruído — são
+empate técnico com vantagem do Zig, não os +5%/+3% de uma rodada isolada.
+As linhas de `queries`/`fortunes`/`updates` são da variante de 2 loops do `fast7` (medição
+completa anterior); `db`/`json` usam a variante de 4 loops (só `LOOPS` e o alvo do lote diferem).
 
 O que o `fast7` faz:
 
@@ -33,12 +41,12 @@ O que o `fast7` faz:
 - **fortunes uma vez por rodada**: `SELECT id, message FROM fortune`, ordenação byte a byte com a
   linha extra do TFB, renderização única e cópia para todos os clientes;
 - **statements preparados por conexão** e protocolo simples (`Q`/`D`/`Z`), sem libpq;
-- **espera curta (≤1 ms)** para o lote encher antes da consulta, porque o round-trip do PG domina;
-- 2 loops (um socket PG cada) nas 2 CPUs do servidor.
+- **espera curta (≤0,8 ms)** para o lote encher antes da consulta, porque o round-trip do PG domina;
+- 4 loops (um socket PG cada) nas 2 CPUs do servidor; alvo de 96 requisições por lote.
 
-Não funcionou (medido): 4 loops (37 k em `/db`), 1 loop (34 k), thread por conexão com cliente
-bloqueante (5,7 k, rodada anterior). O ganho vem do batching: o custo por consulta deixou de ser
-pago por requisição.
+Não funcionou (medido): 1 loop (34 k em `/db`), 2 loops com alvo 192 (54,7 k), thread por conexão
+com cliente bloqueante (5,7 k, rodada anterior). O ganho vem do batching: o custo por consulta
+deixou de ser pago por requisição.
 
 ## Resumo (melhor nível por teste, critério de ranking do TechEmpower)
 

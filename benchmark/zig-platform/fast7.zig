@@ -11,7 +11,7 @@ const PORT: u16 = 8098;
 const PG_PORT: u16 = 5432;
 const PG_USER = "benchmarkdbuser";
 const PG_DB = "hello_world";
-const LOOPS: usize = 2;
+const LOOPS: usize = 4;
 const MAX_CONN = 4096;
 const MAX_OPS = 2048;
 const MAX_Q = 500;
@@ -659,8 +659,8 @@ fn processarEventos(lp: *Loop, eventos: []const std.os.linux.epoll_event) void {
 }
 
 fn aguardarMais(lp: *Loop) void {
-    const alvo: usize = 192;
-    const limite_ns: u64 = 1000 * std.time.ns_per_us;
+    const alvo: usize = 96;
+    const limite_ns: u64 = 800 * std.time.ns_per_us;
     if (lp.n_ops == 0 or lp.n_ops >= alvo) return;
     const t0 = std.time.nanoTimestamp();
     var extra: [1024]std.os.linux.epoll_event = undefined;
