@@ -27,6 +27,12 @@ IMPLS = [
     ("paulo-epoll-jit", "py-platform epoll 3.14 + JIT"),
     ("paulo-uvloop-nofp", "py-platform uvloop sem fast path"),
     ("paulo-epoll-nofp", "py-platform epoll sem fast path"),
+    # Stacks implementadas nesta rodada multi-linguagem.
+    ("php", "PHP 8.3 (nginx + php-fpm)"), ("lua", "LuaJIT 2.1"),
+    ("nim", "Nim 1.6 (httpbeast + libpq)"), ("elixir", "Elixir 1.14 (Cowboy + Postgrex)"),
+    ("julia", "Julia 1.13 (HTTP.jl + LibPQ)"), ("dart", "Dart 3 (dart:io)"),
+    ("kotlin", "Kotlin/JVM 25"), ("pascal", "Pascal (FPC)"), ("delphi", "Delphi (FPC modo Delphi)"),
+    ("zig", "Zig 0.17"), ("cobol", "COBOL (GnuCOBOL)"), ("brainfuck", "Brainfuck"),
 ]
 TESTS = [
     ("plaintext", "plaintext", "Hello, World! com pipelining 16"),

@@ -91,6 +91,54 @@
   {
    "id": "paulo-epoll-nofp",
    "label": "py-platform epoll sem fast path"
+  },
+  {
+   "id": "php",
+   "label": "PHP 8.3 (nginx + php-fpm)"
+  },
+  {
+   "id": "lua",
+   "label": "LuaJIT 2.1"
+  },
+  {
+   "id": "nim",
+   "label": "Nim 1.6 (httpbeast + libpq)"
+  },
+  {
+   "id": "elixir",
+   "label": "Elixir 1.14 (Cowboy + Postgrex)"
+  },
+  {
+   "id": "julia",
+   "label": "Julia 1.13 (HTTP.jl + LibPQ)"
+  },
+  {
+   "id": "dart",
+   "label": "Dart 3 (dart:io)"
+  },
+  {
+   "id": "kotlin",
+   "label": "Kotlin/JVM 25"
+  },
+  {
+   "id": "pascal",
+   "label": "Pascal (FPC)"
+  },
+  {
+   "id": "delphi",
+   "label": "Delphi (FPC modo Delphi)"
+  },
+  {
+   "id": "zig",
+   "label": "Zig 0.17"
+  },
+  {
+   "id": "cobol",
+   "label": "COBOL (GnuCOBOL)"
+  },
+  {
+   "id": "brainfuck",
+   "label": "Brainfuck"
   }
  ],
  "tests": [
@@ -328,6 +376,30 @@
        "rps": 548530.84,
        "level": 256,
        "errors": 0
+      },
+      {
+       "impl": "paulo-epoll",
+       "rps": 628069.53,
+       "level": 256,
+       "errors": 0
+      },
+      {
+       "impl": "php",
+       "rps": 7845.07,
+       "level": 256,
+       "errors": 0
+      },
+      {
+       "impl": "lua",
+       "rps": 808.56,
+       "level": 4096,
+       "errors": 0
+      },
+      {
+       "impl": "nim",
+       "rps": 6471.14,
+       "level": 1024,
+       "errors": 32785
       }
      ]
     },
@@ -435,6 +507,30 @@
        "rps": 48956.92,
        "level": 16,
        "errors": 0
+      },
+      {
+       "impl": "paulo-epoll",
+       "rps": 46751.09,
+       "level": 256,
+       "errors": 0
+      },
+      {
+       "impl": "php",
+       "rps": 7581.86,
+       "level": 64,
+       "errors": 0
+      },
+      {
+       "impl": "lua",
+       "rps": 101.46,
+       "level": 512,
+       "errors": 0
+      },
+      {
+       "impl": "nim",
+       "rps": 9542.24,
+       "level": 64,
+       "errors": 47854
       }
      ]
     },
@@ -542,6 +638,30 @@
        "rps": 5393.35,
        "level": 16,
        "errors": 0
+      },
+      {
+       "impl": "paulo-epoll",
+       "rps": 5015.98,
+       "level": 64,
+       "errors": 0
+      },
+      {
+       "impl": "php",
+       "rps": 2657.41,
+       "level": 64,
+       "errors": 0
+      },
+      {
+       "impl": "lua",
+       "rps": 101.49,
+       "level": 512,
+       "errors": 0
+      },
+      {
+       "impl": "nim",
+       "rps": 2298.73,
+       "level": 256,
+       "errors": 11565
       }
      ]
     },
@@ -649,6 +769,30 @@
        "rps": 5111.82,
        "level": 1,
        "errors": 0
+      },
+      {
+       "impl": "paulo-epoll",
+       "rps": 4173.87,
+       "level": 1,
+       "errors": 0
+      },
+      {
+       "impl": "php",
+       "rps": 2533.32,
+       "level": 1,
+       "errors": 0
+      },
+      {
+       "impl": "lua",
+       "rps": 101.51,
+       "level": 20,
+       "errors": 0
+      },
+      {
+       "impl": "nim",
+       "rps": 2189.32,
+       "level": 1,
+       "errors": 11027
       }
      ]
     },
@@ -756,6 +900,30 @@
        "rps": 6905.82,
        "level": 16,
        "errors": 0
+      },
+      {
+       "impl": "paulo-epoll",
+       "rps": 4433.87,
+       "level": 64,
+       "errors": 0
+      },
+      {
+       "impl": "php",
+       "rps": 2851.73,
+       "level": 64,
+       "errors": 0
+      },
+      {
+       "impl": "lua",
+       "rps": 101.51,
+       "level": 512,
+       "errors": 0
+      },
+      {
+       "impl": "nim",
+       "rps": 2536.8,
+       "level": 16,
+       "errors": 12689
       }
      ]
     },
@@ -863,6 +1031,30 @@
        "rps": 4761.93,
        "level": 1,
        "errors": 0
+      },
+      {
+       "impl": "paulo-epoll",
+       "rps": 2823.4,
+       "level": 1,
+       "errors": 0
+      },
+      {
+       "impl": "php",
+       "rps": 1877.52,
+       "level": 1,
+       "errors": 0
+      },
+      {
+       "impl": "lua",
+       "rps": 101.45,
+       "level": 10,
+       "errors": 0
+      },
+      {
+       "impl": "nim",
+       "rps": 1782.81,
+       "level": 1,
+       "errors": 8987
       }
      ]
     }
