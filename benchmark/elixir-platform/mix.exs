@@ -11,9 +11,12 @@ defmodule Platform.MixProject do
 
   defp deps do
     [
-      {:plug_cowboy, "~> 2.7"},
-      {:postgrex, "~> 0.17"},
-      {:jason, "~> 1.4"}
+      {:plug_cowboy, "~> 2.6.0"},
+      {:plug, "~> 1.14.0", override: true},
+      {:postgrex, "~> 0.17.0"},
+      {:db_connection, "~> 2.5.0", override: true},
+      {:jason, "~> 1.4"},
+      {:ranch, "~> 1.8", override: true}
     ]
   end
 end

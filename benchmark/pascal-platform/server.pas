@@ -1,33 +1,42 @@
-{ Pascal "platform" entry (FPC): fphttpserver com threads + conectores PostgreSQL (fcl-db).
-  Os mesmos seis testes do TechEmpower; serve também como entrada "Delphi" (mesmo código,
-  compilado por Delphi/FPC em modo Delphi). }
+{ Pascal "platform" entry (FPC 3.2, modo objfpc): fphttpserver com threads + fcl-db/postgres.
+  Mesmos seis testes do TechEmpower. Este arquivo também é a base da entrada "Delphi":
+  basta compilar com Delphi (a API HTTP seria substituída por Indy/WebBroker). }
 program server;
 
 {$mode objfpc}{$H+}
 
 uses
-  Classes, SysUtils, fphttpserver, httpdefs, pqconnection, sqldb, strutils;
-
-type
-  TConn = record Conexao: TPQConnection; Consulta: TSQLQuery; end;
+  {$IFDEF UNIX}cthreads,{$ENDIF}
+  Classes, SysUtils, fphttpserver, httpdefs, pqconnection, sqldb;
 
 var
-  Cfg: record Host, Base, Usuario, Senha: string; Porta: Integer; end;
+  Porta, Procura: Integer;
+  Host, Base, Usuario, Senha: string;
+
+type
+  TServidorApp = class
+    procedure Tratar(Sender: TObject; var ARequest: TFPHTTPConnectionRequest; var AResponse: TFPHTTPConnectionResponse);
+  end;
 
 threadvar
-  C: TConn;
+  Conexao: TPQConnection;
+  Transacao: TSQLTransaction;
+  Consulta: TSQLQuery;
 
 procedure AbrirBanco;
 begin
-  if Assigned(C.Conexao) then Exit;
-  C.Conexao := TPQConnection.Create(nil);
-  C.Conexao.HostName := Cfg.Host;
-  C.Conexao.DatabaseName := Cfg.Base;
-  C.Conexao.UserName := Cfg.Usuario;
-  C.Conexao.Password := Cfg.Senha;
-  C.Conexao.Connected := True;
-  C.Consulta := TSQLQuery.Create(nil);
-  C.Consulta.DataBase := C.Conexao;
+  if Assigned(Conexao) then Exit;
+  Conexao := TPQConnection.Create(nil);
+  Conexao.HostName := Host;
+  Conexao.DatabaseName := Base;
+  Conexao.UserName := Usuario;
+  Conexao.Password := Senha;
+  Conexao.Connected := True;
+  Transacao := TSQLTransaction.Create(nil);
+  Transacao.DataBase := Conexao;
+  Consulta := TSQLQuery.Create(nil);
+  Consulta.DataBase := Conexao;
+  Consulta.Transaction := Transacao;
 end;
 
 function IdAleatorio: Integer; inline;
@@ -45,13 +54,12 @@ begin
   Inc(p, 2);
   i := p;
   while (i <= Length(Qs)) and (Qs[i] in ['0'..'9']) do Inc(i);
-  if i > p then
-    Result := StrToIntDef(Copy(Qs, p, i - p), 1);
+  if i > p then Result := StrToIntDef(Copy(Qs, p, i - p), 1);
   if Result < 1 then Result := 1;
   if Result > 500 then Result := 500;
 end;
 
-procedure Escrever(ARequest: TFPHTTPConnectionRequest; AResponse: TFPHTTPConnectionResponse; const Corpo, Tipo: string);
+procedure Escrever(AResponse: TFPHTTPConnectionResponse; const Corpo, Tipo: string);
 begin
   AResponse.Code := 200;
   AResponse.ContentType := Tipo;
@@ -59,33 +67,42 @@ begin
   AResponse.Content := Corpo;
 end;
 
-function Fortunes: string;
+function Escapar(const S: string): string;
+begin
+  Result := StringReplace(S, '&', '&amp;', [rfReplaceAll]);
+  Result := StringReplace(Result, '<', '&lt;', [rfReplaceAll]);
+  Result := StringReplace(Result, '>', '&gt;', [rfReplaceAll]);
+  Result := StringReplace(Result, '"', '&quot;', [rfReplaceAll]);
+end;
+
+function FortunesPagina: string;
 var
   itens: TStringList;
+  i, p: Integer;
+  identificador, mensagem: string;
 begin
   AbrirBanco;
-  C.Consulta.Close;
-  C.Consulta.SQL.Text := 'SELECT id, message FROM fortune';
-  C.Consulta.Open;
+  Consulta.Close;
+  Consulta.SQL.Text := 'SELECT id, message FROM fortune';
+  Consulta.Open;
   itens := TStringList.Create;
   try
-    while not C.Consulta.EOF do
+    while not Consulta.EOF do
     begin
-      itens.Add(Format('%d'#9'%s', [C.Consulta.FieldByName('id').AsInteger,
-        C.Consulta.FieldByName('message').AsString]));
-      C.Consulta.Next;
+      itens.Add(Format('%.10d'#9'%s', [Consulta.FieldByName('id').AsInteger,
+        Consulta.FieldByName('message').AsString]));
+      Consulta.Next;
     end;
-    itens.Add('0'#9'Additional fortune added at request time.');
+    itens.Add('0000000000'#9'Additional fortune added at request time.');
     itens.Sort;
-    Result := '<!DOCTYPE html><html><head><title>Fortunes</title></head><body><table><tr><th>id</th><th>message</th></tr>';
-    for var i := 0 to itens.Count - 1 do
+    Result := '<!DOCTYPE html><html><head><title>Fortunes</title></head><body><table>' +
+      '<tr><th>id</th><th>message</th></tr>';
+    for i := 0 to itens.Count - 1 do
     begin
-      var P := Pos(#9, itens[i]);
-      var Id := Copy(itens[i], 1, P - 1);
-      var Msg := StringReplace(StringReplace(StringReplace(StringReplace(Copy(itens[i], P + 1, MaxInt),
-        '&', '&amp;', [rfReplaceAll]), '<', '&lt;', [rfReplaceAll]), '>', '&gt;', [rfReplaceAll]),
-        '"', '&quot;', [rfReplaceAll]);
-      Result := Result + '<tr><td>' + Id + '</td><td>' + Msg + '</td></tr>';
+      p := Pos(#9, itens[i]);
+      identificador := IntToStr(StrToIntDef(Copy(itens[i], 1, p - 1), 0));
+      mensagem := Copy(itens[i], p + 1, MaxInt);
+      Result := Result + '<tr><td>' + identificador + '</td><td>' + Escapar(mensagem) + '</td></tr>';
     end;
     Result := Result + '</table></body></html>';
   finally
@@ -93,92 +110,90 @@ begin
   end;
 end;
 
-procedure Tratar(ARequest: TFPHTTPConnectionRequest; AResponse: TFPHTTPConnectionResponse);
+procedure TServidorApp.Tratar(Sender: TObject; var ARequest: TFPHTTPConnectionRequest; var AResponse: TFPHTTPConnectionResponse);
 var
-  Rota, Corpo, ListaIds, ListaNovos: string;
-  Q, I, Id, Novo: Integer;
-  Ids, Novos, Rs: TStringList;
+  rota, corpo, listaIds, listaNovos, primeiro, url: string;
+  q, i, id, novo: Integer;
 begin
-  Rota := ARequest.Path;
-  if Rota = '/plaintext' then
-    Escrever(ARequest, AResponse, 'Hello, World!', 'text/plain')
-  else if Rota = '/json' then
-    Escrever(ARequest, AResponse, '{"message":"Hello, World!"}', 'application/json')
-  else if Rota = '/db' then
+  url := ARequest.URL;
+  q := Pos('?', url);
+  if q > 0 then rota := Copy(url, 1, q - 1) else rota := url;
+  if rota = '/plaintext' then
+    Escrever(AResponse, 'Hello, World!', 'text/plain')
+  else if rota = '/json' then
+    Escrever(AResponse, '{"message":"Hello, World!"}', 'application/json')
+  else if rota = '/db' then
   begin
     AbrirBanco;
-    Id := IdAleatorio;
-    C.Consulta.Close;
-    C.Consulta.SQL.Text := 'SELECT id, randomnumber FROM world WHERE id = ' + IntToStr(Id);
-    C.Consulta.Open;
-    Escrever(ARequest, AResponse,
-      Format('{"id":%d,"randomNumber":%d}', [C.Consulta.FieldByName('id').AsInteger,
-        C.Consulta.FieldByName('randomnumber').AsInteger]), 'application/json');
+    id := IdAleatorio;
+    Consulta.Close;
+    Consulta.SQL.Text := 'SELECT id, randomnumber FROM world WHERE id = ' + IntToStr(id);
+    Consulta.Open;
+    Escrever(AResponse, Format('{"id":%d,"randomNumber":%d}',
+      [Consulta.FieldByName('id').AsInteger, Consulta.FieldByName('randomnumber').AsInteger]),
+      'application/json');
   end
-  else if Rota = '/queries' then
+  else if rota = '/queries' then
   begin
     AbrirBanco;
-    Q := QtdDaQuery(ARequest.QueryString);
-    Ids := TStringList.Create;
-    try
-      ListaIds := '';
-      for I := 1 to Q do
-      begin
-        Id := IdAleatorio;
-        Ids.Add(IntToStr(Id));
-        if I > 1 then ListaIds := ListaIds + ',';
-        ListaIds := ListaIds + IntToStr(Id);
-      end;
-      C.Consulta.Close;
-      C.Consulta.SQL.Text := 'SELECT id, randomnumber FROM world WHERE id IN (' + ListaIds + ')';
-      C.Consulta.Open;
-      Corpo := '[';
-      var Primeiro := True;
-      while not C.Consulta.EOF do
-      begin
-        if not Primeiro then Corpo := Corpo + ',';
-        Primeiro := False;
-        Corpo := Corpo + Format('{"id":%d,"randomNumber":%d}', [C.Consulta.FieldByName('id').AsInteger,
-          C.Consulta.FieldByName('randomnumber').AsInteger]);
-        C.Consulta.Next;
-      end;
-      Corpo := Corpo + ']';
-      Escrever(ARequest, AResponse, Corpo, 'application/json');
-    finally
-      Ids.Free;
-    end;
-  end
-  else if Rota = '/updates' then
-  begin
-    AbrirBanco;
-    Q := QtdDaQuery(ARequest.QueryString);
-    ListaIds := ''; ListaNovos := '';
-    for I := 1 to Q do
+    q := QtdDaQuery(ARequest.QueryString);
+    listaIds := '';
+    for i := 1 to q do
     begin
-      if I > 1 then begin ListaIds := ListaIds + ','; ListaNovos := ListaNovos + ','; end;
-      ListaIds := ListaIds + IntToStr(IdAleatorio);
-      ListaNovos := ListaNovos + IntToStr(IdAleatorio);
+      if i > 1 then listaIds := listaIds + ',';
+      listaIds := listaIds + IntToStr(IdAleatorio);
     end;
-    C.Consulta.Close;
-    C.Consulta.SQL.Text :=
-      'UPDATE world SET randomnumber = v.rn FROM (SELECT unnest(''{' + ListaIds + '}''::int[]) AS id, ' +
-      'unnest(''{' + ListaNovos + '}''::int[]) AS rn) AS v WHERE world.id = v.id RETURNING world.id, world.randomnumber';
-    C.Consulta.Open;
-    Corpo := '[';
-    var Primeiro := True;
-    while not C.Consulta.EOF do
+    Consulta.Close;
+    Consulta.SQL.Text := 'SELECT id, randomnumber FROM world WHERE id IN (' + listaIds + ')';
+    Consulta.Open;
+    corpo := '[';
+    primeiro := '';
+    while not Consulta.EOF do
     begin
-      if not Primeiro then Corpo := Corpo + ',';
-      Primeiro := False;
-      Corpo := Corpo + Format('{"id":%d,"randomNumber":%d}', [C.Consulta.FieldByName('id').AsInteger,
-        C.Consulta.FieldByName('randomnumber').AsInteger]);
-      C.Consulta.Next;
+      corpo := corpo + primeiro + Format('{"id":%d,"randomNumber":%d}',
+        [Consulta.FieldByName('id').AsInteger, Consulta.FieldByName('randomnumber').AsInteger]);
+      primeiro := ',';
+      Consulta.Next;
     end;
-    Corpo := Corpo + ']';
-    Escrever(ARequest, AResponse, Corpo, 'application/json');
+    corpo := corpo + ']';
+    Escrever(AResponse, corpo, 'application/json');
   end
-  else if Rota = '/fortunes' then
-    Escrever(ARequest, AResponse, Fortunes, 'text/html; charset=utf-8')
+  else if rota = '/updates' then
+  begin
+    AbrirBanco;
+    q := QtdDaQuery(ARequest.QueryString);
+    listaIds := '';
+    listaNovos := '';
+    for i := 1 to q do
+    begin
+      if i > 1 then
+      begin
+        listaIds := listaIds + ',';
+        listaNovos := listaNovos + ',';
+      end;
+      listaIds := listaIds + IntToStr(IdAleatorio);
+      listaNovos := listaNovos + IntToStr(IdAleatorio);
+    end;
+    Consulta.Close;
+    Consulta.SQL.Text :=
+      'UPDATE world SET randomnumber = v.rn FROM (SELECT unnest(''{' + listaIds + '}''::int[]) AS id, ' +
+      'unnest(''{' + listaNovos + '}''::int[]) AS rn) AS v WHERE world.id = v.id ' +
+      'RETURNING world.id, world.randomnumber';
+    Consulta.Open;
+    corpo := '[';
+    primeiro := '';
+    while not Consulta.EOF do
+    begin
+      corpo := corpo + primeiro + Format('{"id":%d,"randomNumber":%d}',
+        [Consulta.FieldByName('id').AsInteger, Consulta.FieldByName('randomnumber').AsInteger]);
+      primeiro := ',';
+      Consulta.Next;
+    end;
+    corpo := corpo + ']';
+    Escrever(AResponse, corpo, 'application/json');
+  end
+  else if rota = '/fortunes' then
+    Escrever(AResponse, FortunesPagina, 'text/html; charset=utf-8')
   else
   begin
     AResponse.Code := 404;
@@ -188,24 +203,26 @@ end;
 
 var
   Servidor: TFPHTTPServer;
+  App: TServidorApp;
 begin
   Randomize;
-  Cfg.Host := GetEnvironmentVariable('PGHOST');
-  if Cfg.Host = '' then Cfg.Host := '127.0.0.1';
-  Cfg.Base := GetEnvironmentVariable('PGDATABASE');
-  if Cfg.Base = '' then Cfg.Base := 'hello_world';
-  Cfg.Usuario := GetEnvironmentVariable('PGUSER');
-  if Cfg.Usuario = '' then Cfg.Usuario := 'benchmarkdbuser';
-  Cfg.Senha := GetEnvironmentVariable('PGPASSWORD');
-  if Cfg.Senha = '' then Cfg.Senha := 'benchmarkdbpass';
-  Cfg.Porta := StrToIntDef(GetEnvironmentVariable('PORT'), 8092);
+  Host := GetEnvironmentVariable('PGHOST');
+  if Host = '' then Host := '127.0.0.1';
+  Base := GetEnvironmentVariable('PGDATABASE');
+  if Base = '' then Base := 'hello_world';
+  Usuario := GetEnvironmentVariable('PGUSER');
+  if Usuario = '' then Usuario := 'benchmarkdbuser';
+  Senha := GetEnvironmentVariable('PGPASSWORD');
+  if Senha = '' then Senha := 'benchmarkdbpass';
+  Porta := StrToIntDef(GetEnvironmentVariable('PORT'), 8092);
 
   Servidor := TFPHTTPServer.Create(nil);
-  Servidor.Port := Cfg.Porta;
+  Servidor.Port := Porta;
   Servidor.Threaded := True;
   Servidor.QueueSize := 4096;
-  Servidor.OnRequest := @Tratar;
+  App := TServidorApp.Create;
+  Servidor.OnRequest := @App.Tratar;
   Servidor.Active := True;
-  WriteLn('pascal-platform on :', Cfg.Porta);
+  WriteLn('pascal-platform on :', Porta);
   ReadLn;
 end.

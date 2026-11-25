@@ -3,10 +3,10 @@
 set -uo pipefail
 cd "$(dirname "$0")/.."
 DURATION="${DURATION:-5}"
-for stack in paulo-epoll php lua nim; do
+for stack in paulo-epoll php lua nim pascal; do
   script="run-$stack.sh"
   [ -x "$script" ] || { echo "$stack: sem $script"; continue; }
-  case "$stack" in paulo-epoll) porta=18091;; php) porta=18093;; lua) porta=18094;; nim) porta=18095;; *) porta=0;; esac
+  case "$stack" in paulo-epoll) porta=18091;; php) porta=18093;; lua) porta=18094;; nim) porta=18095;; pascal) porta=18096;; *) porta=0;; esac
   melhor=0; sem=0; r=0
   while [ "$sem" -lt 4 ] && [ "$r" -lt 8 ]; do
     r=$((r + 1))

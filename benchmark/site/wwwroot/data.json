@@ -400,6 +400,12 @@
        "rps": 6596.21,
        "level": 4096,
        "errors": 33511
+      },
+      {
+       "impl": "pascal",
+       "rps": 2034.35,
+       "level": 256,
+       "errors": 10190
       }
      ]
     },
@@ -531,6 +537,12 @@
        "rps": 9684.53,
        "level": 64,
        "errors": 48482
+      },
+      {
+       "impl": "pascal",
+       "rps": 2041.5,
+       "level": 16,
+       "errors": 10217
       }
      ]
     },
@@ -662,6 +674,12 @@
        "rps": 2319.47,
        "level": 256,
        "errors": 11630
+      },
+      {
+       "impl": "pascal",
+       "rps": 35.76,
+       "level": 64,
+       "errors": 181
       }
      ]
     },
@@ -793,6 +811,12 @@
        "rps": 2235.28,
        "level": 1,
        "errors": 11256
+      },
+      {
+       "impl": "pascal",
+       "rps": 0.0,
+       "level": 1,
+       "errors": 459
       }
      ]
     },
@@ -924,6 +948,12 @@
        "rps": 2565.09,
        "level": 64,
        "errors": 12834
+      },
+      {
+       "impl": "pascal",
+       "rps": 0.0,
+       "level": 16,
+       "errors": 1072
       }
      ]
     },
@@ -1055,6 +1085,12 @@
        "rps": 1791.67,
        "level": 1,
        "errors": 9021
+      },
+      {
+       "impl": "pascal",
+       "rps": 0.0,
+       "level": 1,
+       "errors": 0
       }
      ]
     }

@@ -1,0 +1,2662 @@
+%% Copyright (c) Loïc Hoguin <essen@ninenines.eu>
+%%
+%% Permission to use, copy, modify, and/or distribute this software for any
+%% purpose with or without fee is hereby granted, provided that the above
+%% copyright notice and this permission notice appear in all copies.
+%%
+%% THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
+%% WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF
+%% MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
+%% ANY SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
+%% WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN
+%% ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
+%% OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
+
+-module(cow_http2_machine).
+
+-export([init/2]).
+-export([terminate/1]).
+-export([init_stream/2]).
+-export([init_upgrade_stream/2]).
+-export([frame/2]).
+-export([ignored_frame/1]).
+-export([timeout/3]).
+-export([prepare_headers/5]).
+-export([prepare_push_promise/4]).
+-export([prepare_trailers/3]).
+-export([send_or_queue_data/4]).
+-export([ensure_window/2]).
+-export([ensure_window/3]).
+-export([update_window/2]).
+-export([update_window/3]).
+-export([reset_stream/2]).
+-export([get_connection_local_buffer_size/1]).
+-export([get_local_setting/2]).
+-export([get_remote_settings/1]).
+-export([get_last_streamid/1]).
+-export([set_last_streamid/1]).
+-export([get_stream_local_buffer_size/2]).
+-export([get_stream_local_state/2]).
+-export([get_stream_remote_state/2]).
+-export([is_remote_concurrency_limit_reached/1]).
+-export([is_lingering_stream/2]).
+
+-type opts() :: #{
+	connection_window_margin_size => 0..16#7fffffff,
+	connection_window_update_threshold => 0..16#7fffffff,
+	enable_connect_protocol => boolean(),
+	initial_connection_window_size => 65535..16#7fffffff,
+	initial_stream_window_size => 0..16#7fffffff,
+	max_connection_window_size => 0..16#7fffffff,
+	max_concurrent_streams => 0..16#ffffffff | infinity,
+	max_decode_table_size => 0..16#ffffffff,
+	max_encode_table_size => 0..16#ffffffff,
+	max_fragmented_header_block_size => 16384..16#7fffffff,
+	max_frame_size_received => 16384..16777215,
+	max_frame_size_sent => 16384..16777215 | infinity,
+	max_header_list_size => 0..16#ffffffff | infinity,
+	max_headers => non_neg_integer(),
+	max_local_lingering_streams => pos_integer(),
+	max_remote_lingering_streams => pos_integer(),
+	max_stream_window_size => 0..16#7fffffff,
+	message_tag => any(),
+	preface_timeout => timeout(),
+	settings_timeout => timeout(),
+	stream_window_data_threshold => 0..16#7fffffff,
+	stream_window_margin_size => 0..16#7fffffff,
+	stream_window_update_threshold => 0..16#7fffffff
+}.
+-export_type([opts/0]).
+
+%% The order of the fields is significant.
+-record(sendfile, {
+	offset :: non_neg_integer(),
+	bytes :: pos_integer(),
+	path :: file:name_all()
+}).
+
+-record(stream, {
+	id = undefined :: cow_http2:streamid(),
+
+	%% Request method.
+	method = undefined :: binary(),
+
+	%% Whether we finished sending data.
+	local = idle :: idle | cow_http:fin(),
+
+	%% Local flow control window (how much we can send).
+	local_window :: integer(),
+
+	%% Buffered data waiting for the flow control window to increase.
+	local_buffer = queue:new() ::
+		queue:queue({cow_http:fin(), non_neg_integer(), {data, iodata()} | #sendfile{}}),
+	local_buffer_size = 0 :: non_neg_integer(),
+	local_trailers = undefined :: undefined | cow_http:headers(),
+
+	%% Whether we finished receiving data.
+	remote = idle :: idle | cow_http:fin(),
+
+	%% Remote flow control window (how much we accept to receive).
+	remote_window :: integer(),
+
+	%% Size expected and read from the request body.
+	remote_expected_size = undefined :: undefined | non_neg_integer(),
+	remote_read_size = 0 :: non_neg_integer(),
+
+	%% Unparsed te header. Used to know if we can send trailers.
+	%% Note that we can always send trailers to the server.
+	te :: undefined | binary()
+}).
+
+-type stream() :: #stream{}.
+
+-type linger_gens() :: {
+	#{cow_http2:streamid() => true},
+	#{cow_http2:streamid() => true}
+}.
+
+-type continued_frame() ::
+	{headers, cow_http2:streamid(), cow_http:fin(), cow_http2:head_fin(), binary()} |
+	{push_promise, cow_http2:streamid(), cow_http2:head_fin(), cow_http2:streamid(), binary()}.
+
+-record(http2_machine, {
+	%% Whether the HTTP/2 endpoint is a client or a server.
+	mode :: client | server,
+
+	%% HTTP/2 SETTINGS customization.
+	opts = #{} :: opts(),
+
+	%% Connection-wide frame processing state.
+	state = settings :: settings | normal
+		| {continuation, request | response | trailers | push_promise | linger,
+			continued_frame()},
+
+	%% Timer for the connection preface.
+	preface_timer = undefined :: undefined | reference(),
+
+	%% Timer for the ack for a SETTINGS frame we sent.
+	settings_timer = undefined :: undefined | reference(),
+
+	%% Settings are separate for each endpoint. Settings with
+	%% a minimal default must be acknowledged before they can
+	%% be expected to be applied. Settings with a protocol
+	%% default of 'infinity' get a safer default enforced
+	%% immediately.
+	local_settings = #{
+%		header_table_size => 4096,
+%		enable_push => true,
+%		max_concurrent_streams => infinity,
+		initial_window_size => 65535
+%		max_frame_size => 16384
+%		max_header_list_size => infinity
+%		enable_connect_protocol => false
+	} :: map(),
+	next_settings = #{} :: map(),
+	remote_settings = #{
+		initial_window_size => 65535
+	} :: map(),
+
+	%% Connection-wide flow control window.
+	local_window = 65535 :: integer(), %% How much we can send.
+	remote_window = 65535 :: integer(), %% How much we accept to receive.
+
+	%% Stream identifiers.
+	local_streamid :: pos_integer(), %% The next streamid to be used.
+	remote_streamid = 0 :: non_neg_integer(), %% The last streamid received.
+	last_remote_streamid = 16#7fffffff :: non_neg_integer(), %% Used in GOAWAY.
+
+	%% Currently active HTTP/2 streams. Streams may be initiated either
+	%% by the client or by the server through PUSH_PROMISE frames.
+	streams = #{} :: #{cow_http2:streamid() => stream()},
+
+	%% HTTP/2 streams that have recently been reset locally.
+	%% We are expected to keep receiving additional frames after
+	%% sending an RST_STREAM. {Current, Previous}.
+	local_lingering_streams = {#{}, #{}} :: linger_gens(),
+
+	%% HTTP/2 streams that have recently been reset remotely.
+	%% We keep a few of these around in order to reject subsequent
+	%% frames on these streams. {Current, Previous}.
+	remote_lingering_streams = {#{}, #{}} :: linger_gens(),
+
+	%% HPACK decoding and encoding state.
+	decode_state = cow_hpack:init() :: cow_hpack:state(),
+	encode_state = cow_hpack:init() :: cow_hpack:state()
+}).
+
+-opaque http2_machine() :: #http2_machine{}.
+-export_type([http2_machine/0]).
+
+%% Returns true when the given StreamID is for a local-initiated stream.
+-define(IS_SERVER_LOCAL(StreamID), ((StreamID rem 2) =:= 0)).
+-define(IS_CLIENT_LOCAL(StreamID), ((StreamID rem 2) =:= 1)).
+-define(IS_LOCAL(Mode, StreamID), (
+	((Mode =:= server) andalso ?IS_SERVER_LOCAL(StreamID))
+	orelse
+	((Mode =:= client) andalso ?IS_CLIENT_LOCAL(StreamID))
+)).
+
+-spec init(client | server, opts()) -> {ok, iodata(), http2_machine()}.
+init(client, Opts) ->
+	NextSettings = settings_init(Opts),
+	client_preface(init_encode_max_size(#http2_machine{
+		mode=client,
+		opts=Opts,
+		preface_timer=start_timer(preface_timeout, Opts),
+		settings_timer=start_timer(settings_timeout, Opts),
+		next_settings=NextSettings,
+		local_streamid=1
+	}));
+init(server, Opts) ->
+	NextSettings = settings_init(Opts),
+	common_preface(init_encode_max_size(#http2_machine{
+		mode=server,
+		opts=Opts,
+		preface_timer=start_timer(preface_timeout, Opts),
+		settings_timer=start_timer(settings_timeout, Opts),
+		next_settings=NextSettings,
+		local_streamid=2
+	})).
+
+%% A max_encode_table_size below the protocol default of 4096 applies
+%% now. The current HPACK size stays 4096 so the first header block
+%% announces the reduction. A larger value waits for the peer.
+init_encode_max_size(State=#http2_machine{opts=Opts, encode_state=EncodeState}) ->
+	case maps:get(max_encode_table_size, Opts, 4096) of
+		Max when Max < 4096 ->
+			State#http2_machine{encode_state=
+				cow_hpack:set_max_size(Max, EncodeState)};
+		_ ->
+			State
+	end.
+
+%% @todo Cowlib 3.0: always include MessageTag in the timer message
+%% (use 'undefined' if the option is missing).
+start_timer(Name, Opts=#{message_tag := MessageTag}) ->
+	case maps:get(Name, Opts, 5000) of
+		infinity -> undefined;
+		Timeout -> erlang:start_timer(Timeout, self(), {?MODULE, MessageTag, Name})
+	end;
+start_timer(Name, Opts) ->
+	case maps:get(Name, Opts, 5000) of
+		infinity -> undefined;
+		Timeout -> erlang:start_timer(Timeout, self(), {?MODULE, Name})
+	end.
+
+client_preface(State0) ->
+	{ok, CommonPreface, State} = common_preface(State0),
+	{ok, [
+		<<"PRI * HTTP/2.0\r\n\r\nSM\r\n\r\n">>,
+		CommonPreface
+	], State}.
+
+%% We send next_settings and use defaults until we get an ack.
+%%
+%% We also send a WINDOW_UPDATE frame for the connection when
+%% the user specified an initial_connection_window_size.
+common_preface(State=#http2_machine{opts=Opts, next_settings=NextSettings}) ->
+	case maps:get(initial_connection_window_size, Opts, 65535) of
+		65535 ->
+			{ok, cow_http2:settings(NextSettings), State};
+		Size ->
+			{ok, [
+				cow_http2:settings(NextSettings),
+				cow_http2:window_update(Size - 65535)
+			], update_window(Size - 65535, State)}
+	end.
+
+settings_init(Opts) ->
+	S0 = setting_from_opt(#{}, Opts, max_decode_table_size,
+		header_table_size, 4096),
+	%% We use a default of 100 even though the protocol
+	%% default is infinity.
+	S1 = setting_from_opt(S0, Opts, max_concurrent_streams,
+		max_concurrent_streams, infinity, 100),
+	S2 = setting_from_opt(S1, Opts, initial_stream_window_size,
+		initial_window_size, 65535),
+	S3 = setting_from_opt(S2, Opts, max_frame_size_received,
+		max_frame_size, 16384),
+	%% We use a default of 32768 even though the protocol
+	%% default is infinity.
+	S4 = setting_from_opt(S3, Opts, max_header_list_size,
+		max_header_list_size, infinity, 32768),
+	setting_from_opt(S4, Opts, enable_connect_protocol,
+		enable_connect_protocol, false).
+
+setting_from_opt(Settings, Opts, OptName, SettingName, Default) ->
+	setting_from_opt(Settings, Opts, OptName, SettingName, Default, Default).
+
+setting_from_opt(Settings, Opts, OptName, SettingName,
+		Default, DefaultIfMissing) ->
+	case Opts of
+		#{OptName := Default} -> Settings;
+		#{OptName := Value} -> Settings#{SettingName => Value};
+		#{} when Default =:= DefaultIfMissing -> Settings;
+		#{} -> Settings#{SettingName => DefaultIfMissing}
+	end.
+
+-spec terminate(State::http2_machine()) -> ok.
+terminate(#http2_machine{preface_timer=PTRef, settings_timer=STRef}) ->
+	cancel_timeout(PTRef),
+	cancel_timeout(STRef).
+
+cancel_timeout(TRef) ->
+	ok = case TRef of
+		undefined ->
+			ok;
+		_ ->
+			%% Do a synchronous cancel and remove the message if any
+			%% to avoid receiving stray messages.
+			_ = erlang:cancel_timer(TRef, [{async, false}, {info, false}]),
+			receive
+				{timeout, TRef, _} -> ok
+			after 0 ->
+				ok
+			end
+	end.
+
+-ifdef(TEST).
+
+terminate_removes_stray_timeout_messages_test() ->
+	PTRef = erlang:start_timer(5000, self(), {?MODULE, undefined, preface_timeout}),
+	STRef = erlang:start_timer(5000, self(), {?MODULE, undefined, settings_timeout}),
+	PTMsg = {timeout, PTRef, {?MODULE, undefined, preface_timeout}},
+	STMsg = {timeout, STRef, {?MODULE, undefined, settings_timeout}},
+	self() ! PTMsg,
+	self() ! STMsg,
+	terminate(#http2_machine{preface_timer=PTRef, settings_timer=STRef}),
+	[] = collect_timeout_messages(PTRef, STRef),
+	ok.
+
+collect_timeout_messages(PTRef, STRef) ->
+	receive
+		{timeout, PTRef, {?MODULE, undefined, preface_timeout}} ->
+			[preface_timeout|collect_timeout_messages(PTRef, STRef)];
+		{timeout, STRef, {?MODULE, undefined, settings_timeout}} ->
+			[settings_timeout|collect_timeout_messages(PTRef, STRef)]
+	after 0 ->
+		[]
+	end.
+
+-endif.
+
+-spec init_stream(binary(), State)
+	-> {ok, cow_http2:streamid(), State} when State::http2_machine().
+init_stream(Method, State=#http2_machine{mode=client, local_streamid=LocalStreamID,
+		local_settings=#{initial_window_size := RemoteWindow},
+		remote_settings=#{initial_window_size := LocalWindow}}) ->
+	Stream = #stream{id=LocalStreamID, method=Method,
+		local_window=LocalWindow, remote_window=RemoteWindow},
+	{ok, LocalStreamID, stream_store(Stream, State#http2_machine{
+		local_streamid=LocalStreamID + 2})}.
+
+-spec init_upgrade_stream(binary(), State)
+	-> {ok, cow_http2:streamid(), State} when State::http2_machine().
+init_upgrade_stream(Method, State=#http2_machine{mode=server, remote_streamid=0,
+		local_settings=#{initial_window_size := RemoteWindow},
+		remote_settings=#{initial_window_size := LocalWindow}}) ->
+	Stream = #stream{id=1, method=Method,
+		remote=fin, remote_expected_size=0,
+		local_window=LocalWindow, remote_window=RemoteWindow, te=undefined},
+	{ok, 1, stream_store(Stream, State#http2_machine{remote_streamid=1})}.
+
+-spec frame(cow_http2:frame(), State)
+	-> {ok, State}
+	| {ok, {data, cow_http2:streamid(), cow_http:fin(), binary()}, State}
+	| {ok, {headers, cow_http2:streamid(), cow_http:fin(),
+		cow_http:headers(), cow_http:pseudo_headers(),
+		non_neg_integer() | undefined}, State}
+	| {ok, {trailers, cow_http2:streamid(), cow_http:headers()}, State}
+	| {ok, {rst_stream, cow_http2:streamid(), cow_http2:error()}, State}
+	| {ok, {push_promise, cow_http2:streamid(), cow_http2:streamid(),
+		cow_http:headers(), cow_http:pseudo_headers()}, State}
+	| {ok, {goaway, cow_http2:streamid(), cow_http2:error(), binary()}, State}
+	| {send, [{cow_http2:streamid(), cow_http:fin(),
+		[{data, iodata()} | #sendfile{} | {trailers, cow_http:headers()}]}], State}
+	| {window_changed, pos_integer(), State}
+	| {error, {stream_error, cow_http2:streamid(), cow_http2:error(), atom()}, State}
+	| {error, {connection_error, cow_http2:error(), atom()}, State}
+	when State::http2_machine().
+
+%-define(HTTP2_MACHINE_DEBUG, 1).
+-ifdef(HTTP2_MACHINE_DEBUG).
+-define(LOG_FRAME(Frame, State),
+	begin
+		Frame2 = case Frame of
+			{data,_,_,_,_} -> setelement(4, Frame, {'BINARY-DATA', byte_size(element(4, Frame))});
+			{continuation,_,_,_} -> setelement(4, Frame, {'BINARY-DATA', byte_size(element(4, Frame))});
+			_ -> Frame
+		end,
+		io:format(user, "~p rcv: ~p~n", [State#http2_machine.mode, Frame2])
+	end
+).
+-else.
+-define(LOG_FRAME(Frame, State), _ = Frame).
+-endif.
+
+frame(Frame, State=#http2_machine{state=settings, preface_timer=TRef}) ->
+	?LOG_FRAME(Frame, State),
+	ok = case TRef of
+		undefined -> ok;
+		_ -> erlang:cancel_timer(TRef, [{async, true}, {info, false}])
+	end,
+	settings_frame(Frame, State#http2_machine{state=normal, preface_timer=undefined});
+frame(Frame, State=#http2_machine{state={continuation, _, _}}) ->
+	?LOG_FRAME(Frame, State),
+	maybe_discard_result(continuation_frame(Frame, State));
+frame(Frame = settings_ack, State=#http2_machine{state=normal}) ->
+	?LOG_FRAME(Frame, State),
+	settings_ack_frame(State);
+frame(Frame, State=#http2_machine{state=normal}) ->
+	?LOG_FRAME(Frame, State),
+	Result = case element(1, Frame) of
+		data -> data_frame(Frame, State);
+		headers -> headers_frame(Frame, State);
+		priority -> priority_frame(Frame, State);
+		rst_stream -> rst_stream_frame(Frame, State);
+		settings -> settings_frame(Frame, State);
+		push_promise -> push_promise_frame(Frame, State);
+		ping -> ping_frame(Frame, State);
+		ping_ack -> ping_ack_frame(Frame, State);
+		goaway -> goaway_frame(Frame, State);
+		window_update -> window_update_frame(Frame, State);
+		continuation -> unexpected_continuation_frame(Frame, State);
+		_ -> ignored_frame(State)
+	end,
+	maybe_discard_result(Result).
+
+%% RFC7540 6.9. After sending a GOAWAY frame, the sender can discard frames for
+%% streams initiated by the receiver with identifiers higher than the identified
+%% last stream. However, any frames that alter connection state cannot be
+%% completely ignored. For instance, HEADERS, PUSH_PROMISE, and CONTINUATION
+%% frames MUST be minimally processed to ensure the state maintained for header
+%% compression is consistent.
+maybe_discard_result(FrameResult={ok, Result, State=#http2_machine{mode=Mode,
+		last_remote_streamid=MaxID}})
+		when element(1, Result) =/= goaway ->
+	case element(2, Result) of
+		StreamID when StreamID > MaxID, not ?IS_LOCAL(Mode, StreamID) ->
+			%% DATA already reduced the connection window.
+			case Result of
+				{data, _, _, _, Flow} when Flow > 0 ->
+					{window_changed, Flow, State};
+				_ ->
+					{ok, State}
+			end;
+		_StreamID ->
+			case Result of
+				{data, StreamID, IsFin, Data, _} ->
+					{ok, {data, StreamID, IsFin, Data}, State};
+				_ ->
+					FrameResult
+			end
+	end;
+maybe_discard_result(FrameResult) ->
+	FrameResult.
+
+%% DATA frame.
+
+data_frame({data, StreamID, _, _, _}, State=#http2_machine{mode=Mode,
+		local_streamid=LocalStreamID, remote_streamid=RemoteStreamID})
+		when (?IS_LOCAL(Mode, StreamID) andalso (StreamID >= LocalStreamID))
+		orelse ((not ?IS_LOCAL(Mode, StreamID)) andalso (StreamID > RemoteStreamID)) ->
+	{error, {connection_error, protocol_error,
+		'DATA frame received on a stream in idle state. (RFC7540 5.1)'},
+		State};
+data_frame({data, _, _, _, Flow}, State=#http2_machine{remote_window=ConnWindow})
+		when Flow > ConnWindow ->
+	{error, {connection_error, flow_control_error,
+		'DATA frame overflowed the connection flow control window. (RFC7540 6.9, RFC7540 6.9.1)'},
+		State};
+data_frame(Frame={data, StreamID, _, _, Flow}, State0=#http2_machine{
+		remote_window=ConnWindow, local_lingering_streams=Lingering}) ->
+	State = State0#http2_machine{remote_window=ConnWindow - Flow},
+	case stream_get(StreamID, State) of
+		#stream{remote_window=StreamWindow} when StreamWindow < Flow ->
+			stream_reset(StreamID, State, flow_control_error,
+				'DATA frame overflowed the stream flow control window. (RFC7540 6.9, RFC7540 6.9.1)');
+		Stream = #stream{remote=nofin} ->
+			data_frame(Frame, State, Stream);
+		#stream{remote=idle} ->
+			stream_reset(StreamID, State, protocol_error,
+				'DATA frame received before a HEADERS frame. (RFC7540 8.1, RFC7540 8.1.2.6)');
+		#stream{remote=fin} ->
+			stream_reset(StreamID, State, stream_closed,
+				'DATA frame received for a half-closed (remote) stream. (RFC7540 5.1)');
+		undefined ->
+			%% After we send an RST_STREAM frame and terminate a stream,
+			%% the remote endpoint might still be sending us some more
+			%% frames until it can process this RST_STREAM.
+			case linger_member(StreamID, Lingering) of
+				%% The window was reduced above. The caller applies
+				%% its normal window heuristics.
+				true when Flow > 0 ->
+					{window_changed, Flow, State};
+				%% Empty DATA did not change the window.
+				true ->
+					{ok, State};
+				false ->
+					{error, {connection_error, stream_closed,
+						'DATA frame received for a closed stream. (RFC7540 5.1)'},
+						State}
+			end
+	end.
+
+%% Padding is part of the flow-control length. (RFC9113 6.9.1)
+data_frame(Frame={data, _, IsFin, Data, Flow}, State0, Stream0=#stream{id=StreamID,
+		remote_window=StreamWindow, remote_read_size=StreamRead}) ->
+	Stream = Stream0#stream{remote=IsFin,
+		remote_window=StreamWindow - Flow,
+		remote_read_size=StreamRead + byte_size(Data)},
+	State = stream_store(Stream, State0),
+	case is_body_size_valid(Stream) of
+		true ->
+			{ok, Frame, State};
+		false ->
+			stream_reset(StreamID, State, protocol_error,
+				'The total size of DATA frames is different than the content-length. (RFC7540 8.1.2.6)')
+	end.
+
+%% It's always valid when no content-length header was specified.
+is_body_size_valid(#stream{remote_expected_size=undefined}) ->
+	true;
+%% We didn't finish reading the body but the size is already larger than expected.
+is_body_size_valid(#stream{remote=nofin, remote_expected_size=Expected,
+		remote_read_size=Read}) when Read > Expected ->
+	false;
+is_body_size_valid(#stream{remote=nofin}) ->
+	true;
+is_body_size_valid(#stream{remote=fin, remote_expected_size=Expected,
+		remote_read_size=Expected}) ->
+	true;
+%% We finished reading the body and the size read is not the one expected.
+is_body_size_valid(_) ->
+	false.
+
+%% HEADERS frame.
+%%
+%% We always close the connection when we detect errors before
+%% decoding the headers to not waste resources on non-compliant
+%% endpoints, making us stricter than the RFC requires.
+
+%% Convenience record to manipulate the tuple.
+%% The order of the fields matter.
+-record(headers, {
+	id :: cow_http2:streamid(),
+	fin :: cow_http:fin(),
+	head :: cow_http2:head_fin(),
+	data :: binary()
+}).
+
+headers_frame(Frame=#headers{}, State=#http2_machine{mode=Mode}) ->
+	case Mode of
+		server -> server_headers_frame(Frame, State);
+		client -> client_headers_frame(Frame, State)
+	end;
+%% The PRIORITY mechanism is seen as flawed and deprecated.
+%% We will not implement it.
+headers_frame({headers, StreamID, IsFin, IsHeadFin,
+		_IsExclusive, _DepStreamID, _Weight, HeaderData},
+		State=#http2_machine{mode=Mode}) ->
+	HeadersFrame = #headers{id=StreamID, fin=IsFin, head=IsHeadFin, data=HeaderData},
+	case Mode of
+		server -> server_headers_frame(HeadersFrame, State);
+		client -> client_headers_frame(HeadersFrame, State)
+	end.
+
+%% Reject HEADERS frames with even-numbered streamid.
+server_headers_frame(#headers{id=StreamID}, State)
+		when ?IS_SERVER_LOCAL(StreamID) ->
+	{error, {connection_error, protocol_error,
+		'HEADERS frame received with even-numbered streamid. (RFC7540 5.1.1)'},
+		State};
+%% HEADERS frame on an idle stream: new request.
+server_headers_frame(Frame=#headers{id=StreamID, head=IsHeadFin},
+		State=#http2_machine{mode=server, remote_streamid=RemoteStreamID})
+		when StreamID > RemoteStreamID ->
+	case IsHeadFin of
+		head_fin ->
+			headers_decode(Frame, State, request, undefined);
+		head_nofin ->
+			{ok, State#http2_machine{state={continuation, request, Frame}}}
+	end;
+%% Either a HEADERS frame received on (half-)closed stream,
+%% or a HEADERS frame containing the trailers.
+server_headers_frame(Frame=#headers{id=StreamID, fin=IsFin, head=IsHeadFin}, State) ->
+	case stream_get(StreamID, State) of
+		%% Trailers.
+		Stream = #stream{remote=nofin} when IsFin =:= fin ->
+			case IsHeadFin of
+				head_fin ->
+					headers_decode(Frame, State, trailers, Stream);
+				head_nofin ->
+					{ok, State#http2_machine{state={continuation, trailers, Frame}}}
+			end;
+		#stream{remote=nofin} ->
+			{error, {connection_error, protocol_error,
+				'Trailing HEADERS frame received without the END_STREAM flag set. (RFC7540 8.1, RFC7540 8.1.2.6)'},
+				State};
+		undefined ->
+			linger_headers(Frame, State);
+		_ ->
+			{error, {connection_error, stream_closed,
+				'HEADERS frame received on a half-closed (remote) stream. (RFC7540 5.1)'},
+				State}
+	end.
+
+%% Either a HEADERS frame received on an (half-)closed stream,
+%% or a HEADERS frame containing the response or the trailers.
+client_headers_frame(Frame=#headers{id=StreamID, fin=IsFin, head=IsHeadFin},
+		State=#http2_machine{local_streamid=LocalStreamID, remote_streamid=RemoteStreamID})
+		when (?IS_CLIENT_LOCAL(StreamID) andalso (StreamID < LocalStreamID))
+		orelse ((not ?IS_CLIENT_LOCAL(StreamID)) andalso (StreamID =< RemoteStreamID)) ->
+	case stream_get(StreamID, State) of
+		Stream = #stream{remote=idle} ->
+			case IsHeadFin of
+				head_fin ->
+					headers_decode(Frame, State, response, Stream);
+				head_nofin ->
+					{ok, State#http2_machine{state={continuation, response, Frame}}}
+			end;
+		Stream = #stream{remote=nofin} when IsFin =:= fin ->
+			case IsHeadFin of
+				head_fin ->
+					headers_decode(Frame, State, trailers, Stream);
+				head_nofin ->
+					{ok, State#http2_machine{state={continuation, trailers, Frame}}}
+			end;
+		#stream{remote=nofin} ->
+			{error, {connection_error, protocol_error,
+				'Trailing HEADERS frame received without the END_STREAM flag set. (RFC7540 8.1, RFC7540 8.1.2.6)'},
+				State};
+		undefined ->
+			linger_headers(Frame, State);
+		_ ->
+			{error, {connection_error, stream_closed,
+				'HEADERS frame received on a half-closed (remote) stream. (RFC7540 5.1)'},
+				State}
+	end;
+%% Reject HEADERS frames received on idle streams.
+client_headers_frame(_, State) ->
+	{error, {connection_error, protocol_error,
+		'HEADERS frame received on an idle stream. (RFC7540 5.1.1)'},
+		State}.
+
+linger_headers(Frame, State=#http2_machine{local_lingering_streams=Lingering}) ->
+	case linger_member(Frame#headers.id, Lingering) of
+		true -> linger_headers1(Frame, State);
+		false ->
+			{error, {connection_error, stream_closed,
+				'HEADERS frame received on a stream in closed state. (RFC7540 5.1)'},
+				State}
+	end.
+
+%% A stream that was reset. The header block must still be decoded
+%% so the HPACK table stays aligned with the peer, and the fields
+%% themselves are dropped. (RFC7540 5.1, RFC7540 6.2)
+linger_headers1(#headers{head=head_nofin}=Frame, State) ->
+	{ok, State#http2_machine{state={continuation, linger, Frame}}};
+linger_headers1(Frame=#headers{head=head_fin}, State) ->
+	headers_decode(Frame, State, linger, undefined).
+
+headers_decode(Frame=#headers{head=head_fin, data=HeaderData},
+		State=#http2_machine{opts=Opts, decode_state=DecodeState0},
+		Type, Stream) ->
+	try cow_hpack:decode(HeaderData, DecodeState0, Opts) of
+		{_, DecodeState} when Type =:= linger ->
+			{ok, State#http2_machine{decode_state=DecodeState}};
+		{Headers, DecodeState} ->
+			State1 = State#http2_machine{decode_state=DecodeState},
+			%% The whole block is decoded so the HPACK table
+			%% stays aligned with the peer. The limit applies
+			%% to the finished list because a failure during
+			%% decode is a connection error. (RFC9113 4.3)
+			%% This is safe because large binaries are
+			%% referenced rather than copied at this point.
+			case header_list_within_limit(Headers, State1) of
+				true when Type =:= request ->
+					headers_enforce_concurrency_limit(Frame, State1,
+						Type, Stream, Headers);
+				true ->
+					headers_process(Frame, State1, Type, Stream, Headers);
+				false ->
+					{error, {stream_error, Frame#headers.id, enhance_your_calm,
+						'The header list size is larger than the configured limit. (RFC9113 6.5.2)'},
+						header_list_reject(Type, Frame, State1)}
+			end
+	catch
+		error:max_headers ->
+			{error, {connection_error, enhance_your_calm,
+				'The number of headers is larger than configuration allows. (RFC9110 5.4)'},
+				State};
+		_:_ ->
+			{error, {connection_error, compression_error,
+				'Error while trying to decode HPACK-encoded header block. (RFC7540 4.3)'},
+				State}
+	end.
+
+headers_enforce_concurrency_limit(Frame=#headers{id=StreamID},
+		State=#http2_machine{local_settings=LocalSettings,
+			next_settings=NextSettings, streams=Streams},
+		Type, Stream, Headers) ->
+	%% We use the most up to date max_concurrent_streams
+	%% even if a settings ack was not yet received.
+	LocalMax = maps:get(max_concurrent_streams, LocalSettings, undefined),
+	NextMax = maps:get(max_concurrent_streams, NextSettings, undefined),
+	MaxConcurrentStreams = case {LocalMax, NextMax} of
+		{undefined, undefined} -> infinity;
+		{_, undefined} -> LocalMax;
+		_ -> NextMax
+	end,
+	%% Using < is correct because this new stream is not included
+	%% in the Streams variable yet and so we'll end up with +1 stream.
+	case map_size(Streams) < MaxConcurrentStreams of
+		true ->
+			headers_process(Frame, State, Type, Stream, Headers);
+		false ->
+			stream_reset(StreamID,
+				State#http2_machine{remote_streamid=StreamID},
+				refused_stream,
+				'Maximum number of concurrent streams has been reached. (RFC7540 5.1.2)')
+	end.
+
+header_list_within_limit(Headers, #http2_machine{
+		local_settings=Local, next_settings=Next}) ->
+	case header_list_size_limit(Next, Local) of
+		infinity ->
+			true;
+		Limit ->
+			header_list_size(Headers, Limit, 0)
+	end.
+
+header_list_size_limit(#{max_header_list_size := Limit}, _) ->
+	Limit;
+header_list_size_limit(_, #{max_header_list_size := Limit}) ->
+	Limit;
+header_list_size_limit(_, _) ->
+	infinity.
+
+header_list_size([], _, _) ->
+	true;
+header_list_size([{Name, Value}|Tail], Limit, Size) ->
+	Size1 = Size + byte_size(Name) + byte_size(Value) + 32,
+	case Size1 > Limit of
+		true ->
+			false;
+		false ->
+			header_list_size(Tail, Limit, Size1)
+	end.
+
+%% The promised response may already be in flight. Close the id
+%% so those frames are ignored. (RFC7540 5.1, RFC7540 6.6)
+header_list_reject(push_promise, #headers{id=PromisedStreamID}, State) ->
+	stream_linger(PromisedStreamID,
+		State#http2_machine{remote_streamid=PromisedStreamID});
+%% The stream is already open. Drop it so later frames are ignored
+%% and it does not keep a concurrency slot.
+header_list_reject(Type, #headers{id=StreamID},
+		State=#http2_machine{streams=Streams0})
+		when Type =:= response; Type =:= trailers ->
+	Streams = maps:remove(StreamID, Streams0),
+	stream_linger(StreamID, retarget_continuation(
+		State#http2_machine{streams=Streams}, StreamID));
+%% The request never became a stream.
+header_list_reject(request, #headers{id=StreamID}, State) ->
+	stream_linger(StreamID,
+		State#http2_machine{remote_streamid=StreamID}).
+
+-ifdef(TEST).
+
+header_list_size_indexed_test() ->
+	%% Eight copies are within 32768. Nine are not. Counting the
+	%% shared value once would accept nine.
+	ValueA = binary:copy(<<$a>>, 4000),
+	ValueB = binary:copy(<<$b>>, 4000),
+	Headers = [
+		{<<":method">>, <<"GET">>},
+		{<<":scheme">>, <<"http">>},
+		{<<":path">>, <<"/">>}
+	],
+	{Block8, Enc1} = cow_hpack:encode(
+		Headers ++ lists:duplicate(8, {<<"user-agent">>, ValueA}),
+		cow_hpack:init(), #{huffman => false}),
+	{Block9, Enc2} = cow_hpack:encode(
+		Headers ++ lists:duplicate(9, {<<"user-agent">>, ValueB}),
+		Enc1, #{huffman => false}),
+	{ok, _, S00} = init(server, #{
+		preface_timeout => infinity,
+		settings_timeout => infinity
+	}),
+	{ok, S0} = frame({settings, #{}}, S00),
+	Decode0 = S0#http2_machine.decode_state,
+	{ok, {headers, 1, fin, _, _, _}, S1}
+		= frame({headers, 1, fin, head_fin, iolist_to_binary(Block8)}, S0),
+	true = S1#http2_machine.decode_state =/= Decode0,
+	{error, {stream_error, 3, enhance_your_calm, _}, S2}
+		= frame({headers, 3, fin, head_fin, iolist_to_binary(Block9)}, S1),
+	%% The rejected block was decoded: the dynamic table now has
+	%% the "b" value, not the "a" value from the previous request.
+	{Follow, _} = cow_hpack:encode(
+		Headers ++ [{<<"user-agent">>, ValueB}],
+		Enc2, #{huffman => false}),
+	{ok, {headers, 5, fin, [{<<"user-agent">>, Referenced}], _, _}, _}
+		= frame({headers, 5, fin, head_fin, iolist_to_binary(Follow)}, S2),
+	4000 = byte_size(Referenced),
+	$b = binary:first(Referenced),
+	ok.
+
+header_list_size_before_and_after_ack_test() ->
+	Value = binary:copy(<<$a>>, 4000),
+	Headers = [
+		{<<":method">>, <<"GET">>},
+		{<<":scheme">>, <<"http">>},
+		{<<":path">>, <<"/">>}
+	],
+	{Block0, _} = cow_hpack:encode(
+		Headers ++ lists:duplicate(9, {<<"user-agent">>, Value}),
+		cow_hpack:init(), #{huffman => false}),
+	Block = iolist_to_binary(Block0),
+	{ok, _, S00} = init(server, #{
+		preface_timeout => infinity,
+		settings_timeout => infinity
+	}),
+	{ok, S0} = frame({settings, #{}}, S00),
+	{error, {stream_error, 1, enhance_your_calm, _}, _}
+		= frame({headers, 1, fin, head_fin, Block}, S0),
+	{ok, S1} = frame(settings_ack, S0),
+	{error, {stream_error, 1, enhance_your_calm, _}, _}
+		= frame({headers, 1, fin, head_fin, Block}, S1),
+	ok.
+
+header_list_size_zero_test() ->
+	{Block0, _} = cow_hpack:encode([
+		{<<":method">>, <<"GET">>},
+		{<<":scheme">>, <<"http">>},
+		{<<":path">>, <<"/">>}
+	]),
+	Block = iolist_to_binary(Block0),
+	{ok, _, S00} = init(server, #{
+		preface_timeout => infinity,
+		settings_timeout => infinity,
+		max_header_list_size => 0
+	}),
+	{ok, S0} = frame({settings, #{}}, S00),
+	{error, {stream_error, 1, enhance_your_calm, _}, _}
+		= frame({headers, 1, fin, head_fin, Block}, S0),
+	ok.
+
+header_list_size_response_test() ->
+	%% :status 200 is 42 octets. user-agent adds 42 + ValueSize.
+	At = 32768 - (42 + 42),
+	32768 = 42 + 42 + At,
+	{AtBlock, _} = cow_hpack:encode([
+		{<<":status">>, <<"200">>},
+		{<<"user-agent">>, binary:copy(<<$a>>, At)}
+	], cow_hpack:init(), #{huffman => false}),
+	{OverBlock, _} = cow_hpack:encode([
+		{<<":status">>, <<"200">>},
+		{<<"user-agent">>, binary:copy(<<$a>>, At + 1)}
+	], cow_hpack:init(), #{huffman => false}),
+	{Small, _} = cow_hpack:encode([{<<":status">>, <<"200">>}]),
+	{ok, _, C00} = init(client, #{
+		preface_timeout => infinity,
+		settings_timeout => infinity
+	}),
+	{ok, C0} = frame({settings, #{}}, C00),
+	{ok, 1, C1} = init_stream(<<"GET">>, C0),
+	{ok, {headers, 1, fin, _, _, _}, _}
+		= frame({headers, 1, fin, head_fin, iolist_to_binary(AtBlock)}, C1),
+	{ok, _, C20} = init(client, #{
+		preface_timeout => infinity,
+		settings_timeout => infinity
+	}),
+	{ok, C2} = frame({settings, #{}}, C20),
+	{ok, C2a} = frame({settings, #{max_concurrent_streams => 1}}, C2),
+	{ok, 1, C3} = init_stream(<<"GET">>, C2a),
+	true = is_remote_concurrency_limit_reached(C3),
+	{error, {stream_error, 1, enhance_your_calm, _}, C4}
+		= frame({headers, 1, fin, head_fin, iolist_to_binary(OverBlock)}, C3),
+	%% The stream is gone. Later frames on that id are ignored.
+	false = is_remote_concurrency_limit_reached(C4),
+	{window_changed, 1, C4a} = frame({data, 1, fin, <<"x">>, 1}, C4),
+	{ok, C4b} = frame({headers, 1, fin, head_fin, iolist_to_binary(Small)}, C4a),
+	{ok, 3, C5} = init_stream(<<"GET">>, C4b),
+	{ok, {headers, 3, fin, _, _, _}, _}
+		= frame({headers, 3, fin, head_fin, iolist_to_binary(Small)}, C5),
+	ok.
+
+header_list_size_push_promise_test() ->
+	Value = binary:copy(<<$a>>, 4000),
+	Headers = [
+		{<<":method">>, <<"GET">>},
+		{<<":scheme">>, <<"http">>},
+		{<<":path">>, <<"/">>}
+	],
+	{Over0, _} = cow_hpack:encode(
+		Headers ++ lists:duplicate(9, {<<"user-agent">>, Value}),
+		cow_hpack:init(), #{huffman => false}),
+	Over = iolist_to_binary(Over0),
+	{Min0, _} = cow_hpack:encode(Headers),
+	Min = iolist_to_binary(Min0),
+	{ok, _, C00} = init(client, #{
+		preface_timeout => infinity,
+		settings_timeout => infinity
+	}),
+	{ok, C0} = frame({settings, #{}}, C00),
+	{ok, 1, C1} = init_stream(<<"GET">>, C0),
+	{error, {stream_error, 2, enhance_your_calm, _}, C2}
+		= frame({push_promise, 1, head_fin, 2, Over}, C1),
+	2 = get_last_streamid(C2),
+	{Small0, _} = cow_hpack:encode([{<<":status">>, <<"200">>}]),
+	Small = iolist_to_binary(Small0),
+	%% The promised response may already be in flight.
+	{ok, C3} = frame({headers, 2, fin, head_fin, Small}, C2),
+	{window_changed, 2, C4} = frame({data, 2, fin, <<"hi">>, 2}, C3),
+	{ok, {push_promise, 1, 4, _, _}, C5}
+		= frame({push_promise, 1, head_fin, 4, Min}, C4),
+	{ok, {headers, 1, fin, _, _, _}, _}
+		= frame({headers, 1, fin, head_fin, Small}, C5),
+	ok.
+
+header_list_size_continuation_test() ->
+	Value = binary:copy(<<$a>>, 4000),
+	Headers = [
+		{<<":method">>, <<"GET">>},
+		{<<":scheme">>, <<"http">>},
+		{<<":path">>, <<"/">>}
+	],
+	{Block0, _} = cow_hpack:encode(
+		Headers ++ lists:duplicate(9, {<<"user-agent">>, Value}),
+		cow_hpack:init(), #{huffman => false}),
+	<<First:1/binary, Rest/binary>> = iolist_to_binary(Block0),
+	{Min0, _} = cow_hpack:encode(Headers),
+	Min = iolist_to_binary(Min0),
+	{ok, _, S00} = init(server, #{
+		preface_timeout => infinity,
+		settings_timeout => infinity
+	}),
+	{ok, S0} = frame({settings, #{}}, S00),
+	{ok, S1} = frame({headers, 1, fin, head_nofin, First}, S0),
+	{error, {stream_error, 1, enhance_your_calm, _}, S2}
+		= frame({continuation, 1, head_fin, Rest}, S1),
+	{ok, {headers, 3, fin, _, _, _}, _}
+		= frame({headers, 3, fin, head_fin, Min}, S2),
+	ok.
+
+header_list_size_linger_test() ->
+	Value = binary:copy(<<$a>>, 4000),
+	Headers = [
+		{<<":method">>, <<"GET">>},
+		{<<":scheme">>, <<"http">>},
+		{<<":path">>, <<"/">>}
+	],
+	{Block0, _} = cow_hpack:encode(
+		Headers ++ lists:duplicate(9, {<<"user-agent">>, Value}),
+		cow_hpack:init(), #{huffman => false}),
+	Block = iolist_to_binary(Block0),
+	{ok, _, S00} = init(server, #{
+		preface_timeout => infinity,
+		settings_timeout => infinity
+	}),
+	{ok, S0} = frame({settings, #{}}, S00),
+	S1 = stream_linger(1, S0#http2_machine{remote_streamid=1}),
+	Decode = S1#http2_machine.decode_state,
+	{ok, S2} = frame({headers, 1, fin, head_fin, Block}, S1),
+	true = S2#http2_machine.decode_state =/= Decode,
+	ok.
+
+%% Nine copies exceed the default limit. The id is closed
+%% even though the request never became a stream.
+header_list_size_request_lingers_test() ->
+	Value = binary:copy(<<$a>>, 4000),
+	Headers = [
+		{<<":method">>, <<"GET">>},
+		{<<":scheme">>, <<"http">>},
+		{<<":path">>, <<"/">>}
+	],
+	{Block0, _} = cow_hpack:encode(
+		Headers ++ lists:duplicate(9, {<<"user-agent">>, Value}),
+		cow_hpack:init(), #{huffman => false}),
+	Block = iolist_to_binary(Block0),
+	{ok, _, S00} = init(server, #{
+		preface_timeout => infinity,
+		settings_timeout => infinity
+	}),
+	{ok, S0} = frame({settings, #{}}, S00),
+	{error, {stream_error, 1, enhance_your_calm, _}, S1}
+		= frame({headers, 1, fin, head_fin, Block}, S0),
+	1 = S1#http2_machine.remote_streamid,
+	false = is_map_key(1, S1#http2_machine.streams),
+	true = is_lingering_stream(1, S1),
+	{window_changed, 2, S2} = frame({data, 1, nofin, <<"hi">>, 2}, S1),
+	65533 = S2#http2_machine.remote_window,
+	ok.
+
+-endif.
+
+headers_process(Frame=#headers{id=StreamID, fin=IsFin},
+		State=#http2_machine{local_settings=LocalSettings},
+		Type, Stream, Headers0) ->
+	ReqMethod = case Stream of
+		#stream{method=ReqMethod0} -> ReqMethod0;
+		undefined -> undefined
+	end,
+	case cow_http:process_headers(Headers0, Type, ReqMethod, IsFin, LocalSettings) of
+		{headers, Headers, PseudoHeaders, Len} ->
+			headers_frame(Frame, State, Type, Stream, Headers, PseudoHeaders, Len);
+		{push_promise, Headers, PseudoHeaders} ->
+			push_promise_frame(Frame, State, Stream, Headers, PseudoHeaders);
+		{trailers, Headers} ->
+			trailers_frame(Frame, State, Stream, Headers);
+		{error, Reason} when Type =:= request ->
+			headers_malformed(Frame, State, format_error(Reason));
+		{error, Reason} ->
+			stream_reset(StreamID, State, protocol_error, format_error(Reason))
+	end.
+
+headers_malformed(#headers{id=StreamID}, State, HumanReadable) ->
+	stream_reset(StreamID,
+		State#http2_machine{remote_streamid=StreamID},
+		protocol_error, HumanReadable).
+
+format_error(connect_invalid_pseudo_header) ->
+	'CONNECT requests only use the :method and :authority pseudo-headers. (RFC7540 8.3)';
+format_error(connect_missing_authority) ->
+	'CONNECT requests must include the :authority pseudo-header. (RFC7540 8.3)';
+format_error(empty_header_name) ->
+	'Empty header names are not valid regular headers. (CVE-2019-9516)';
+format_error(extended_connect_missing_protocol) ->
+	'The :protocol pseudo-header MUST be sent with an extended CONNECT. (RFC8441 4)';
+format_error(invalid_connection_header) ->
+	'The connection header is not allowed. (RFC7540 8.1.2.2)';
+format_error(invalid_keep_alive_header) ->
+	'The keep-alive header is not allowed. (RFC7540 8.1.2.2)';
+format_error(invalid_protocol_pseudo_header) ->
+	'The :protocol pseudo-header is only defined for the extended CONNECT. (RFC8441 4)';
+format_error(invalid_proxy_authenticate_header) ->
+	'The proxy-authenticate header is not allowed. (RFC7540 8.1.2.2)';
+format_error(invalid_proxy_authorization_header) ->
+	'The proxy-authorization header is not allowed. (RFC7540 8.1.2.2)';
+format_error(invalid_pseudo_header) ->
+	'An unknown or invalid pseudo-header was found. (RFC7540 8.1.2.1)';
+format_error(invalid_status_pseudo_header) ->
+	'The :status pseudo-header value is invalid. (RFC7540 8.1.2.4)';
+format_error(invalid_te_header) ->
+	'The te header is only allowed in request headers. (RFC7540 8.1.2.2)';
+format_error(invalid_te_value) ->
+	'The te header with a value other than "trailers" is not allowed. (RFC7540 8.1.2.2)';
+format_error(invalid_transfer_encoding_header) ->
+	'The transfer-encoding header is not allowed. (RFC7540 8.1.2.2)';
+format_error(invalid_upgrade_header) ->
+	'The upgrade header is not allowed. (RFC7540 8.1.2.2)';
+format_error(missing_pseudo_header) ->
+	'A required pseudo-header was not found. (RFC7540 8.1.2.3, RFC7540 8.1.2.4)';
+format_error(multiple_authority_pseudo_headers) ->
+	'Multiple :authority pseudo-headers were found. (RFC7540 8.1.2.3)';
+format_error(multiple_method_pseudo_headers) ->
+	'Multiple :method pseudo-headers were found. (RFC7540 8.1.2.3)';
+format_error(multiple_path_pseudo_headers) ->
+	'Multiple :path pseudo-headers were found. (RFC7540 8.1.2.3)';
+format_error(multiple_protocol_pseudo_headers) ->
+	'Multiple :protocol pseudo-headers were found. (RFC7540 8.1.2.3)';
+format_error(multiple_scheme_pseudo_headers) ->
+	'Multiple :scheme pseudo-headers were found. (RFC7540 8.1.2.3)';
+format_error(multiple_status_pseudo_headers) ->
+	'Multiple :status pseudo-headers were found. (RFC7540 8.1.2.3)';
+format_error(non_zero_length_with_fin_flag) ->
+	'HEADERS frame with the END_STREAM flag contains a non-zero content-length. (RFC7540 8.1.2.6)';
+format_error(pseudo_header_after_regular) ->
+	'Pseudo-headers were found after regular headers. (RFC7540 8.1.2.1)';
+format_error(trailer_invalid_pseudo_header) ->
+	'Trailer header blocks must not contain pseudo-headers. (RFC7540 8.1.2.1)';
+format_error(invalid_header_name) ->
+	'Header names must be lowercase. (RFC7540 8.1.2)';
+format_error(invalid_header_value) ->
+	'Header values must only contain valid characters. (RFC7540 8.1.2)';
+format_error(Reason) ->
+	cow_http:format_semantic_error(Reason).
+
+-ifdef(TEST).
+
+refused_request_lingers_test() ->
+	{Req0, _} = cow_hpack:encode([
+		{<<":method">>, <<"GET">>},
+		{<<":scheme">>, <<"http">>},
+		{<<":path">>, <<"/">>}
+	]),
+	Req = iolist_to_binary(Req0),
+	{ok, _, S00} = init(server, #{
+		preface_timeout => infinity,
+		settings_timeout => infinity,
+		max_concurrent_streams => 1
+	}),
+	{ok, S0} = frame({settings, #{}}, S00),
+	%% Stream 1 stays open, so stream 5 is refused.
+	%% Stream 3 was skipped.
+	{ok, {headers, 1, nofin, _, _, _}, S1}
+		= frame({headers, 1, nofin, head_fin, Req}, S0),
+	{error, {stream_error, 5, refused_stream, _}, S2}
+		= frame({headers, 5, nofin, head_fin, Req}, S1),
+	5 = S2#http2_machine.remote_streamid,
+	true = is_map_key(1, S2#http2_machine.streams),
+	false = is_map_key(5, S2#http2_machine.streams),
+	true = is_lingering_stream(5, S2),
+	%% Empty DATA does not ask for a window update.
+	{ok, S2a} = frame({data, 5, nofin, <<>>, 0}, S2),
+	65535 = S2a#http2_machine.remote_window,
+	%% Payload is counted and reported. The window stays reduced.
+	{window_changed, 2, S2b} = frame({data, 5, nofin, <<"hi">>, 2}, S2a),
+	{window_changed, 2, S2c} = frame({data, 5, nofin, <<"hi">>, 2}, S2b),
+	65531 = S2c#http2_machine.remote_window,
+	%% A later header block on that id is decoded and dropped.
+	{Later0, _} = cow_hpack:encode([{<<"user-agent">>, <<"later">>}]),
+	Decode = S2c#http2_machine.decode_state,
+	{ok, S4} = frame({headers, 5, fin, head_fin,
+		iolist_to_binary(Later0)}, S2c),
+	true = S4#http2_machine.decode_state =/= Decode,
+	%% WINDOW_UPDATE is ignored.
+	{ok, S4} = frame({window_update, 5, 1}, S4),
+	%% A skipped id is not lingered.
+	{error, {connection_error, stream_closed, _}, _}
+		= frame({data, 3, nofin, <<"hi">>, 2}, S4),
+	ok.
+
+malformed_request_lingers_test() ->
+	{Block0, _} = cow_hpack:encode([{<<":method">>, <<"GET">>}]),
+	Block = iolist_to_binary(Block0),
+	{ok, _, S00} = init(server, #{
+		preface_timeout => infinity,
+		settings_timeout => infinity
+	}),
+	{ok, S0} = frame({settings, #{}}, S00),
+	{error, {stream_error, 1, protocol_error, _}, S1}
+		= frame({headers, 1, fin, head_fin, Block}, S0),
+	1 = S1#http2_machine.remote_streamid,
+	false = is_map_key(1, S1#http2_machine.streams),
+	true = is_lingering_stream(1, S1),
+	{window_changed, 2, S2} = frame({data, 1, nofin, <<"hi">>, 2}, S1),
+	65533 = S2#http2_machine.remote_window,
+	ok.
+
+rejected_request_continuation_lingers_test() ->
+	{Block0, _} = cow_hpack:encode([
+		{<<":method">>, <<"GET">>},
+		{<<"user-agent">>, <<"x">>}
+	]),
+	<<First:1/binary, Rest/binary>> = iolist_to_binary(Block0),
+	{ok, _, S00} = init(server, #{
+		preface_timeout => infinity,
+		settings_timeout => infinity
+	}),
+	{ok, S0} = frame({settings, #{}}, S00),
+	%% The id stays idle while the header block is open.
+	{ok, S1} = frame({headers, 1, fin, head_nofin, First}, S0),
+	0 = S1#http2_machine.remote_streamid,
+	{error, {stream_error, 1, protocol_error, _}, S2}
+		= frame({continuation, 1, head_fin, Rest}, S1),
+	1 = S2#http2_machine.remote_streamid,
+	false = is_map_key(1, S2#http2_machine.streams),
+	true = is_lingering_stream(1, S2),
+	{window_changed, 2, S3} = frame({data, 1, nofin, <<"hi">>, 2}, S2),
+	65533 = S3#http2_machine.remote_window,
+	ok.
+
+%% Resetting a stored stream reports later DATA. Empty DATA does
+%% not. A missing id does not clear a linger that is already there.
+reset_stream_window_test() ->
+	{Req0, _} = cow_hpack:encode([
+		{<<":method">>, <<"POST">>},
+		{<<":scheme">>, <<"http">>},
+		{<<":path">>, <<"/">>}
+	]),
+	Req = iolist_to_binary(Req0),
+	{ok, _, S00} = init(server, #{
+		preface_timeout => infinity,
+		settings_timeout => infinity
+	}),
+	{ok, S0} = frame({settings, #{}}, S00),
+	{ok, {headers, 1, nofin, _, _, _}, S1}
+		= frame({headers, 1, nofin, head_fin, Req}, S0),
+	true = is_map_key(1, S1#http2_machine.streams),
+	{ok, S2} = reset_stream(1, S1),
+	false = is_map_key(1, S2#http2_machine.streams),
+	true = is_lingering_stream(1, S2),
+	{ok, S2a} = frame({data, 1, nofin, <<>>, 0}, S2),
+	65535 = S2a#http2_machine.remote_window,
+	{window_changed, 2, S2b} = frame({data, 1, nofin, <<"hi">>, 2}, S2a),
+	65533 = S2b#http2_machine.remote_window,
+	{error, not_found} = reset_stream(1, S2b),
+	{window_changed, 2, _} = frame({data, 1, nofin, <<"hi">>, 2}, S2b),
+	ok.
+
+%% The whole connection window can be consumed after a reset.
+%% One byte more is a connection error.
+reset_stream_window_bounds_test() ->
+	{Req0, _} = cow_hpack:encode([
+		{<<":method">>, <<"POST">>},
+		{<<":scheme">>, <<"http">>},
+		{<<":path">>, <<"/">>}
+	]),
+	Req = iolist_to_binary(Req0),
+	{ok, _, S00} = init(server, #{
+		preface_timeout => infinity,
+		settings_timeout => infinity
+	}),
+	{ok, S0} = frame({settings, #{}}, S00),
+	{ok, {headers, 1, nofin, _, _, _}, S1}
+		= frame({headers, 1, nofin, head_fin, Req}, S0),
+	{ok, S2} = reset_stream(1, S1),
+	Full = binary:copy(<<$a>>, 65535),
+	{window_changed, 65535, S3} = frame({data, 1, nofin, Full, byte_size(Full)}, S2),
+	0 = S3#http2_machine.remote_window,
+	Over = binary:copy(<<$a>>, 65536),
+	{error, {connection_error, flow_control_error, _}, S4}
+		= frame({data, 1, nofin, Over, byte_size(Over)}, S2),
+	65535 = S4#http2_machine.remote_window,
+	ok.
+
+%% DATA for a stream above the GOAWAY id is discarded after the
+%% connection window was reduced. Empty DATA did not change it.
+goaway_discarded_data_window_test() ->
+	{Req0, _} = cow_hpack:encode([
+		{<<":method">>, <<"POST">>},
+		{<<":scheme">>, <<"http">>},
+		{<<":path">>, <<"/">>}
+	]),
+	Req = iolist_to_binary(Req0),
+	{ok, _, S00} = init(server, #{
+		preface_timeout => infinity,
+		settings_timeout => infinity
+	}),
+	{ok, S0} = frame({settings, #{}}, S00),
+	{ok, {headers, 1, fin, _, _, _}, S1}
+		= frame({headers, 1, fin, head_fin, Req}, S0),
+	{1, S2} = set_last_streamid(S1),
+	{ok, S3} = frame({headers, 3, nofin, head_fin, Req}, S2),
+	3 = S3#http2_machine.remote_streamid,
+	true = is_map_key(3, S3#http2_machine.streams),
+	{ok, S3a} = frame({data, 3, nofin, <<>>, 0}, S3),
+	65535 = S3a#http2_machine.remote_window,
+	{window_changed, 2, S4} = frame({data, 3, nofin, <<"hi">>, 2}, S3a),
+	65533 = S4#http2_machine.remote_window,
+	ok.
+
+%% Pad Length 0 counts as one octet. A padding-only frame counts
+%% its whole payload. The body is the data without padding.
+data_padding_open_stream_window_test() ->
+	{Req0, _} = cow_hpack:encode([
+		{<<":method">>, <<"POST">>},
+		{<<":scheme">>, <<"http">>},
+		{<<":path">>, <<"/">>}
+	]),
+	Req = iolist_to_binary(Req0),
+	{ok, _, S00} = init(server, #{
+		preface_timeout => infinity,
+		settings_timeout => infinity
+	}),
+	{ok, S0} = frame({settings, #{}}, S00),
+	{ok, {headers, 1, nofin, _, _, _}, S1}
+		= frame({headers, 1, nofin, head_fin, Req}, S0),
+	%% Pad length 0 and <<"hi">>.
+	{ok, {data, 1, nofin, <<"hi">>}, S2}
+		= frame({data, 1, nofin, <<"hi">>, 3}, S1),
+	65532 = S2#http2_machine.remote_window,
+	#stream{remote_window=65532, remote_read_size=2}
+		= maps:get(1, S2#http2_machine.streams),
+	%% Pad length 7 and no data.
+	{ok, {data, 1, nofin, <<>>}, S3}
+		= frame({data, 1, nofin, <<>>, 8}, S2),
+	65524 = S3#http2_machine.remote_window,
+	#stream{remote_window=65524, remote_read_size=2}
+		= maps:get(1, S3#http2_machine.streams),
+	ok.
+
+%% A stream window of 8 accepts a flow of 8. A flow of 9 is a
+%% stream error after the connection window was reduced.
+data_padding_stream_window_bounds_test() ->
+	{Req0, _} = cow_hpack:encode([
+		{<<":method">>, <<"POST">>},
+		{<<":scheme">>, <<"http">>},
+		{<<":path">>, <<"/">>}
+	]),
+	Req = iolist_to_binary(Req0),
+	{ok, _, S00} = init(server, #{
+		preface_timeout => infinity,
+		settings_timeout => infinity,
+		initial_stream_window_size => 8
+	}),
+	{ok, S0} = frame({settings, #{}}, S00),
+	{ok, S0a} = frame(settings_ack, S0),
+	{ok, {headers, 1, nofin, _, _, _}, S1}
+		= frame({headers, 1, nofin, head_fin, Req}, S0a),
+	#stream{remote_window=8} = maps:get(1, S1#http2_machine.streams),
+	%% Pad length octet and 7 data octets.
+	{ok, {data, 1, nofin, <<"1234567">>}, S2}
+		= frame({data, 1, nofin, <<"1234567">>, 8}, S1),
+	65527 = S2#http2_machine.remote_window,
+	#stream{remote_window=0, remote_read_size=7}
+		= maps:get(1, S2#http2_machine.streams),
+	%% Pad length octet and 8 data octets.
+	{error, {stream_error, 1, flow_control_error, _}, S3}
+		= frame({data, 1, nofin, <<"12345678">>, 9}, S1),
+	65526 = S3#http2_machine.remote_window,
+	ok.
+
+%% Padding on a reset stream is reported in full. A flow of 0 is not.
+data_padding_linger_window_test() ->
+	{Req0, _} = cow_hpack:encode([
+		{<<":method">>, <<"POST">>},
+		{<<":scheme">>, <<"http">>},
+		{<<":path">>, <<"/">>}
+	]),
+	Req = iolist_to_binary(Req0),
+	{ok, _, S00} = init(server, #{
+		preface_timeout => infinity,
+		settings_timeout => infinity
+	}),
+	{ok, S0} = frame({settings, #{}}, S00),
+	{ok, {headers, 1, nofin, _, _, _}, S1}
+		= frame({headers, 1, nofin, head_fin, Req}, S0),
+	{ok, S2} = reset_stream(1, S1),
+	{ok, S2a} = frame({data, 1, nofin, <<>>, 0}, S2),
+	65535 = S2a#http2_machine.remote_window,
+	%% Pad length 0 and no data.
+	{window_changed, 1, S2b} = frame({data, 1, nofin, <<>>, 1}, S2a),
+	65534 = S2b#http2_machine.remote_window,
+	%% Pad length 255 and no data.
+	{window_changed, 256, S3} = frame({data, 1, nofin, <<>>, 256}, S2b),
+	65278 = S3#http2_machine.remote_window,
+	ok.
+
+%% DATA discarded after GOAWAY still reports the flow length.
+data_padding_goaway_window_test() ->
+	{Req0, _} = cow_hpack:encode([
+		{<<":method">>, <<"POST">>},
+		{<<":scheme">>, <<"http">>},
+		{<<":path">>, <<"/">>}
+	]),
+	Req = iolist_to_binary(Req0),
+	{ok, _, S00} = init(server, #{
+		preface_timeout => infinity,
+		settings_timeout => infinity
+	}),
+	{ok, S0} = frame({settings, #{}}, S00),
+	{ok, {headers, 1, fin, _, _, _}, S1}
+		= frame({headers, 1, fin, head_fin, Req}, S0),
+	{1, S2} = set_last_streamid(S1),
+	{ok, S3} = frame({headers, 3, nofin, head_fin, Req}, S2),
+	%% Pad length 255 and no data.
+	{window_changed, 256, S4} = frame({data, 3, nofin, <<>>, 256}, S3),
+	65279 = S4#http2_machine.remote_window,
+	%% Pad length 255 and two data octets.
+	{window_changed, 258, S5} = frame({data, 3, nofin, <<"hi">>, 258}, S4),
+	65021 = S5#http2_machine.remote_window,
+	ok.
+
+-endif.
+
+headers_frame(#headers{id=StreamID, fin=IsFin}, State0=#http2_machine{
+		local_settings=#{initial_window_size := RemoteWindow},
+		remote_settings=#{initial_window_size := LocalWindow}},
+		Type, Stream0, Headers, PseudoHeaders, Len) ->
+	{Stream, State1} = case Type of
+		request ->
+			TE = case lists:keyfind(<<"te">>, 1, Headers) of
+				{_, TE0} -> TE0;
+				false -> undefined
+			end,
+			{#stream{id=StreamID, method=maps:get(method, PseudoHeaders),
+				remote=IsFin, remote_expected_size=Len,
+				local_window=LocalWindow, remote_window=RemoteWindow, te=TE},
+				State0#http2_machine{remote_streamid=StreamID}};
+		response ->
+			Stream1 = case PseudoHeaders of
+				#{status := Status} when Status >= 100, Status =< 199 -> Stream0;
+				_ -> Stream0#stream{remote=IsFin, remote_expected_size=Len}
+			end,
+			{Stream1, State0}
+	end,
+	State = stream_store(Stream, State1),
+	{ok, {headers, StreamID, IsFin, Headers, PseudoHeaders, Len}, State}.
+
+trailers_frame(#headers{id=StreamID}, State0, Stream0, Headers) ->
+	Stream = Stream0#stream{remote=fin},
+	State = stream_store(Stream, State0),
+	case is_body_size_valid(Stream) of
+		true ->
+			{ok, {trailers, StreamID, Headers}, State};
+		false ->
+			stream_reset(StreamID, State, protocol_error,
+				'The total size of DATA frames is different than the content-length. (RFC7540 8.1.2.6)')
+	end.
+
+%% PRIORITY frame.
+%%
+%% The PRIORITY mechanism is seen as flawed and deprecated.
+%% We will not implement it.
+
+priority_frame(_Frame, State) ->
+	{ok, State}.
+
+%% RST_STREAM frame.
+
+rst_stream_frame({rst_stream, StreamID, _}, State=#http2_machine{mode=Mode,
+		local_streamid=LocalStreamID, remote_streamid=RemoteStreamID})
+		when (?IS_LOCAL(Mode, StreamID) andalso (StreamID >= LocalStreamID))
+		orelse ((not ?IS_LOCAL(Mode, StreamID)) andalso (StreamID > RemoteStreamID)) ->
+	{error, {connection_error, protocol_error,
+		'RST_STREAM frame received on a stream in idle state. (RFC7540 5.1)'},
+		State};
+rst_stream_frame({rst_stream, StreamID, Reason}, State=#http2_machine{
+		opts=Opts, streams=Streams0, remote_lingering_streams=Lingering0}) ->
+	Streams = maps:remove(StreamID, Streams0),
+	%% Two generations of at most max_remote_lingering_streams.
+	Max = maps:get(max_remote_lingering_streams, Opts, 10),
+	Lingering = linger_add(StreamID, Lingering0, Max),
+	{ok, {rst_stream, StreamID, Reason},
+		State#http2_machine{streams=Streams, remote_lingering_streams=Lingering}}.
+
+%% SETTINGS frame.
+
+settings_frame({settings, Settings}, State0=#http2_machine{
+		opts=Opts, remote_settings=Settings0}) ->
+	State1 = State0#http2_machine{remote_settings=maps:merge(Settings0, Settings)},
+	State2 = maps:fold(fun
+		(header_table_size, NewSize, State=#http2_machine{encode_state=EncodeState0}) ->
+			MaxSize = maps:get(max_encode_table_size, Opts, 4096),
+			EncodeState = cow_hpack:set_max_size(min(NewSize, MaxSize), EncodeState0),
+			State#http2_machine{encode_state=EncodeState};
+		(initial_window_size, NewWindowSize, State) ->
+			OldWindowSize = maps:get(initial_window_size, Settings0, 65535),
+			streams_update_local_window(State, NewWindowSize - OldWindowSize);
+		(_, _, State) ->
+			State
+	end, State1, Settings),
+	case Settings of
+		#{initial_window_size := _} -> send_data(State2);
+		_ -> {ok, State2}
+	end;
+%% We expect to receive a SETTINGS frame as part of the preface.
+settings_frame(_F, State=#http2_machine{mode=server}) ->
+	{error, {connection_error, protocol_error,
+		'The preface sequence must be followed by a SETTINGS frame. (RFC7540 3.5)'},
+		State};
+settings_frame(_F, State) ->
+	{error, {connection_error, protocol_error,
+		'The preface must begin with a SETTINGS frame. (RFC7540 3.5)'},
+		State}.
+
+-ifdef(TEST).
+
+%% {Mode, Opts, Header block}.
+%% :status 200 is static index 8. A lower cap prefixes a size update.
+init_encode_max_size_test_() ->
+	Tests = [
+		{server, #{max_encode_table_size => 0}, <<16#20, 16#88>>},
+		{client, #{max_encode_table_size => 0}, <<16#20, 16#88>>},
+		{server, #{max_encode_table_size => 4095}, <<16#3f, 16#e0, 16#1f, 16#88>>},
+		{client, #{max_encode_table_size => 4095}, <<16#3f, 16#e0, 16#1f, 16#88>>},
+		{server, #{}, <<16#88>>},
+		{server, #{max_encode_table_size => 4096}, <<16#88>>},
+		{server, #{max_encode_table_size => 4097}, <<16#88>>}
+	],
+	[{iolist_to_binary(io_lib:format("~0p ~0p", [Mode, Opts])), fun() ->
+		{ok, _, #http2_machine{encode_state=Enc}} = init(Mode, Opts#{
+			preface_timeout => infinity,
+			settings_timeout => infinity
+		}),
+		{Block, _} = cow_hpack:encode([{<<":status">>, <<"200">>}], Enc),
+		Expected = iolist_to_binary(Block)
+	end} || {Mode, Opts, Expected} <- Tests].
+
+-endif.
+
+%% When SETTINGS_INITIAL_WINDOW_SIZE changes we need to update
+%% the local stream windows for all active streams and perhaps
+%% resume sending data.
+streams_update_local_window(State=#http2_machine{streams=Streams0}, Increment) ->
+	Streams = maps:map(fun(_, S=#stream{local_window=StreamWindow}) ->
+		S#stream{local_window=StreamWindow + Increment}
+	end, Streams0),
+	State#http2_machine{streams=Streams}.
+
+%% Ack for a previously sent SETTINGS frame.
+
+settings_ack_frame(State0=#http2_machine{settings_timer=TRef,
+		local_settings=Local0, next_settings=NextSettings}) ->
+	ok = case TRef of
+		undefined -> ok;
+		_ -> erlang:cancel_timer(TRef, [{async, true}, {info, false}])
+	end,
+	Local = maps:merge(Local0, NextSettings),
+	State1 = State0#http2_machine{settings_timer=undefined,
+		local_settings=Local, next_settings=#{}},
+	{ok, maps:fold(fun
+		(header_table_size, MaxSize, State=#http2_machine{decode_state=DecodeState0}) ->
+			DecodeState = cow_hpack:set_max_size(MaxSize, DecodeState0),
+			State#http2_machine{decode_state=DecodeState};
+		(initial_window_size, NewWindowSize, State) ->
+			OldWindowSize = maps:get(initial_window_size, Local0, 65535),
+			streams_update_remote_window(State, NewWindowSize - OldWindowSize);
+		(_, _, State) ->
+			State
+	end, State1, NextSettings)}.
+
+%% When we receive an ack to a SETTINGS frame we sent we need to update
+%% the remote stream windows for all active streams.
+streams_update_remote_window(State=#http2_machine{streams=Streams0}, Increment) ->
+	Streams = maps:map(fun(_, S=#stream{remote_window=StreamWindow}) ->
+		S#stream{remote_window=StreamWindow + Increment}
+	end, Streams0),
+	State#http2_machine{streams=Streams}.
+
+%% PUSH_PROMISE frame.
+
+%% Convenience record to manipulate the tuple.
+%% The order of the fields matter.
+-record(push_promise, {
+	id :: cow_http2:streamid(),
+	head :: cow_http2:head_fin(),
+	promised_id :: cow_http2:streamid(),
+	data :: binary()
+}).
+
+push_promise_frame(_, State=#http2_machine{mode=server}) ->
+	{error, {connection_error, protocol_error,
+		'PUSH_PROMISE frames MUST NOT be sent by the client. (RFC7540 6.6)'},
+		State};
+push_promise_frame(_, State=#http2_machine{local_settings=#{enable_push := false}}) ->
+	{error, {connection_error, protocol_error,
+		'PUSH_PROMISE frame received despite SETTINGS_ENABLE_PUSH set to 0. (RFC7540 6.6)'},
+		State};
+push_promise_frame(#push_promise{promised_id=PromisedStreamID}, State)
+		when not ?IS_SERVER_LOCAL(PromisedStreamID) ->
+	{error, {connection_error, protocol_error,
+		'PUSH_PROMISE promised an invalid stream id. (RFC7540 5.1.1, RFC7540 6.6)'},
+		State};
+push_promise_frame(#push_promise{promised_id=PromisedStreamID},
+		State=#http2_machine{remote_streamid=RemoteStreamID})
+		when PromisedStreamID =< RemoteStreamID ->
+	{error, {connection_error, protocol_error,
+		'PUSH_PROMISE frame received for a promised stream in closed or half-closed state. (RFC7540 5.1, RFC7540 6.6)'},
+		State};
+push_promise_frame(#push_promise{id=StreamID}, State)
+		when not ?IS_CLIENT_LOCAL(StreamID) ->
+	{error, {connection_error, protocol_error,
+		'PUSH_PROMISE frame received on a server-initiated stream. (RFC7540 6.6)'},
+		State};
+push_promise_frame(#push_promise{id=StreamID},
+		State=#http2_machine{local_streamid=LocalStreamID})
+		when StreamID >= LocalStreamID ->
+	{error, {connection_error, protocol_error,
+		'PUSH_PROMISE frame received on a stream in idle state. (RFC7540 5.1)'},
+		State};
+push_promise_frame(Frame=#push_promise{id=StreamID, head=IsHeadFin,
+		promised_id=PromisedStreamID, data=HeaderData}, State) ->
+	case stream_get(StreamID, State) of
+		Stream=#stream{remote=Remote} when Remote =/= fin ->
+			case IsHeadFin of
+				head_fin ->
+					headers_decode(#headers{id=PromisedStreamID,
+						fin=fin, head=IsHeadFin, data=HeaderData},
+						State, push_promise, Stream);
+				head_nofin ->
+					{ok, State#http2_machine{state={continuation, push_promise, Frame}}}
+			end;
+		undefined ->
+			linger_push_promise(Frame, State);
+		%% Half-closed (remote): the response has already ended.
+		_ ->
+			{error, {connection_error, protocol_error,
+				'PUSH_PROMISE frame received on a half-closed (remote) stream. (RFC7540 6.6)'},
+				State}
+	end.
+
+push_promise_frame(#headers{id=PromisedStreamID},
+		State0=#http2_machine{
+			local_settings=#{initial_window_size := RemoteWindow},
+			remote_settings=#{initial_window_size := LocalWindow}},
+		#stream{id=StreamID}, Headers, PseudoHeaders=#{method := Method}) ->
+	TE = case lists:keyfind(<<"te">>, 1, Headers) of
+		{_, TE0} -> TE0;
+		false -> undefined
+	end,
+	PromisedStream = #stream{id=PromisedStreamID, method=Method,
+		local=fin, local_window=LocalWindow,
+		remote_window=RemoteWindow, te=TE},
+	State = stream_store(PromisedStream,
+		State0#http2_machine{remote_streamid=PromisedStreamID}),
+	{ok, {push_promise, StreamID, PromisedStreamID, Headers, PseudoHeaders}, State}.
+
+linger_push_promise(Frame=#push_promise{id=StreamID},
+		State=#http2_machine{local_lingering_streams=Lingering}) ->
+	case linger_member(StreamID, Lingering) of
+		true ->
+			linger_push_promise1(Frame, State);
+		false ->
+			{error, {connection_error, protocol_error,
+				'PUSH_PROMISE frame received on a stream in closed state. (RFC7540 5.1, RFC7540 6.6)'},
+				State}
+	end.
+
+%% RFC7540 6.6. A PUSH_PROMISE that was in flight when we
+%% reset the parent must not tear the connection down.
+linger_push_promise1(#push_promise{head=head_nofin}=Frame, State) ->
+	{ok, State#http2_machine{state={continuation, linger, Frame}}};
+linger_push_promise1(#push_promise{head=head_fin, promised_id=PromisedStreamID,
+		data=HeaderData}, State) ->
+	linger_push_promise_decode(HeaderData, PromisedStreamID, State).
+
+linger_push_promise_decode(HeaderData, PromisedStreamID, State0) ->
+	case headers_decode(#headers{id=PromisedStreamID, fin=fin, head=head_fin,
+			data=HeaderData}, State0, linger, undefined) of
+		{ok, State} when ?IS_SERVER_LOCAL(PromisedStreamID) ->
+			{error, {stream_error, PromisedStreamID, cancel,
+				'PUSH_PROMISE received on a stream that was reset. (RFC7540 6.6)'},
+				stream_linger(PromisedStreamID,
+					State#http2_machine{remote_streamid=PromisedStreamID})};
+		Error ->
+			Error
+	end.
+
+-ifdef(TEST).
+
+push_promise_idle_parent_test() ->
+	{ok, _, S00} = init(client, #{
+		preface_timeout => infinity,
+		settings_timeout => infinity
+	}),
+	{ok, S0} = frame({settings, #{}}, S00),
+	{error, {connection_error, protocol_error, _}, S0}
+		= frame({push_promise, 1, head_fin, 2, <<>>}, S0),
+	{ok, _, S10} = init(client, #{
+		preface_timeout => infinity,
+		settings_timeout => infinity
+	}),
+	{ok, S11} = frame({settings, #{}}, S10),
+	{ok, 1, S1} = init_stream(<<"GET">>, S11),
+	%% 3 is the next id. 5 is further above it. Both are idle.
+	{error, {connection_error, protocol_error, _}, S1}
+		= frame({push_promise, 3, head_fin, 2, <<>>}, S1),
+	{error, {connection_error, protocol_error, _}, S1}
+		= frame({push_promise, 5, head_fin, 2, <<>>}, S1),
+	ok.
+
+push_promise_idle_parent_invalid_id_test() ->
+	{ok, _, S00} = init(client, #{
+		preface_timeout => infinity,
+		settings_timeout => infinity
+	}),
+	{ok, S01} = frame({settings, #{}}, S00),
+	{ok, 1, S1} = init_stream(<<"GET">>, S01),
+	{error, {connection_error, protocol_error, _}, S1}
+		= frame({push_promise, 5, head_fin, 0, <<>>}, S1),
+	{error, {connection_error, protocol_error, _}, S1}
+		= frame({push_promise, 4, head_fin, 2, <<>>}, S1),
+	ok.
+
+push_promise_closed_parent_test() ->
+	State = #http2_machine{mode=client, state=normal, local_streamid=3},
+	{error, {connection_error, protocol_error, _}, State}
+		= frame({push_promise, 1, head_fin, 2, <<>>}, State),
+	ok.
+
+push_promise_open_parent_test() ->
+	{Block0, _} = cow_hpack:encode([
+		{<<":method">>, <<"GET">>},
+		{<<":scheme">>, <<"https">>},
+		{<<":path">>, <<"/">>}
+	]),
+	Block = iolist_to_binary(Block0),
+	{ok, _, S00} = init(client, #{
+		preface_timeout => infinity,
+		settings_timeout => infinity
+	}),
+	{ok, S01} = frame({settings, #{}}, S00),
+	{ok, 1, S0} = init_stream(<<"GET">>, S01),
+	#http2_machine{streams=Streams0} = S0,
+	Parent0 = maps:get(1, Streams0),
+	Open = S0#http2_machine{streams=Streams0#{1 => Parent0#stream{remote=nofin}}},
+	{ok, {push_promise, 1, 2, _, #{method := <<"GET">>}}, _}
+		= frame({push_promise, 1, head_fin, 2, Block}, Open),
+	{ok, #http2_machine{state={continuation, push_promise, _}}}
+		= frame({push_promise, 1, head_nofin, 2, <<>>}, Open),
+	HalfLocal = S0#http2_machine{streams=Streams0#{1 =>
+		Parent0#stream{local=fin, remote=nofin}}},
+	{ok, {push_promise, 1, 2, _, #{method := <<"GET">>}}, _}
+		= frame({push_promise, 1, head_fin, 2, Block}, HalfLocal),
+	ok.
+
+push_promise_continuation_parent_test() ->
+	{Block0, _} = cow_hpack:encode([
+		{<<":method">>, <<"GET">>},
+		{<<":scheme">>, <<"https">>},
+		{<<":path">>, <<"/">>}
+	]),
+	Block = iolist_to_binary(Block0),
+	<<First:1/binary, Rest/binary>> = Block,
+	{ok, _, S00} = init(client, #{
+		preface_timeout => infinity,
+		settings_timeout => infinity
+	}),
+	{ok, S01} = frame({settings, #{}}, S00),
+	{ok, 1, S0} = init_stream(<<"GET">>, S01),
+	{ok, S1} = frame({push_promise, 1, head_nofin, 2, First}, S0),
+	{ok, {push_promise, 1, 2, _, #{method := <<"GET">>}}, _}
+		= frame({continuation, 1, head_fin, Rest}, S1),
+	#http2_machine{streams=Streams0} = S0,
+	Parent0 = maps:get(1, Streams0),
+	Open = S0#http2_machine{streams=Streams0#{1 => Parent0#stream{remote=nofin}}},
+	{ok, S2} = frame({push_promise, 1, head_nofin, 2, First}, Open),
+	{ok, {push_promise, 1, 2, _, #{method := <<"GET">>}}, _}
+		= frame({continuation, 1, head_fin, Rest}, S2),
+	HalfLocal = S0#http2_machine{streams=Streams0#{1 =>
+		Parent0#stream{local=fin, remote=nofin}}},
+	{ok, S3} = frame({push_promise, 1, head_nofin, 2, First}, HalfLocal),
+	{ok, {push_promise, 1, 2, _, #{method := <<"GET">>}}, _}
+		= frame({continuation, 1, head_fin, Rest}, S3),
+	ok.
+
+push_promise_half_closed_remote_parent_test() ->
+	{ok, _, S00} = init(client, #{
+		preface_timeout => infinity,
+		settings_timeout => infinity
+	}),
+	{ok, S01} = frame({settings, #{}}, S00),
+	{ok, 1, S0} = init_stream(<<"GET">>, S01),
+	#http2_machine{streams=Streams0} = S0,
+	Parent0 = maps:get(1, Streams0),
+	S1 = S0#http2_machine{streams=Streams0#{1 => Parent0#stream{remote=fin}}},
+	{error, {connection_error, protocol_error, _}, S1}
+		= frame({push_promise, 1, head_fin, 2, <<>>}, S1),
+	ok.
+
+push_promise_odd_promised_id_test() ->
+	{Block0, _} = cow_hpack:encode([
+		{<<":method">>, <<"GET">>},
+		{<<":scheme">>, <<"https">>},
+		{<<":path">>, <<"/">>}
+	]),
+	Block = iolist_to_binary(Block0),
+	{ok, _, S00} = init(client, #{
+		preface_timeout => infinity,
+		settings_timeout => infinity
+	}),
+	{ok, S01} = frame({settings, #{}}, S00),
+	{ok, 1, S0} = init_stream(<<"GET">>, S01),
+	{ok, 3, S1} = init_stream(<<"POST">>, S0),
+	{ok, idle, empty} = get_stream_local_state(3, S1),
+	{error, {connection_error, protocol_error, _}, S1}
+		= frame({push_promise, 1, head_fin, 3, Block}, S1),
+	{ok, idle, empty} = get_stream_local_state(3, S1),
+	%% 1 is open. 5 has not been opened. Both are client ids.
+	{error, {connection_error, protocol_error, _}, S1}
+		= frame({push_promise, 1, head_fin, 1, Block}, S1),
+	{error, {connection_error, protocol_error, _}, S1}
+		= frame({push_promise, 1, head_nofin, 5, <<>>}, S1),
+	#http2_machine{streams=Streams1} = S1,
+	Parent1 = maps:get(1, Streams1),
+	S2 = S1#http2_machine{streams=Streams1#{1 => Parent1#stream{remote=nofin}}},
+	{error, {connection_error, protocol_error, _}, S2}
+		= frame({push_promise, 1, head_fin, 3, Block}, S2),
+	{ok, idle, empty} = get_stream_local_state(3, S2),
+	ok.
+
+push_promise_lingering_parent_test() ->
+	{ok, _, S00} = init(client, #{
+		preface_timeout => infinity,
+		settings_timeout => infinity
+	}),
+	{ok, S01} = frame({settings, #{}}, S00),
+	{ok, 1, S0} = init_stream(<<"GET">>, S01),
+	{ok, S1} = reset_stream(1, S0),
+	{error, {stream_error, 2, cancel, _}, _}
+		= frame({push_promise, 1, head_fin, 2, <<>>}, S1),
+	ok.
+
+-endif.
+
+%% PING frame.
+
+ping_frame({ping, _}, State) ->
+	{ok, State}.
+
+%% Ack for a previously sent PING frame.
+
+ping_ack_frame({ping_ack, _}, State) ->
+	{ok, State}.
+
+%% GOAWAY frame.
+
+goaway_frame(Frame={goaway, _, _, _}, State) ->
+	{ok, Frame, State}.
+
+%% WINDOW_UPDATE frame.
+
+%% Connection-wide WINDOW_UPDATE frame.
+window_update_frame({window_update, Increment}, State=#http2_machine{local_window=ConnWindow})
+		when ConnWindow + Increment > 16#7fffffff ->
+	{error, {connection_error, flow_control_error,
+		'The flow control window must not be greater than 2^31-1. (RFC7540 6.9.1)'},
+		State};
+window_update_frame({window_update, Increment}, State=#http2_machine{local_window=ConnWindow}) ->
+	send_data(State#http2_machine{local_window=ConnWindow + Increment});
+%% Stream-specific WINDOW_UPDATE frame.
+window_update_frame({window_update, StreamID, _}, State=#http2_machine{mode=Mode,
+		local_streamid=LocalStreamID, remote_streamid=RemoteStreamID})
+		when (?IS_LOCAL(Mode, StreamID) andalso (StreamID >= LocalStreamID))
+		orelse ((not ?IS_LOCAL(Mode, StreamID)) andalso (StreamID > RemoteStreamID)) ->
+	{error, {connection_error, protocol_error,
+		'WINDOW_UPDATE frame received on a stream in idle state. (RFC7540 5.1)'},
+		State};
+window_update_frame({window_update, StreamID, Increment},
+		State0=#http2_machine{remote_lingering_streams=Lingering}) ->
+	case stream_get(StreamID, State0) of
+		#stream{local_window=StreamWindow} when StreamWindow + Increment > 16#7fffffff ->
+			stream_reset(StreamID, State0, flow_control_error,
+				'The flow control window must not be greater than 2^31-1. (RFC7540 6.9.1)');
+		Stream0 = #stream{local_window=StreamWindow} ->
+			send_data(Stream0#stream{local_window=StreamWindow + Increment}, State0);
+		undefined ->
+			%% WINDOW_UPDATE frames may be received for a short period of time
+			%% after a stream is closed. They must be ignored.
+			case linger_member(StreamID, Lingering) of
+				false -> {ok, State0};
+				true -> stream_reset(StreamID, State0, stream_closed,
+					'WINDOW_UPDATE frame received after the stream was reset. (RFC7540 5.1)')
+			end
+	end.
+
+%% CONTINUATION frame.
+
+%% Convenience record to manipulate the tuple.
+%% The order of the fields matter.
+-record(continuation, {
+	id :: cow_http2:streamid(),
+	head :: cow_http2:head_fin(),
+	data :: binary()
+}).
+
+unexpected_continuation_frame(#continuation{}, State) ->
+	{error, {connection_error, protocol_error,
+		'CONTINUATION frames MUST be preceded by a HEADERS or PUSH_PROMISE frame. (RFC7540 6.10)'},
+		State}.
+
+continuation_frame(#continuation{id=StreamID, head=head_fin, data=HeaderFragment1},
+		State=#http2_machine{state={continuation, linger, #push_promise{
+			id=StreamID, promised_id=PromisedStreamID, data=HeaderFragment0}}}) ->
+	case continuation_frame_append(HeaderFragment0, HeaderFragment1, State) of
+		{ok, HeaderData} ->
+			linger_push_promise_decode(HeaderData, PromisedStreamID,
+				State#http2_machine{state=normal});
+		Error ->
+			Error
+	end;
+continuation_frame(#continuation{id=StreamID, head=head_fin, data=HeaderFragment1},
+		State=#http2_machine{state={continuation, linger,
+			Frame=#headers{id=StreamID, data=HeaderFragment0}}}) ->
+	case continuation_frame_append(HeaderFragment0, HeaderFragment1, State) of
+		{ok, HeaderData} ->
+			headers_decode(Frame#headers{head=head_fin, data=HeaderData},
+				State#http2_machine{state=normal}, linger, undefined);
+		Error ->
+			Error
+	end;
+continuation_frame(#continuation{id=StreamID, head=head_fin, data=HeaderFragment1},
+		State=#http2_machine{state={continuation, Type,
+			Frame=#headers{id=StreamID, data=HeaderFragment0}}}) ->
+	case continuation_frame_append(HeaderFragment0, HeaderFragment1, State) of
+		{ok, HeaderData} ->
+			headers_decode(Frame#headers{head=head_fin, data=HeaderData},
+				State#http2_machine{state=normal}, Type, stream_get(StreamID, State));
+		Error ->
+			Error
+	end;
+continuation_frame(#continuation{id=StreamID, head=head_fin, data=HeaderFragment1},
+		State=#http2_machine{state={continuation, Type, #push_promise{
+			id=StreamID, promised_id=PromisedStreamID, data=HeaderFragment0}}}) ->
+	case continuation_frame_append(HeaderFragment0, HeaderFragment1, State) of
+		{ok, HeaderData} ->
+			%% StreamID is the parent. The headers id is the promised stream.
+			headers_decode(#headers{id=PromisedStreamID, fin=fin,
+				head=head_fin, data=HeaderData},
+				State#http2_machine{state=normal}, Type,
+				stream_get(StreamID, State));
+		Error ->
+			Error
+	end;
+continuation_frame(#continuation{id=StreamID, data=HeaderFragment1},
+		State=#http2_machine{state={continuation, Type, ContinuedFrame}})
+		when element(2, ContinuedFrame) =:= StreamID ->
+	case ContinuedFrame of
+		#headers{data=HeaderFragment0} ->
+			case continuation_frame_append(HeaderFragment0, HeaderFragment1, State) of
+				{ok, HeaderData} ->
+					{ok, State#http2_machine{state={continuation, Type,
+						ContinuedFrame#headers{data=HeaderData}}}};
+				Error ->
+					Error
+			end;
+		#push_promise{data=HeaderFragment0} ->
+			case continuation_frame_append(HeaderFragment0, HeaderFragment1, State) of
+				{ok, HeaderData} ->
+					{ok, State#http2_machine{state={continuation, Type,
+						ContinuedFrame#push_promise{data=HeaderData}}}};
+				Error ->
+					Error
+			end
+	end;
+continuation_frame(_F, State) ->
+	{error, {connection_error, protocol_error,
+		'An invalid frame was received in the middle of a header block. (RFC7540 6.2)'},
+		State}.
+
+continuation_frame_append(Fragment0, Fragment1, State=#http2_machine{opts=Opts}) ->
+	MaxSize = maps:get(max_fragmented_header_block_size, Opts, 32768),
+	case byte_size(Fragment0) + byte_size(Fragment1) =< MaxSize of
+		true ->
+			{ok, <<Fragment0/binary, Fragment1/binary>>};
+		false ->
+			{error, {connection_error, enhance_your_calm,
+				'Larger fragmented header block size than we are willing to accept.'},
+				State}
+	end.
+
+%% Ignored frames.
+
+-spec ignored_frame(State)
+	-> {ok, State}
+	| {error, {connection_error, protocol_error, atom()}, State}
+	when State::http2_machine().
+ignored_frame(State=#http2_machine{state={continuation, _, _}}) ->
+	{error, {connection_error, protocol_error,
+		'An invalid frame was received in the middle of a header block. (RFC7540 6.2)'},
+		State};
+%% @todo It might be useful to error out when we receive
+%% too many unknown frames. (RFC7540 10.5)
+ignored_frame(State) ->
+	{ok, State}.
+
+%% Timeouts.
+
+-spec timeout(preface_timeout | settings_timeout, reference(), State)
+	-> {ok, State}
+	| {error, {connection_error, cow_http2:error(), atom()}, State}
+	when State::http2_machine().
+timeout(preface_timeout, TRef, State=#http2_machine{preface_timer=TRef}) ->
+	{error, {connection_error, protocol_error,
+		'The preface was not received in a reasonable amount of time.'},
+		State#http2_machine{preface_timer=undefined}};
+timeout(settings_timeout, TRef, State=#http2_machine{settings_timer=TRef}) ->
+	{error, {connection_error, settings_timeout,
+		'The SETTINGS ack was not received within the configured time. (RFC7540 6.5.3)'},
+		State#http2_machine{settings_timer=undefined}};
+timeout(_, _, State) ->
+	{ok, State}.
+
+%% Functions for sending a message header or body. Note that
+%% this module does not send data directly, instead it returns
+%% a value that can then be used to send the frames.
+
+-spec prepare_headers(cow_http2:streamid(), State, idle | cow_http:fin(),
+		cow_http:pseudo_headers(), cow_http:headers())
+	-> {ok, cow_http:fin(), iodata(), State} when State::http2_machine().
+prepare_headers(StreamID, State=#http2_machine{encode_state=EncodeState0},
+		IsFin0, PseudoHeaders, Headers0) ->
+	Stream = #stream{method=Method, local=idle} = stream_get(StreamID, State),
+	IsFin = case {IsFin0, Method} of
+		{idle, _} -> nofin;
+		{_, <<"HEAD">>} -> fin;
+		_ -> IsFin0
+	end,
+	Headers = cow_http:merge_pseudo_headers(PseudoHeaders,
+		cow_http:remove_http1_headers(Headers0)),
+	{HeaderBlock, EncodeState} = cow_hpack:encode(Headers, EncodeState0),
+	{ok, IsFin, HeaderBlock, stream_store(Stream#stream{local=IsFin0},
+		State#http2_machine{encode_state=EncodeState})}.
+
+-spec prepare_push_promise(cow_http2:streamid(), State,
+		cow_http:pseudo_headers(), cow_http:headers())
+	-> {ok, cow_http2:streamid(), iodata(), State}
+	| {error, no_push} when State::http2_machine().
+prepare_push_promise(_, #http2_machine{remote_settings=#{enable_push := false}}, _, _) ->
+	{error, no_push};
+prepare_push_promise(StreamID, State=#http2_machine{encode_state=EncodeState0,
+		local_settings=#{initial_window_size := RemoteWindow},
+		remote_settings=#{initial_window_size := LocalWindow},
+		local_streamid=LocalStreamID}, PseudoHeaders, Headers0) ->
+	#stream{local=idle} = stream_get(StreamID, State),
+	TE = case lists:keyfind(<<"te">>, 1, Headers0) of
+		{_, TE0} -> TE0;
+		false -> undefined
+	end,
+	Headers = cow_http:merge_pseudo_headers(PseudoHeaders,
+		cow_http:remove_http1_headers(Headers0)),
+	{HeaderBlock, EncodeState} = cow_hpack:encode(Headers, EncodeState0),
+	{ok, LocalStreamID, HeaderBlock, stream_store(
+		#stream{id=LocalStreamID, method=maps:get(method, PseudoHeaders),
+			remote=fin, remote_expected_size=0,
+			local_window=LocalWindow, remote_window=RemoteWindow, te=TE},
+		State#http2_machine{encode_state=EncodeState, local_streamid=LocalStreamID + 2})}.
+
+-spec prepare_trailers(cow_http2:streamid(), State, cow_http:headers())
+	-> {ok, iodata(), State} when State::http2_machine().
+prepare_trailers(StreamID, State=#http2_machine{encode_state=EncodeState0}, Trailers) ->
+	Stream = #stream{local=nofin} = stream_get(StreamID, State),
+	{HeaderBlock, EncodeState} = cow_hpack:encode(Trailers, EncodeState0),
+	{ok, HeaderBlock, stream_store(Stream#stream{local=fin},
+		State#http2_machine{encode_state=EncodeState})}.
+
+-spec send_or_queue_data(cow_http2:streamid(), State, cow_http:fin(), DataOrFileOrTrailers)
+	-> {ok, State}
+	| {send, [{cow_http2:streamid(), cow_http:fin(), [DataOrFileOrTrailers]}], State}
+	when State::http2_machine(), DataOrFileOrTrailers::
+		{data, iodata()} | #sendfile{} | {trailers, cow_http:headers()}.
+send_or_queue_data(StreamID, State0=#http2_machine{opts=Opts, local_window=ConnWindow},
+		IsFin0, DataOrFileOrTrailers0) ->
+	%% @todo Probably just ignore if the method was HEAD.
+	Stream0 = #stream{
+		local=nofin,
+		local_window=StreamWindow,
+		local_buffer_size=BufferSize,
+		te=TE0
+	} = stream_get(StreamID, State0),
+	DataOrFileOrTrailers = case DataOrFileOrTrailers0 of
+		{trailers, _} ->
+			%% We only accept TE headers containing exactly "trailers" (RFC7540 8.1.2.1).
+			TE = try cow_http_hd:parse_te(TE0) of
+				{trailers, []} -> trailers;
+				_ -> no_trailers
+			catch _:_ ->
+				%% If we can't parse the TE header, assume we can't send trailers.
+				no_trailers
+			end,
+			case TE of
+				trailers ->
+					DataOrFileOrTrailers0;
+				no_trailers ->
+					{data, <<>>}
+			end;
+		_ ->
+			DataOrFileOrTrailers0
+	end,
+	SendSize = case DataOrFileOrTrailers of
+		{data, D} -> BufferSize + iolist_size(D);
+		#sendfile{bytes=B} -> BufferSize + B;
+		{trailers, _} -> 0
+	end,
+	MinSendSize = maps:get(stream_window_data_threshold, Opts, 16384),
+	if
+		%% If we cannot send the data all at once and the window
+		%% is smaller than we are willing to send at a minimum,
+		%% we queue the data directly.
+		(StreamWindow < MinSendSize)
+				andalso ((StreamWindow < SendSize) orelse (ConnWindow < SendSize)) ->
+			{ok, stream_store(queue_data(Stream0, IsFin0, DataOrFileOrTrailers, in), State0)};
+		true ->
+			case send_or_queue_data(Stream0, State0, [], IsFin0, DataOrFileOrTrailers, in) of
+				{ok, Stream, State, []} ->
+					{ok, stream_store(Stream, State)};
+				{ok, Stream=#stream{local=IsFin}, State, SendData} ->
+					{send, [{StreamID, IsFin, lists:reverse(SendData)}], stream_store(Stream, State)}
+			end
+	end.
+
+%% Internal data sending/queuing functions.
+
+%% The PRIORITY mechanism is seen as flawed and deprecated.
+%% We will not implement it. So we just go over
+%% all streams and send what we can until either everything is
+%% sent or we run out of space in the window.
+send_data(State0=#http2_machine{streams=Streams0}) ->
+	Iterator = maps:iterator(Streams0),
+	case send_data_for_all_streams(maps:next(Iterator), Streams0, State0, []) of
+		{ok, Streams, State, []} ->
+			{ok, State#http2_machine{streams=Streams}};
+		{ok, Streams, State, Send} ->
+			{send, Send, State#http2_machine{streams=Streams}}
+	end.
+
+send_data_for_all_streams(none, Streams, State, Send) ->
+	{ok, Streams, State, Send};
+%% While technically we should never get < 0 here, let's be on the safe side.
+send_data_for_all_streams(_, Streams, State=#http2_machine{local_window=ConnWindow}, Send)
+		when ConnWindow =< 0 ->
+	{ok, Streams, State, Send};
+%% We rely on send_data_for_one_stream/3 to do all the necessary checks about the stream.
+send_data_for_all_streams({StreamID, Stream0, Iterator}, Streams, State0, Send) ->
+	case send_data_for_one_stream(Stream0, State0, []) of
+		{ok, Stream, State, []} ->
+			send_data_for_all_streams(maps:next(Iterator),
+				Streams#{StreamID => Stream}, State, Send);
+		%% We need to remove the stream here because we do not use stream_store/2.
+		{ok, #stream{local=fin, remote=fin}, State, SendData} ->
+			send_data_for_all_streams(maps:next(Iterator),
+				maps:remove(StreamID, Streams), State, [{StreamID, fin, SendData}|Send]);
+		{ok, Stream=#stream{local=IsFin}, State, SendData} ->
+			send_data_for_all_streams(maps:next(Iterator),
+				Streams#{StreamID => Stream}, State, [{StreamID, IsFin, SendData}|Send])
+	end.
+
+send_data(Stream0, State0) ->
+	case send_data_for_one_stream(Stream0, State0, []) of
+		{ok, Stream, State, []} ->
+			{ok, stream_store(Stream, State)};
+		{ok, Stream=#stream{id=StreamID, local=IsFin}, State, SendData} ->
+			{send, [{StreamID, IsFin, SendData}], stream_store(Stream, State)}
+	end.
+
+send_data_for_one_stream(Stream=#stream{local=nofin, local_buffer_size=0,
+		local_trailers=Trailers}, State, SendAcc) when Trailers =/= undefined ->
+	{ok, Stream, State, lists:reverse([{trailers, Trailers}|SendAcc])};
+send_data_for_one_stream(Stream=#stream{local=nofin, local_buffer=Q0, local_buffer_size=0},
+		State, SendAcc) ->
+	case queue:len(Q0) of
+		0 ->
+			{ok, Stream, State, lists:reverse(SendAcc)};
+		1 ->
+			%% We know there is a final empty data frame in the queue.
+			%% We need to mark the stream as complete.
+			{{value, {fin, 0, _}}, Q} = queue:out(Q0),
+			{ok, Stream#stream{local=fin, local_buffer=Q}, State, lists:reverse(SendAcc)}
+	end;
+send_data_for_one_stream(Stream=#stream{local=IsFin, local_window=StreamWindow,
+		local_buffer_size=BufferSize}, State=#http2_machine{local_window=ConnWindow}, SendAcc)
+		when ConnWindow =< 0; IsFin =:= fin; StreamWindow =< 0; BufferSize =:= 0 ->
+	{ok, Stream, State, lists:reverse(SendAcc)};
+send_data_for_one_stream(Stream0=#stream{local_window=StreamWindow,
+		local_buffer=Q0, local_buffer_size=BufferSize},
+		State0=#http2_machine{opts=Opts, local_window=ConnWindow}, SendAcc0) ->
+	MinSendSize = maps:get(stream_window_data_threshold, Opts, 16384),
+	if
+		%% If we cannot send the entire buffer at once and the window
+		%% is smaller than we are willing to send at a minimum, do nothing.
+		%%
+		%% We only do this check the first time we go through this function;
+		%% we want to send as much data as possible IF we send some.
+		(SendAcc0 =:= []) andalso (StreamWindow < MinSendSize)
+				andalso ((StreamWindow < BufferSize) orelse (ConnWindow < BufferSize)) ->
+			{ok, Stream0, State0, []};
+		true ->
+			%% We know there is an item in the queue.
+			{{value, {IsFin, DataSize, Data}}, Q} = queue:out(Q0),
+			Stream1 = Stream0#stream{local_buffer=Q, local_buffer_size=BufferSize - DataSize},
+			{ok, Stream, State, SendAcc}
+				= send_or_queue_data(Stream1, State0, SendAcc0, IsFin, Data, in_r),
+			send_data_for_one_stream(Stream, State, SendAcc)
+	end.
+
+%% We can send trailers immediately if the queue is empty, otherwise we queue.
+%% We always send trailer frames even if the window is empty.
+send_or_queue_data(Stream=#stream{local_buffer_size=0},
+		State, SendAcc, fin, {trailers, Trailers}, _) ->
+	{ok, Stream, State, [{trailers, Trailers}|SendAcc]};
+send_or_queue_data(Stream, State, SendAcc, fin, {trailers, Trailers}, _) ->
+	{ok, Stream#stream{local_trailers=Trailers}, State, SendAcc};
+%% Send data immediately if we can, buffer otherwise.
+send_or_queue_data(Stream=#stream{local_window=StreamWindow},
+		State=#http2_machine{local_window=ConnWindow},
+		SendAcc, IsFin, Data, In)
+		when ConnWindow =< 0; StreamWindow =< 0 ->
+	{ok, queue_data(Stream, IsFin, Data, In), State, SendAcc};
+send_or_queue_data(Stream=#stream{local_window=StreamWindow},
+		State=#http2_machine{opts=Opts, remote_settings=RemoteSettings,
+		local_window=ConnWindow}, SendAcc, IsFin, Data, In) ->
+	RemoteMaxFrameSize = maps:get(max_frame_size, RemoteSettings, 16384),
+	ConfiguredMaxFrameSize = maps:get(max_frame_size_sent, Opts, infinity),
+	MaxSendSize = min(
+		min(ConnWindow, StreamWindow),
+		min(RemoteMaxFrameSize, ConfiguredMaxFrameSize)
+	),
+	case Data of
+		File = #sendfile{bytes=Bytes} when Bytes =< MaxSendSize ->
+			{ok, Stream#stream{local=IsFin, local_window=StreamWindow - Bytes},
+				State#http2_machine{local_window=ConnWindow - Bytes},
+				[File|SendAcc]};
+		File = #sendfile{offset=Offset, bytes=Bytes} ->
+			send_or_queue_data(Stream#stream{local_window=StreamWindow - MaxSendSize},
+				State#http2_machine{local_window=ConnWindow - MaxSendSize},
+				[File#sendfile{bytes=MaxSendSize}|SendAcc], IsFin,
+				File#sendfile{offset=Offset + MaxSendSize, bytes=Bytes - MaxSendSize}, In);
+		{data, Iolist0} ->
+			IolistSize = iolist_size(Iolist0),
+			if
+				IolistSize =< MaxSendSize ->
+					{ok, Stream#stream{local=IsFin, local_window=StreamWindow - IolistSize},
+						State#http2_machine{local_window=ConnWindow - IolistSize},
+						[{data, Iolist0}|SendAcc]};
+				true ->
+					{Iolist, More} = cow_iolists:split(MaxSendSize, Iolist0),
+					send_or_queue_data(Stream#stream{local_window=StreamWindow - MaxSendSize},
+						State#http2_machine{local_window=ConnWindow - MaxSendSize},
+						[{data, Iolist}|SendAcc], IsFin, {data, More}, In)
+			end
+	end.
+
+queue_data(Stream=#stream{local_buffer=Q0, local_buffer_size=Size0}, IsFin, Data, In) ->
+	DataSize = case Data of
+		{sendfile, _, Bytes, _} -> Bytes;
+		{data, Iolist} -> iolist_size(Iolist)
+	end,
+	%% Never queue non-final empty data frames.
+	case {DataSize, IsFin} of
+		{0, nofin} ->
+			Stream;
+		_ ->
+			Q = queue:In({IsFin, DataSize, Data}, Q0),
+			Stream#stream{local_buffer=Q, local_buffer_size=Size0 + DataSize}
+	end.
+
+%% Public interface to update the flow control window.
+%%
+%% The ensure_window function applies heuristics to avoid updating the
+%% window when it is not necessary. The update_window function updates
+%% the window unconditionally.
+%%
+%% The ensure_window function should be called when requesting more
+%% data (for example when reading a request or response body) as well
+%% as when receiving new data. Failure to do so may result in the
+%% window being depleted.
+%%
+%% The heuristics dictating whether the window must be updated and
+%% what the window size is depends on three options (margin, max
+%% and threshold) along with the Size argument. The window increment
+%% returned by this function may therefore be smaller than the Size
+%% argument. On the other hand the total window allocated over many
+%% calls may end up being larger than the initial Size argument. As
+%% a result, it is the responsibility of the caller to ensure that
+%% the Size argument is never lower than 0.
+
+-spec ensure_window(non_neg_integer(), State)
+	-> ok | {ok, pos_integer(), State} when State::http2_machine().
+ensure_window(Size, State=#http2_machine{opts=Opts, remote_window=RemoteWindow}) ->
+	case ensure_window(Size, RemoteWindow, connection, Opts) of
+		ok ->
+			ok;
+		{ok, Increment} ->
+			{ok, Increment, State#http2_machine{remote_window=RemoteWindow + Increment}}
+	end.
+
+-spec ensure_window(cow_http2:streamid(), non_neg_integer(), State)
+	-> ok | {ok, pos_integer(), State} when State::http2_machine().
+ensure_window(StreamID, Size, State=#http2_machine{opts=Opts}) ->
+	case stream_get(StreamID, State) of
+		%% For simplicity's sake, we do not consider attempts to ensure the window
+		%% of a terminated stream to be errors. We simply act as if the stream
+		%% window is large enough.
+		undefined ->
+			ok;
+		Stream = #stream{remote_window=RemoteWindow} ->
+			case ensure_window(Size, RemoteWindow, stream, Opts) of
+				ok ->
+					ok;
+				{ok, Increment} ->
+					{ok, Increment, stream_store(Stream#stream{remote_window=RemoteWindow + Increment}, State)}
+			end
+	end.
+
+%% No need to update the window when we are not expecting data.
+ensure_window(0, _, _, _) ->
+	ok;
+%% No need to update the window when it is already high enough.
+ensure_window(Size, Window, _, _) when Size =< Window ->
+	ok;
+ensure_window(Size0, Window, Type, Opts) ->
+	Threshold = ensure_window_threshold(Type, Opts),
+	if
+		%% We do not update the window when it is higher than the threshold.
+		Window > Threshold ->
+			ok;
+		true ->
+			Margin = ensure_window_margin(Type, Opts),
+			Size = Size0 + Margin,
+			MaxWindow = ensure_window_max(Type, Opts),
+			Increment = if
+				%% We cannot go above the maximum window size.
+				Size > MaxWindow -> MaxWindow - Window;
+				true -> Size - Window
+			end,
+			case Increment of
+				0 -> ok;
+				_ -> {ok, Increment}
+			end
+	end.
+
+%% Margin defaults to the default initial window size.
+ensure_window_margin(connection, Opts) ->
+	maps:get(connection_window_margin_size, Opts, 65535);
+ensure_window_margin(stream, Opts) ->
+	maps:get(stream_window_margin_size, Opts, 65535).
+
+%% Max window defaults to the max value allowed by the protocol.
+ensure_window_max(connection, Opts) ->
+	maps:get(max_connection_window_size, Opts, 16#7fffffff);
+ensure_window_max(stream, Opts) ->
+	maps:get(max_stream_window_size, Opts, 16#7fffffff).
+
+%% Threshold defaults to 10 times the default frame size.
+ensure_window_threshold(connection, Opts) ->
+	maps:get(connection_window_update_threshold, Opts, 163840);
+ensure_window_threshold(stream, Opts) ->
+	maps:get(stream_window_update_threshold, Opts, 163840).
+
+-spec update_window(1..16#7fffffff, State)
+	-> State when State::http2_machine().
+update_window(Size, State=#http2_machine{remote_window=RemoteWindow})
+		when Size > 0 ->
+	State#http2_machine{remote_window=RemoteWindow + Size}.
+
+-spec update_window(cow_http2:streamid(), 1..16#7fffffff, State)
+	-> State when State::http2_machine().
+update_window(StreamID, Size, State)
+		when Size > 0 ->
+	Stream = #stream{remote_window=RemoteWindow} = stream_get(StreamID, State),
+	stream_store(Stream#stream{remote_window=RemoteWindow + Size}, State).
+
+%% Public interface to reset streams.
+
+-spec reset_stream(cow_http2:streamid(), State)
+	-> {ok, State} | {error, not_found} when State::http2_machine().
+reset_stream(StreamID, State=#http2_machine{streams=Streams0}) ->
+	case maps:take(StreamID, Streams0) of
+		{_, Streams} ->
+			{ok, stream_linger(StreamID, retarget_continuation(
+				State#http2_machine{streams=Streams}, StreamID))};
+		error ->
+			{error, not_found}
+	end.
+
+%% The stream was just removed. If its header block is still
+%% open, mark the continuation as linger.
+retarget_continuation(State=#http2_machine{state={continuation, _, Frame}}, StreamID)
+		when element(2, Frame) =:= StreamID ->
+	State#http2_machine{state={continuation, linger, Frame}};
+retarget_continuation(State, _) ->
+	State.
+
+%% Retrieve the buffer size for all streams.
+
+-spec get_connection_local_buffer_size(http2_machine()) -> non_neg_integer().
+get_connection_local_buffer_size(#http2_machine{streams=Streams}) ->
+	maps:fold(fun(_, #stream{local_buffer_size=Size}, Acc) ->
+		Acc + Size
+	end, 0, Streams).
+
+%% Retrieve a setting value, or its default value if not set.
+
+-spec get_local_setting(atom(), http2_machine()) -> atom() | integer().
+get_local_setting(Key, #http2_machine{local_settings=Settings}) ->
+	maps:get(Key, Settings, default_setting_value(Key)).
+
+-spec get_remote_settings(http2_machine()) -> map().
+get_remote_settings(#http2_machine{mode=Mode, remote_settings=Settings}) ->
+	Defaults0 = #{
+		header_table_size => default_setting_value(header_table_size),
+		enable_push => default_setting_value(enable_push),
+		max_concurrent_streams => default_setting_value(max_concurrent_streams),
+		initial_window_size => default_setting_value(initial_window_size),
+		max_frame_size => default_setting_value(max_frame_size),
+		max_header_list_size => default_setting_value(max_header_list_size)
+	},
+	Defaults = case Mode of
+		server ->
+			Defaults0#{enable_connect_protocol => default_setting_value(enable_connect_protocol)};
+		client ->
+			Defaults0
+	end,
+	maps:merge(Defaults, Settings).
+
+default_setting_value(header_table_size) -> 4096;
+default_setting_value(enable_push) -> true;
+default_setting_value(max_concurrent_streams) -> infinity;
+default_setting_value(initial_window_size) -> 65535;
+default_setting_value(max_frame_size) -> 16384;
+default_setting_value(max_header_list_size) -> infinity;
+default_setting_value(enable_connect_protocol) -> false.
+
+%% Function to obtain the last known streamid received
+%% for the purposes of sending a GOAWAY frame and closing the connection.
+
+-spec get_last_streamid(http2_machine()) -> cow_http2:streamid().
+get_last_streamid(#http2_machine{remote_streamid=RemoteStreamID}) ->
+	RemoteStreamID.
+
+%% Set last accepted streamid to the last known streamid, for the purpose
+%% ignoring frames for remote streams created after sending GOAWAY.
+
+-spec set_last_streamid(http2_machine()) -> {cow_http2:streamid(), http2_machine()}.
+set_last_streamid(State=#http2_machine{remote_streamid=StreamID,
+		last_remote_streamid=LastStreamID}) when StreamID =< LastStreamID->
+	{StreamID, State#http2_machine{last_remote_streamid = StreamID}}.
+
+%% Retrieve the local buffer size for a stream.
+
+-spec get_stream_local_buffer_size(cow_http2:streamid(), http2_machine())
+	-> {ok, non_neg_integer()} | {error, not_found | closed}.
+get_stream_local_buffer_size(StreamID, State=#http2_machine{mode=Mode,
+		local_streamid=LocalStreamID, remote_streamid=RemoteStreamID}) ->
+	case stream_get(StreamID, State) of
+		#stream{local_buffer_size=Size} ->
+			{ok, Size};
+		undefined when (?IS_LOCAL(Mode, StreamID) andalso (StreamID < LocalStreamID))
+				orelse ((not ?IS_LOCAL(Mode, StreamID)) andalso (StreamID =< RemoteStreamID)) ->
+			{error, closed};
+		undefined ->
+			{error, not_found}
+	end.
+
+%% Retrieve the local state for a stream, including the state in the queue.
+
+-spec get_stream_local_state(cow_http2:streamid(), http2_machine())
+	-> {ok, idle | cow_http:fin(), empty | nofin | fin} | {error, not_found | closed}.
+get_stream_local_state(StreamID, State=#http2_machine{mode=Mode,
+		local_streamid=LocalStreamID, remote_streamid=RemoteStreamID}) ->
+	case stream_get(StreamID, State) of
+		#stream{local=IsFin, local_buffer=Q, local_trailers=undefined} ->
+			IsQueueFin = case queue:peek_r(Q) of
+				empty -> empty;
+				{value, {IsQueueFin0, _, _}} -> IsQueueFin0
+			end,
+			{ok, IsFin, IsQueueFin};
+		%% Trailers are queued so the local state is fin after the queue is drained.
+		#stream{local=IsFin} ->
+			{ok, IsFin, fin};
+		undefined when (?IS_LOCAL(Mode, StreamID) andalso (StreamID < LocalStreamID))
+				orelse ((not ?IS_LOCAL(Mode, StreamID)) andalso (StreamID =< RemoteStreamID)) ->
+			{error, closed};
+		undefined ->
+			{error, not_found}
+	end.
+
+%% Retrieve the remote state for a stream.
+
+-spec get_stream_remote_state(cow_http2:streamid(), http2_machine())
+	-> {ok, idle | cow_http:fin()} | {error, not_found | closed}.
+get_stream_remote_state(StreamID, State=#http2_machine{mode=Mode,
+		local_streamid=LocalStreamID, remote_streamid=RemoteStreamID}) ->
+	case stream_get(StreamID, State) of
+		#stream{remote=IsFin} ->
+			{ok, IsFin};
+		undefined when (?IS_LOCAL(Mode, StreamID) andalso (StreamID < LocalStreamID))
+				orelse ((not ?IS_LOCAL(Mode, StreamID)) andalso (StreamID =< RemoteStreamID)) ->
+			{error, closed};
+		undefined ->
+			{error, not_found}
+	end.
+
+%% Check if we are allowed to initiate a new stream according to the remote
+%% setting MAX_CONCURRENT_STREAMS.
+
+-spec is_remote_concurrency_limit_reached(http2_machine()) -> boolean().
+is_remote_concurrency_limit_reached(State=#http2_machine{
+		remote_settings=RemoteSettings, streams=Streams}) ->
+	MaxConcurrentStreams = maps:get(max_concurrent_streams, RemoteSettings, infinity),
+	%% We care about local streams, but first check the total number of
+	%% streams because it's cheaper.
+	MaxConcurrentStreams =/= infinity andalso
+		map_size(Streams) >= MaxConcurrentStreams andalso
+		count_local_streams(State) >= MaxConcurrentStreams.
+
+count_local_streams(#http2_machine{mode=Mode, streams=Streams}) ->
+	maps:fold(fun(StreamId, _Stream, Sum) when ?IS_LOCAL(Mode, StreamId) ->
+			Sum + 1;
+		(_, _, Sum) ->
+			Sum
+	end, 0, Streams).
+
+%% Query whether the stream was reset recently by the remote endpoint.
+
+-spec is_lingering_stream(cow_http2:streamid(), http2_machine()) -> boolean().
+is_lingering_stream(StreamID, #http2_machine{
+		local_lingering_streams=Local, remote_lingering_streams=Remote}) ->
+	linger_member(StreamID, Local) orelse linger_member(StreamID, Remote).
+
+%% Stream-related functions.
+
+stream_get(StreamID, #http2_machine{streams=Streams}) ->
+	maps:get(StreamID, Streams, undefined).
+
+stream_store(#stream{id=StreamID, local=fin, remote=fin},
+		State=#http2_machine{streams=Streams0}) ->
+	Streams = maps:remove(StreamID, Streams0),
+	State#http2_machine{streams=Streams};
+stream_store(Stream=#stream{id=StreamID},
+		State=#http2_machine{streams=Streams}) ->
+	State#http2_machine{streams=Streams#{StreamID => Stream}}.
+
+%% @todo Don't send an RST_STREAM if one was already sent.
+stream_reset(StreamID, State, Reason, HumanReadable) ->
+	{error, {stream_error, StreamID, Reason, HumanReadable},
+		stream_linger(StreamID, State)}.
+
+stream_linger(StreamID, State=#http2_machine{opts=Opts,
+		local_lingering_streams=Lingering0}) ->
+	%% Two generations of at most max_local_lingering_streams.
+	Max = maps:get(max_local_lingering_streams, Opts, 100),
+	Lingering = linger_add(StreamID, Lingering0, Max),
+	State#http2_machine{local_lingering_streams=Lingering}.
+
+%% The current generation holds at most Max ids. The next id
+%% starts a new generation and keeps the full one as previous.
+%% A repeated id is treated like a new one.
+linger_add(StreamID, {Current, Previous}, Max) when map_size(Current) < Max ->
+	{Current#{StreamID => true}, Previous};
+linger_add(StreamID, {Current, _}, _) ->
+	{#{StreamID => true}, Current}.
+
+linger_member(StreamID, {Current, Previous}) ->
+	is_map_key(StreamID, Current) orelse is_map_key(StreamID, Previous).
+
+-ifdef(TEST).
+
+linger_machine(Mode) ->
+	{ok, _, S0} = init(Mode, #{
+		preface_timeout => infinity,
+		settings_timeout => infinity
+	}),
+	{ok, S} = frame({settings, #{}}, S0),
+	%% Keep every id used below out of the idle range.
+	S#http2_machine{local_streamid=100000, remote_streamid=100000}.
+
+linger_locals(Ids, State) ->
+	lists:foldl(fun(Id, Acc) -> stream_linger(Id, Acc) end, State, Ids).
+
+linger_remotes(Ids, State) ->
+	lists:foldl(fun(Id, Acc) ->
+		{ok, {rst_stream, Id, cancel}, Acc1}
+			= frame({rst_stream, Id, cancel}, Acc),
+		Acc1
+	end, State, Ids).
+
+local_linger_generations_test() ->
+	Max = 100,
+	S0 = linger_machine(server),
+	%% Filling the current generation does not rotate.
+	S1 = linger_locals(lists:seq(1, Max), S0),
+	{Current1, Previous1} = S1#http2_machine.local_lingering_streams,
+	Max = map_size(Current1),
+	0 = map_size(Previous1),
+	%% One past the bound keeps the full generation as previous.
+	S2 = stream_linger(Max + 1, S1),
+	{Current2, Previous2} = S2#http2_machine.local_lingering_streams,
+	1 = map_size(Current2),
+	Max = map_size(Previous2),
+	true = is_lingering_stream(1, S2),
+	true = is_lingering_stream(Max, S2),
+	true = is_lingering_stream(Max + 1, S2),
+	{ok, _} = frame({data, 1, fin, <<>>, 0}, S2),
+	{ok, _} = frame({data, Max + 1, fin, <<>>, 0}, S2),
+	%% Below the bound, repeating an id from the previous generation
+	%% writes it into the current one as well.
+	S2b = stream_linger(1, S2),
+	{Current2b, Previous2} = S2b#http2_machine.local_lingering_streams,
+	2 = map_size(Current2b),
+	true = is_map_key(1, Current2b),
+	true = is_map_key(1, Previous2),
+	%% The next full generation drops the first.
+	S3 = linger_locals(lists:seq(Max + 2, Max * 2), S2),
+	S4 = stream_linger(Max * 2 + 1, S3),
+	false = is_lingering_stream(1, S4),
+	true = is_lingering_stream(Max + 1, S4),
+	true = is_lingering_stream(Max * 2, S4),
+	true = is_lingering_stream(Max * 2 + 1, S4),
+	{error, {connection_error, stream_closed, _}, _}
+		= frame({data, 1, fin, <<>>, 0}, S4),
+	{ok, _} = frame({data, Max + 1, fin, <<>>, 0}, S4),
+	{ok, _} = frame({data, Max * 2 + 1, fin, <<>>, 0}, S4),
+	%% Repeating an id at the bound rotates. The repeated id stays.
+	%% An id that was only in the previous generation is dropped.
+	S5 = stream_linger(1, S3),
+	false = is_lingering_stream(2, S5),
+	true = is_lingering_stream(1, S5),
+	true = is_lingering_stream(Max + 1, S5),
+	{error, {connection_error, stream_closed, _}, _}
+		= frame({data, 2, fin, <<>>, 0}, S5),
+	{ok, _} = frame({data, 1, fin, <<>>, 0}, S5),
+	%% Repeating an id already in the full current generation rotates too.
+	%% That id stays. The previous generation is dropped.
+	S6 = stream_linger(Max + 1, S3),
+	false = is_lingering_stream(1, S6),
+	true = is_lingering_stream(Max + 1, S6),
+	true = is_lingering_stream(Max * 2, S6),
+	{error, {connection_error, stream_closed, _}, _}
+		= frame({data, 1, fin, <<>>, 0}, S6),
+	{ok, _} = frame({data, Max + 1, fin, <<>>, 0}, S6),
+	%% A header block on a lingered stream is decoded. One on a
+	%% forgotten stream is rejected and does not touch HPACK state.
+	{Block0, _} = cow_hpack:encode(
+		[{<<"user-agent">>, <<"linger-test">>}], cow_hpack:init()),
+	Block = iolist_to_binary(Block0),
+	Decode = S4#http2_machine.decode_state,
+	{error, {connection_error, stream_closed, _}, S7}
+		= frame({headers, 1, fin, head_fin, Block}, S4),
+	Decode = S7#http2_machine.decode_state,
+	{ok, S8} = frame({headers, Max + 1, fin, head_fin, Block}, S4),
+	true = S8#http2_machine.decode_state =/= Decode,
+	{ok, S9} = frame({headers, Max * 2 + 1, fin, head_fin, Block}, S4),
+	true = S9#http2_machine.decode_state =/= Decode,
+	ok.
+
+remote_linger_generations_test() ->
+	Max = 10,
+	S0 = linger_machine(server),
+	S1 = linger_remotes(lists:seq(1, Max), S0),
+	{Current1, Previous1} = S1#http2_machine.remote_lingering_streams,
+	Max = map_size(Current1),
+	0 = map_size(Previous1),
+	S2 = linger_remotes([Max + 1], S1),
+	true = is_lingering_stream(1, S2),
+	true = is_lingering_stream(Max + 1, S2),
+	{error, {stream_error, 1, stream_closed, _}, _}
+		= frame({window_update, 1, 1}, S2),
+	%% Below the bound, repeating an id writes it into the current generation.
+	S2b = linger_remotes([1], S2),
+	{Current2b, Previous2b} = S2b#http2_machine.remote_lingering_streams,
+	2 = map_size(Current2b),
+	true = is_map_key(1, Current2b),
+	true = is_map_key(1, Previous2b),
+	S3 = linger_remotes(lists:seq(Max + 2, Max * 2), S2),
+	S4 = linger_remotes([Max * 2 + 1], S3),
+	false = is_lingering_stream(1, S4),
+	Kept = Max + 1,
+	Newest = Max * 2 + 1,
+	true = is_lingering_stream(Kept, S4),
+	true = is_lingering_stream(Newest, S4),
+	{ok, _} = frame({window_update, 1, 1}, S4),
+	{error, {stream_error, Kept, stream_closed, _}, _}
+		= frame({window_update, Kept, 1}, S4),
+	{error, {stream_error, Newest, stream_closed, _}, _}
+		= frame({window_update, Newest, 1}, S4),
+	%% Repeating an id at the bound rotates. That id stays.
+	%% An id that was only in the previous generation is dropped.
+	S5 = linger_remotes([1], S3),
+	false = is_lingering_stream(2, S5),
+	true = is_lingering_stream(1, S5),
+	true = is_lingering_stream(Kept, S5),
+	{ok, _} = frame({window_update, 2, 1}, S5),
+	{error, {stream_error, 1, stream_closed, _}, _}
+		= frame({window_update, 1, 1}, S5),
+	%% Repeating an id already in the full current generation rotates too.
+	S6 = linger_remotes([Kept], S3),
+	false = is_lingering_stream(1, S6),
+	true = is_lingering_stream(Kept, S6),
+	true = is_lingering_stream(Max * 2, S6),
+	{ok, _} = frame({window_update, 1, 1}, S6),
+	{error, {stream_error, Kept, stream_closed, _}, _}
+		= frame({window_update, Kept, 1}, S6),
+	%% A PUSH_PROMISE for a parent this side reset is still accepted
+	%% while that parent lingers, including from the previous generation.
+	C0 = linger_machine(client),
+	First = 1,
+	Prev = 1 + 100 * 2,
+	Current = 1 + 100 * 4,
+	C1 = linger_locals(lists:seq(First, Current, 2), C0),
+	{error, {connection_error, protocol_error, _}, _}
+		= frame({push_promise, First, head_fin, 100002, <<>>}, C1),
+	{error, {stream_error, 100002, cancel, _}, _}
+		= frame({push_promise, Prev, head_fin, 100002, <<>>}, C1),
+	{error, {stream_error, 100004, cancel, _}, _}
+		= frame({push_promise, Current, head_fin, 100004, <<>>}, C1),
+	ok.
+
+-endif.
