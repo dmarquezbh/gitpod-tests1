@@ -111,7 +111,7 @@ fn qtd(alvo: []const u8) usize {
 }
 
 const PLAIN = "HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\nContent-Length: 13\r\n\r\nHello, World!";
-const REP_MAX = 4096;
+const REP_MAX = 512;
 const REP: [PLAIN.len * REP_MAX]u8 = blk: {
     @setEvalBranchQuota(200000);
     var buf: [PLAIN.len * REP_MAX]u8 = undefined;

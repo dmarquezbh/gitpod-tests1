@@ -1,13 +1,13 @@
 Running 5s test @ http://127.0.0.1:8098/db
   2 threads and 256 connections
   Thread Stats   Avg      Stdev     Max   +/- Stdev
-    Latency    37.80ms    4.62ms  76.31ms   72.09%
-    Req/Sec     3.38k   136.46     3.61k    74.00%
+    Latency    51.24ms    5.97ms 155.61ms   93.65%
+    Req/Sec     2.50k   178.97     2.70k    92.00%
   Latency Distribution
-     50%   37.67ms
-     75%   40.67ms
-     90%   43.47ms
-     99%   48.71ms
-  33692 requests in 5.02s, 3.27MB read
-Requests/sec:   6717.32
-Transfer/sec:    667.68KB
+     50%   50.69ms
+     75%   52.76ms
+     90%   54.52ms
+     99%   75.10ms
+  24853 requests in 5.03s, 2.41MB read
+Requests/sec:   4940.25
+Transfer/sec:    491.05KB
