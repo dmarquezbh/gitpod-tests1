@@ -1,0 +1,4 @@
+[25-Nov-2026 06:08:28] NOTICE: [pool bench] 'user' directive is ignored when FPM is not running as root
+[25-Nov-2026 06:08:28] NOTICE: [pool bench] 'group' directive is ignored when FPM is not running as root
+[25-Nov-2026 06:08:28] ERROR: Another FPM instance seems to already listen on /tmp/bench-fpm.sock
+[25-Nov-2026 06:08:28] ERROR: FPM initialization failed

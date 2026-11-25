@@ -379,27 +379,27 @@
       },
       {
        "impl": "paulo-epoll",
-       "rps": 628069.53,
+       "rps": 637804.23,
        "level": 256,
        "errors": 0
       },
       {
        "impl": "php",
-       "rps": 7845.07,
+       "rps": 7889.46,
        "level": 256,
        "errors": 0
       },
       {
        "impl": "lua",
-       "rps": 808.56,
+       "rps": 809.67,
        "level": 4096,
        "errors": 0
       },
       {
        "impl": "nim",
-       "rps": 6471.14,
-       "level": 1024,
-       "errors": 32785
+       "rps": 6596.21,
+       "level": 4096,
+       "errors": 33511
       }
      ]
     },
@@ -510,27 +510,27 @@
       },
       {
        "impl": "paulo-epoll",
-       "rps": 46751.09,
+       "rps": 47281.19,
        "level": 256,
        "errors": 0
       },
       {
        "impl": "php",
-       "rps": 7581.86,
-       "level": 64,
+       "rps": 7682.29,
+       "level": 16,
        "errors": 0
       },
       {
        "impl": "lua",
-       "rps": 101.46,
+       "rps": 101.31,
        "level": 512,
        "errors": 0
       },
       {
        "impl": "nim",
-       "rps": 9542.24,
+       "rps": 9684.53,
        "level": 64,
-       "errors": 47854
+       "errors": 48482
       }
      ]
     },
@@ -641,27 +641,27 @@
       },
       {
        "impl": "paulo-epoll",
-       "rps": 5015.98,
-       "level": 64,
+       "rps": 5098.78,
+       "level": 16,
        "errors": 0
       },
       {
        "impl": "php",
-       "rps": 2657.41,
+       "rps": 2707.19,
        "level": 64,
        "errors": 0
       },
       {
        "impl": "lua",
-       "rps": 101.49,
+       "rps": 101.5,
        "level": 512,
        "errors": 0
       },
       {
        "impl": "nim",
-       "rps": 2298.73,
+       "rps": 2319.47,
        "level": 256,
-       "errors": 11565
+       "errors": 11630
       }
      ]
     },
@@ -772,27 +772,27 @@
       },
       {
        "impl": "paulo-epoll",
-       "rps": 4173.87,
+       "rps": 4196.67,
        "level": 1,
        "errors": 0
       },
       {
        "impl": "php",
-       "rps": 2533.32,
+       "rps": 2522.18,
        "level": 1,
        "errors": 0
       },
       {
        "impl": "lua",
-       "rps": 101.51,
-       "level": 20,
+       "rps": 101.54,
+       "level": 10,
        "errors": 0
       },
       {
        "impl": "nim",
-       "rps": 2189.32,
+       "rps": 2235.28,
        "level": 1,
-       "errors": 11027
+       "errors": 11256
       }
      ]
     },
@@ -903,27 +903,27 @@
       },
       {
        "impl": "paulo-epoll",
-       "rps": 4433.87,
-       "level": 64,
+       "rps": 4484.22,
+       "level": 256,
        "errors": 0
       },
       {
        "impl": "php",
-       "rps": 2851.73,
+       "rps": 2892.07,
        "level": 64,
        "errors": 0
       },
       {
        "impl": "lua",
-       "rps": 101.51,
+       "rps": 101.54,
        "level": 512,
        "errors": 0
       },
       {
        "impl": "nim",
-       "rps": 2536.8,
-       "level": 16,
-       "errors": 12689
+       "rps": 2565.09,
+       "level": 64,
+       "errors": 12834
       }
      ]
     },
@@ -1034,27 +1034,27 @@
       },
       {
        "impl": "paulo-epoll",
-       "rps": 2823.4,
+       "rps": 2813.94,
        "level": 1,
        "errors": 0
       },
       {
        "impl": "php",
-       "rps": 1877.52,
+       "rps": 1915.74,
        "level": 1,
        "errors": 0
       },
       {
        "impl": "lua",
-       "rps": 101.45,
-       "level": 10,
+       "rps": 101.48,
+       "level": 20,
        "errors": 0
       },
       {
        "impl": "nim",
-       "rps": 1782.81,
+       "rps": 1791.67,
        "level": 1,
-       "errors": 8987
+       "errors": 9021
       }
      ]
     }

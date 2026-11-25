@@ -42,7 +42,7 @@
     else
     {
         <section class="cards">
-            <div class="card"><span>Implementações</span><b>@data.Impls.Count</b></div>
+            <div class="card"><span>Implementações medidas</span><b>@ImplsMedidas()</b></div>
             <div class="card"><span>Melhor plaintext</span><b>@N(Best("plaintext"))</b><small>req/s · @Label(BestImpl("plaintext"))</small></div>
             <div class="card"><span>Melhor queries</span><b>@N(Best("queries"))</b><small>req/s · @Label(BestImpl("queries"))</small></div>
             <div class="card"><span>Menor footprint</span><b>@Size(SmallestTotal())</b><small>@Label(SmallestImpl())</small></div>
@@ -176,6 +176,7 @@
 
     double Best(string test) => Host?.Tests.FirstOrDefault(t => t.Id == test)?.Results.Max(r => r.Rps) ?? 0;
     string BestImpl(string test) => Host?.Tests.FirstOrDefault(t => t.Id == test)?.Results.OrderByDescending(r => r.Rps).FirstOrDefault()?.Impl ?? "";
+    int ImplsMedidas() => Host?.Tests.SelectMany(t => t.Results).Select(r => r.Impl).Distinct().Count() ?? 0;
     long SmallestTotal() => Host is { Metrics.Count: > 0 } h ? h.Metrics.Min(m => m.TotalBytes) : 0;
     string SmallestImpl() => Host?.Metrics.OrderBy(m => m.TotalBytes).FirstOrDefault()?.Impl ?? "";
 

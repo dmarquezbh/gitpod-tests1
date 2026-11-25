@@ -1,0 +1,13 @@
+Running 5s test @ http://127.0.0.1:18094/fortunes
+  2 threads and 512 connections
+  Thread Stats   Avg      Stdev     Max   +/- Stdev
+    Latency   143.43ms   67.70ms 244.50ms   61.25%
+    Req/Sec     0.86k   247.51     1.27k    66.67%
+  Latency Distribution
+     50%  153.53ms
+     75%  198.77ms
+     90%  228.54ms
+     99%  242.82ms
+  511 requests in 5.04s, 650.23KB read
+Requests/sec:    101.33
+Transfer/sec:    128.93KB
