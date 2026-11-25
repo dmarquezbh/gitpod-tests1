@@ -1,0 +1,75 @@
+{
+ "tests": [
+  {
+   "id": "plaintext",
+   "results": [
+    {
+     "impl": "paulo-uvloop",
+     "rps": 635462.67,
+     "level": 256,
+     "errors": 0
+    },
+    {
+     "impl": "paulo-epoll",
+     "rps": 619772.24,
+     "level": 256,
+     "errors": 0
+    },
+    {
+     "impl": "paulo-epoll-jit",
+     "rps": 713914.86,
+     "level": 256,
+     "errors": 0
+    },
+    {
+     "impl": "paulo-uvloop-nofp",
+     "rps": 588391.36,
+     "level": 256,
+     "errors": 0
+    },
+    {
+     "impl": "paulo-epoll-nofp",
+     "rps": 509939.18,
+     "level": 256,
+     "errors": 0
+    }
+   ]
+  },
+  {
+   "id": "json",
+   "results": [
+    {
+     "impl": "paulo-uvloop",
+     "rps": 46999.27,
+     "level": 512,
+     "errors": 0
+    },
+    {
+     "impl": "paulo-epoll",
+     "rps": 45745.96,
+     "level": 512,
+     "errors": 0
+    },
+    {
+     "impl": "paulo-epoll-jit",
+     "rps": 50759.22,
+     "level": 512,
+     "errors": 0
+    },
+    {
+     "impl": "paulo-uvloop-nofp",
+     "rps": 48252.59,
+     "level": 512,
+     "errors": 0
+    },
+    {
+     "impl": "paulo-epoll-nofp",
+     "rps": 47625.93,
+     "level": 512,
+     "errors": 0
+    }
+   ]
+  }
+ ],
+ "metrics": []
+}

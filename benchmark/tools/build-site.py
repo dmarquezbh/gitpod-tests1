@@ -28,6 +28,11 @@ IMPLS = [
     ("c", "C (gcc)"),
     ("cpp", "C++ (epoll)"),
     ("zero", "Zero C#"),
+    ("paulo-uvloop", "py-platform uvloop 3.13"),
+    ("paulo-epoll", "py-platform epoll 3.14"),
+    ("paulo-epoll-jit", "py-platform epoll 3.14 + JIT"),
+    ("paulo-uvloop-nofp", "py-platform uvloop sem fast path"),
+    ("paulo-epoll-nofp", "py-platform epoll sem fast path"),
 ]
 TESTS = ["plaintext", "json", "db", "queries", "fortunes", "updates"]
 TEST_LABEL = {

@@ -22,6 +22,10 @@
             @if (Host?.Host is { } host)
             {
                 <p class="host">Host: <b>@host.Cpu</b> · @host.Memory · @host.Os · @host.Postgres · medido em @host.Date</p>
+                @if (host.Projection)
+                {
+                    <p class="proj">Projeção a partir das razões publicadas no PR #1 — só plaintext e json; as demais categorias não existem nessa stack. <span title="@host.Notes">ⓘ</span></p>
+                }
             }
         </div>
         <nav class="links">

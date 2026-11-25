@@ -22,6 +22,11 @@ IMPLS = [
     ("python", "CPython 3.14"), ("pypy", "PyPy 3.11"), ("graalpy", "GraalPy 3.11"),
     ("node", "Node 26"), ("bun", "Bun 1.4"), ("deno", "Deno 2.9"),
     ("ruby", "Ruby 3.2"), ("c", "C (gcc)"), ("cpp", "C++ (epoll)"), ("zero", "Zero C#"),
+    # PR #1 do Paulo: variantes "platform" em CPython (projeção: o PR só publicou razões).
+    ("paulo-uvloop", "py-platform uvloop 3.13"), ("paulo-epoll", "py-platform epoll 3.14"),
+    ("paulo-epoll-jit", "py-platform epoll 3.14 + JIT"),
+    ("paulo-uvloop-nofp", "py-platform uvloop sem fast path"),
+    ("paulo-epoll-nofp", "py-platform epoll sem fast path"),
 ]
 TESTS = [
     ("plaintext", "plaintext", "Hello, World! com pipelining 16"),
@@ -72,6 +77,13 @@ def host_info(res_dir):
 
 
 def host_entry(res_dir):
+    # Host com data.json pronto (projeção ou medição consolidada) não é recalculado.
+    pronto = os.path.join(res_dir, "data.json")
+    if os.path.exists(pronto):
+        with open(pronto) as f:
+            dados = json.load(f)
+        return {"host": host_info(res_dir), "tests": dados.get("tests", []), "metrics": dados.get("metrics", [])}
+
     best = best_levels(res_dir)
     met = metrics(res_dir)
     return {

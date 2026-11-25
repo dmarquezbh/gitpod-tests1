@@ -1,0 +1,11 @@
+{
+  "id": "paulo-i7-1355u-wsl",
+  "cpu": "Intel Core i7-1355U (WSL) — host do PR #1",
+  "memory": "não declarada no PR",
+  "os": "Windows 11 + WSL2",
+  "postgres": "mesmo schema do benchmark",
+  "storage": "não declarada",
+  "date": "2026-11-24",
+  "notes": "PROJEÇÃO: o PR #1 do Paulo mediu apenas plaintext e json e publicou RAZÕES contra o dotnet-platform da mesma rodada (mediana de 3). Nenhum req/s absoluto foi capturado. Os valores aqui são razão × dotnet-platform deste host (plaintext 784.522; json 62.666) e servem só para comparar variantes — db, queries, fortunes e updates não existem nessa stack ainda. Substituir por medicação real quando o host rodar a suíte.",
+  "projection": true
+}

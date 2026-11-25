@@ -71,6 +71,26 @@
   {
    "id": "zero",
    "label": "Zero C#"
+  },
+  {
+   "id": "paulo-uvloop",
+   "label": "py-platform uvloop 3.13"
+  },
+  {
+   "id": "paulo-epoll",
+   "label": "py-platform epoll 3.14"
+  },
+  {
+   "id": "paulo-epoll-jit",
+   "label": "py-platform epoll 3.14 + JIT"
+  },
+  {
+   "id": "paulo-uvloop-nofp",
+   "label": "py-platform uvloop sem fast path"
+  },
+  {
+   "id": "paulo-epoll-nofp",
+   "label": "py-platform epoll sem fast path"
   }
  ],
  "tests": [
@@ -106,6 +126,92 @@
   }
  ],
  "hosts": [
+  {
+   "host": {
+    "id": "paulo-i7-1355u-wsl",
+    "cpu": "Intel Core i7-1355U (WSL) — host do PR #1",
+    "memory": "não declarada no PR",
+    "os": "Windows 11 + WSL2",
+    "postgres": "mesmo schema do benchmark",
+    "storage": "não declarada",
+    "date": "2026-11-24",
+    "notes": "PROJEÇÃO: o PR #1 do Paulo mediu apenas plaintext e json e publicou RAZÕES contra o dotnet-platform da mesma rodada (mediana de 3). Nenhum req/s absoluto foi capturado. Os valores aqui são razão × dotnet-platform deste host (plaintext 784.522; json 62.666) e servem só para comparar variantes — db, queries, fortunes e updates não existem nessa stack ainda. Substituir por medicação real quando o host rodar a suíte.",
+    "projection": true
+   },
+   "tests": [
+    {
+     "id": "plaintext",
+     "results": [
+      {
+       "impl": "paulo-uvloop",
+       "rps": 635462.67,
+       "level": 256,
+       "errors": 0
+      },
+      {
+       "impl": "paulo-epoll",
+       "rps": 619772.24,
+       "level": 256,
+       "errors": 0
+      },
+      {
+       "impl": "paulo-epoll-jit",
+       "rps": 713914.86,
+       "level": 256,
+       "errors": 0
+      },
+      {
+       "impl": "paulo-uvloop-nofp",
+       "rps": 588391.36,
+       "level": 256,
+       "errors": 0
+      },
+      {
+       "impl": "paulo-epoll-nofp",
+       "rps": 509939.18,
+       "level": 256,
+       "errors": 0
+      }
+     ]
+    },
+    {
+     "id": "json",
+     "results": [
+      {
+       "impl": "paulo-uvloop",
+       "rps": 46999.27,
+       "level": 512,
+       "errors": 0
+      },
+      {
+       "impl": "paulo-epoll",
+       "rps": 45745.96,
+       "level": 512,
+       "errors": 0
+      },
+      {
+       "impl": "paulo-epoll-jit",
+       "rps": 50759.22,
+       "level": 512,
+       "errors": 0
+      },
+      {
+       "impl": "paulo-uvloop-nofp",
+       "rps": 48252.59,
+       "level": 512,
+       "errors": 0
+      },
+      {
+       "impl": "paulo-epoll-nofp",
+       "rps": 47625.93,
+       "level": 512,
+       "errors": 0
+      }
+     ]
+    }
+   ],
+   "metrics": []
+  },
   {
    "host": {
     "id": "i5-3317u-linux-x64",

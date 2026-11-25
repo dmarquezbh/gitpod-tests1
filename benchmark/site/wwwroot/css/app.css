@@ -143,3 +143,5 @@ th button:hover { color: var(--accent); }
     .bar-row .bar-label { font-size: .78rem; }
     .shell { padding-top: 1.5rem; }
 }
+.proj { margin: .5rem 0 0; padding: .45rem .7rem; border: 1px solid #4a3a12; border-radius: 6px;
+    background: #1a1406; color: #f0d9a0; font-size: .82rem; font-family: var(--mono); }

@@ -45,6 +45,7 @@ public sealed class HostInfo
     public string Storage { get; set; } = "";
     public string Date { get; set; } = "";
     public string Notes { get; set; } = "";
+    public bool Projection { get; set; }
 }
 
 public sealed class Impl
