@@ -6,6 +6,40 @@ Data: 2026-10-22. Metodologia, arquitetura e reprodução em [`README.md`](READM
 Novidade da rodada: a variante platform ganhou um **event loop próprio por core** (`epoll` via
 libc, HTTP e PostgreSQL na mesma thread), o desenho do tokio *current-thread* reproduzido em C#.
 
+## Rodada 6 (2026-11-25): Zig platform — PostgreSQL dentro do epoll
+
+Duas implementações Zig na mesma suíte, 10 s por nível, servidor nas CPUs 0-1 e `wrk` nas 2-3,
+PostgreSQL 16.16 em container (`synchronous_commit=off`). `fast6` mantém o plaintext (loop HTTP com
+burst); `fast7` faz o banco com o desenho do "platform" do .NET: **HTTP e PostgreSQL no mesmo loop
+epoll, batching por rodada**. O .NET platform é a configuração revalidada nesta mesma máquina
+(`09fe7c2`); o placar abaixo é o melhor nível de cada teste.
+
+| Teste | **Zig** | .NET 11 platform | líder |
+|---|---:|---:|---|
+| plaintext (x16) | **811.894** (fast6, c=256) | 776.916 | Zig |
+| json | **73.578** (fast7, c=256) | 71.131 | Zig |
+| db | **54.740** (c=512) | 52.026 | Zig |
+| queries q=1 | **55.984** | 49.820 | Zig |
+| fortunes | **67.020** (c=512) | 49.334 | Zig |
+| updates q=1 | **45.292** | 6.268 | Zig |
+
+O que o `fast7` faz:
+
+- **uma consulta por rodada**: todos os `/db` e `/queries` de uma rodada viram um único
+  `EXECUTE wq('{ids}')` (`PREPARE wq(int[])`: `unnest($1) WITH ORDINALITY JOIN world ... ORDER BY
+  ord`, o mesmo SQL do .NET); a resposta de cada requisição é montada na ordem das linhas;
+- **um UPDATE por rodada**: `/updates` concatenam os `int[]` de ids e números no mesmo `UNNEST`;
+  o JSON de resposta vem dos próprios valores sorteados, como no .NET;
+- **fortunes uma vez por rodada**: `SELECT id, message FROM fortune`, ordenação byte a byte com a
+  linha extra do TFB, renderização única e cópia para todos os clientes;
+- **statements preparados por conexão** e protocolo simples (`Q`/`D`/`Z`), sem libpq;
+- **espera curta (≤1 ms)** para o lote encher antes da consulta, porque o round-trip do PG domina;
+- 2 loops (um socket PG cada) nas 2 CPUs do servidor.
+
+Não funcionou (medido): 4 loops (37 k em `/db`), 1 loop (34 k), thread por conexão com cliente
+bloqueante (5,7 k, rodada anterior). O ganho vem do batching: o custo por consulta deixou de ser
+pago por requisição.
+
 ## Resumo (melhor nível por teste, critério de ranking do TechEmpower)
 
 | Teste | Rust axum | .NET 11 Kestrel | **.NET 11 Platform** | Go net/http | Go fasthttp | Vencedor |
