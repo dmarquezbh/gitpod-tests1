@@ -402,10 +402,28 @@
        "errors": 33511
       },
       {
+       "impl": "dart",
+       "rps": 10837.46,
+       "level": 256,
+       "errors": 0
+      },
+      {
+       "impl": "kotlin",
+       "rps": 23658.83,
+       "level": 1024,
+       "errors": 133
+      },
+      {
        "impl": "pascal",
        "rps": 2088.1,
        "level": 256,
        "errors": 10415
+      },
+      {
+       "impl": "zig",
+       "rps": 820816.71,
+       "level": 256,
+       "errors": 0
       }
      ]
     },
@@ -539,10 +557,28 @@
        "errors": 48482
       },
       {
+       "impl": "dart",
+       "rps": 8317.04,
+       "level": 64,
+       "errors": 0
+      },
+      {
+       "impl": "kotlin",
+       "rps": 11008.83,
+       "level": 512,
+       "errors": 25775
+      },
+      {
        "impl": "pascal",
        "rps": 2052.37,
        "level": 16,
        "errors": 10477
+      },
+      {
+       "impl": "zig",
+       "rps": 68701.0,
+       "level": 64,
+       "errors": 0
       }
      ]
     },
@@ -676,10 +712,28 @@
        "errors": 11630
       },
       {
+       "impl": "dart",
+       "rps": 2042.56,
+       "level": 256,
+       "errors": 0
+      },
+      {
+       "impl": "kotlin",
+       "rps": 4704.9,
+       "level": 256,
+       "errors": 1233
+      },
+      {
        "impl": "pascal",
        "rps": 37.65,
        "level": 64,
        "errors": 192
+      },
+      {
+       "impl": "zig",
+       "rps": 5171.18,
+       "level": 16,
+       "errors": 0
       }
      ]
     },
@@ -813,10 +867,28 @@
        "errors": 11256
       },
       {
+       "impl": "dart",
+       "rps": 1947.51,
+       "level": 1,
+       "errors": 0
+      },
+      {
+       "impl": "kotlin",
+       "rps": 3684.72,
+       "level": 1,
+       "errors": 0
+      },
+      {
        "impl": "pascal",
        "rps": 0.0,
        "level": 1,
        "errors": 1422
+      },
+      {
+       "impl": "zig",
+       "rps": 4775.15,
+       "level": 1,
+       "errors": 0
       }
      ]
     },
@@ -950,8 +1022,26 @@
        "errors": 12834
       },
       {
+       "impl": "dart",
+       "rps": 1359.0,
+       "level": 64,
+       "errors": 0
+      },
+      {
+       "impl": "kotlin",
+       "rps": 4248.7,
+       "level": 256,
+       "errors": 128
+      },
+      {
        "impl": "pascal",
        "rps": 0.0,
+       "level": 16,
+       "errors": 0
+      },
+      {
+       "impl": "zig",
+       "rps": 6365.24,
        "level": 16,
        "errors": 0
       }
@@ -1087,8 +1177,26 @@
        "errors": 9021
       },
       {
+       "impl": "dart",
+       "rps": 1586.73,
+       "level": 1,
+       "errors": 0
+      },
+      {
+       "impl": "kotlin",
+       "rps": 2995.8,
+       "level": 1,
+       "errors": 0
+      },
+      {
        "impl": "pascal",
        "rps": 0.0,
+       "level": 1,
+       "errors": 0
+      },
+      {
+       "impl": "zig",
+       "rps": 3560.69,
        "level": 1,
        "errors": 0
       }

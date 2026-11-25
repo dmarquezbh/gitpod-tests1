@@ -3,18 +3,17 @@ using HTTP, LibPQ
 
 const PORT = parse(Int, get(ENV, "PORT", "8097"))
 const CONNINFO = get(ENV, "DB_URL", "postgres://benchmarkdbuser:benchmarkdbpass@127.0.0.1/hello_world")
-const conn = LibPQ.Connection(CONNINFO)
-const trava = ReentrantLock()
+const NT = max(1, Threads.nthreads())
+const conns = [LibPQ.Connection(CONNINFO) for _ in 1:NT]
+conn() = conns[Threads.threadid()]
 
 qtd(uri) = (m = match(r"[?&]q=(\d+)", uri); m === nothing ? 1 : clamp(parse(Int, m.captures[1]), 1, 500))
 
 function consulta(sql)
-    lock(trava) do
-        r = execute(conn, sql)
-        linhas = [(Int(first(linha)), Int(last(linha))) for linha in r]
-        close(r)
-        linhas
-    end
+    r = execute(conn(), sql)
+    linhas = [(Int(first(linha)), Int(last(linha))) for linha in r]
+    close(r)
+    linhas
 end
 
 function fortunes_html()
