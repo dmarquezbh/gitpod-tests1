@@ -1,0 +1,6 @@
+elixir-fast :8098 workers=2 janela=200us
+
+23:33:15.995 [notice] SIGTERM received - shutting down
+
+** (EXIT from #PID<0.94.0>) killed
+

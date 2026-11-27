@@ -1,13 +1,12 @@
 #[global_allocator]
 static GLOBAL: mimalloc::MiMalloc = mimalloc::MiMalloc;
 
-use std::fmt::Write;
 use std::io;
 use std::sync::Arc;
 
 use bytes::BytesMut;
 use may_minihttp::{HttpService, HttpServiceFactory, Request, Response};
-use may_postgres::{types::ToSql, Client, Statement};
+use may_postgres::{Client, Statement};
 use nanorand::{Rng, WyRand};
 use smallvec::SmallVec;
 use yarte::{ywrite_html, Serialize};
@@ -69,8 +68,9 @@ impl PgConnectionPool {
 
 struct PgStatement {
     world: Statement,
+    world_many: Statement,
+    update_many: Statement,
     fortune: Statement,
-    updates: Vec<Statement>,
 }
 
 struct PgConnection {
@@ -83,31 +83,19 @@ impl PgConnection {
         let client = may_postgres::connect(db_url).unwrap();
 
         let world = client.prepare("SELECT * FROM world WHERE id=$1").unwrap();
+        let world_many = client
+            .prepare("SELECT id, randomnumber FROM world WHERE id = ANY($1)")
+            .unwrap();
+        let update_many = client
+            .prepare("UPDATE world SET randomnumber = v.rn FROM (SELECT * FROM UNNEST($1::int[], $2::int[]) AS w(id, rn)) AS v(id, rn) WHERE world.id = v.id")
+            .unwrap();
         let fortune = client.prepare("SELECT * FROM fortune").unwrap();
-
-        let mut updates = Vec::new();
-        for num in 1..=500u16 {
-            let mut pl: u16 = 1;
-            let mut q = String::new();
-            q.push_str("UPDATE world SET randomnumber = CASE id ");
-            for _ in 1..=num {
-                let _ = write!(&mut q, "when ${} then ${} ", pl, pl + 1);
-                pl += 2;
-            }
-            q.push_str("ELSE randomnumber END WHERE id IN (");
-            for _ in 1..=num {
-                let _ = write!(&mut q, "${pl},");
-                pl += 1;
-            }
-            q.pop();
-            q.push(')');
-            updates.push(client.prepare(&q).unwrap());
-        }
 
         let statement = Arc::new(PgStatement {
             world,
+            world_many,
+            update_many,
             fortune,
-            updates,
         });
 
         PgConnection { client, statement }
@@ -131,24 +119,22 @@ impl PgConnection {
         num: usize,
         rand: &mut WyRand,
     ) -> Result<SmallVec<[WorldRow; 32]>, may_postgres::Error> {
-        let mut queries = SmallVec::<[_; 32]>::new();
+        // Uma consulta por requisicao (ANY) em vez de N consultas pipelined: e o mesmo desenho do fast7 do Zig.
+        // Ids repetidos sao deduplicados porque o ANY devolve a linha uma vez so.
+        let mut ids: Vec<i32> = Vec::with_capacity(num);
         for _ in 0..num {
-            let random_id = (rand.generate::<u32>() % 10_000 + 1) as i32;
-            queries.push(
-                self.client
-                    .query_raw(&self.statement.world, &[&random_id])?,
-            );
+            ids.push((rand.generate::<u32>() % 10_000 + 1) as i32);
         }
+        ids.sort_unstable();
+        ids.dedup();
 
-        let mut worlds = SmallVec::<[_; 32]>::new();
-        for mut q in queries {
-            match q.next().transpose()? {
-                Some(row) => worlds.push(WorldRow {
-                    id: row.get(0),
-                    randomnumber: row.get(1),
-                }),
-                None => unreachable!(),
-            }
+        let mut q = self.client.query_raw(&self.statement.world_many, &[&ids])?;
+        let mut worlds = SmallVec::<[WorldRow; 32]>::new();
+        while let Some(row) = q.next().transpose()? {
+            worlds.push(WorldRow {
+                id: row.get(0),
+                randomnumber: row.get(1),
+            });
         }
         Ok(worlds)
     }
@@ -158,41 +144,27 @@ impl PgConnection {
         num: usize,
         rand: &mut WyRand,
     ) -> Result<SmallVec<[WorldRow; 32]>, may_postgres::Error> {
-        let mut queries = SmallVec::<[_; 32]>::new();
+        // Um UPDATE em lote por requisicao (UNNEST), com ids ordenados para dois lotes concorrentes nao se
+        // travarem; ids repetidos ficam com o ultimo numero sorteado. Mesmo desenho do fast7 do Zig.
+        let mut pares: Vec<(i32, i32)> = Vec::with_capacity(num);
         for _ in 0..num {
-            let random_id = (rand.generate::<u32>() % 10_000 + 1) as i32;
-            queries.push(
-                self.client
-                    .query_raw(&self.statement.world, &[&random_id])?,
-            );
+            pares.push((
+                (rand.generate::<u32>() % 10_000 + 1) as i32,
+                (rand.generate::<u32>() % 10_000 + 1) as i32,
+            ));
         }
+        pares.sort_unstable_by_key(|p| p.0);
+        pares.dedup_by_key(|p| p.0);
+        let (ids, nums): (Vec<i32>, Vec<i32>) = pares.into_iter().unzip();
 
-        let mut worlds = SmallVec::<[_; 32]>::new();
-        for mut q in queries {
-            let new_random_num = (rand.generate::<u32>() % 10_000 + 1) as i32;
-            match q.next().transpose()? {
-                Some(row) => worlds.push(WorldRow {
-                    id: row.get(0),
-                    randomnumber: new_random_num,
-                }),
-                None => unreachable!(),
-            }
-        }
+        let mut q = self.client.query_raw(&self.statement.update_many, &[&ids, &nums])?;
+        while q.next().transpose()?.is_some() {}
 
-        let mut params: Vec<&(dyn ToSql)> = Vec::with_capacity(num * 3);
-        for w in &worlds {
-            params.push(&w.id);
-            params.push(&w.randomnumber);
-        }
-        for w in &worlds {
-            params.push(&w.id);
-        }
-
-        // use `query_one` to sync wait result
-        let _ = self
-            .client
-            .query_one(&self.statement.updates[num - 1], &params);
-        Ok(worlds)
+        Ok(ids
+            .into_iter()
+            .zip(nums)
+            .map(|(id, randomnumber)| WorldRow { id, randomnumber })
+            .collect())
     }
 
     fn tell_fortune(&self, buf: &mut BytesMut) -> Result<(), may_postgres::Error> {

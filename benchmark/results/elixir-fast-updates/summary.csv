@@ -1,0 +1,5 @@
+impl,test,level,rps,latency_avg_ms,latency_p99_ms,requests,errors,non2xx,transfer_mb_s
+elixir-fast-updates,updates,1,6335.62,243.460,1050.000,63777,0,0,0.627
+elixir-fast-updates,updates,5,7332.26,176.120,1060.000,73809,0,0,1.620
+elixir-fast-updates,updates,10,4728.52,275.190,1990.000,47627,0,0,1.760
+elixir-fast-updates,updates,20,3628.68,210.220,1130.000,36450,0,0,2.450
